@@ -13,12 +13,12 @@
     <title>Donezo - Beautiful Todo App</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/date-fns@2.29.3/index.js"></script>
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
         
         /* iOS-specific optimizations */
         @supports (-webkit-touch-callout: none) {
@@ -45,7 +45,7 @@
         }
         
         body {
-            font-family: 'Inter', system-ui, sans-serif;
+            font-family: 'Poppins', system-ui, sans-serif;
             min-height: 100vh;
             /* iOS safe area support */
             padding-top: env(safe-area-inset-top);
@@ -63,7 +63,7 @@
             width: 100%;
             height: 100%;
             z-index: -1;
-            background: linear-gradient(-45deg, #f0fdfa, #e0f2fe, #faf5ff, #fff7ed);
+            background: linear-gradient(-45deg, #f0fdfa, #e0f2fe, #fef3c7, #fed7aa);
             background-size: 400% 400%;
             animation: gradientShift 15s ease infinite;
         }
@@ -75,9 +75,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at 20% 80%, rgba(94, 234, 212, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 80% 20%, rgba(168, 85, 247, 0.1) 0%, transparent 50%),
-                        radial-gradient(circle at 40% 40%, rgba(251, 146, 60, 0.05) 0%, transparent 50%);
+            background: radial-gradient(circle at 20% 80%, rgba(94, 234, 212, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 80% 20%, rgba(251, 146, 60, 0.12) 0%, transparent 50%),
+                        radial-gradient(circle at 40% 40%, rgba(20, 184, 166, 0.08) 0%, transparent 50%),
+                        radial-gradient(circle at 60% 60%, rgba(251, 146, 60, 0.06) 0%, transparent 50%);
             animation: floatingOrbs 20s ease-in-out infinite;
         }
 
@@ -88,9 +89,22 @@
         }
 
         @keyframes floatingOrbs {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            33% { transform: translateY(-20px) rotate(120deg); }
-            66% { transform: translateY(10px) rotate(240deg); }
+            0%, 100% { 
+                transform: translateY(0px) rotate(0deg) scale(1);
+                opacity: 0.8;
+            }
+            25% { 
+                transform: translateY(-15px) rotate(90deg) scale(1.1);
+                opacity: 1;
+            }
+            50% { 
+                transform: translateY(10px) rotate(180deg) scale(0.9);
+                opacity: 0.6;
+            }
+            75% { 
+                transform: translateY(-8px) rotate(270deg) scale(1.05);
+                opacity: 0.9;
+            }
         }
 
         /* Mobile-first responsive design */
@@ -413,10 +427,12 @@
             transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             border-radius: 1rem;
             margin-bottom: 0.5rem;
+            cursor: pointer;
         }
         
         .list-item:hover {
             transform: translateX(4px);
+            background-color: rgba(20, 184, 166, 0.05);
         }
         
         /* Enhanced toggle buttons */
@@ -466,8 +482,21 @@
         <div id="sidebar" class="w-80 flex flex-col sidebar-mobile-hidden">
             <div class="p-6 border-b border-gray-200/30">
                 <div class="flex items-center gap-3">
-                    <div class="w-12 h-12 bg-gradient-to-br from-teal-500 via-lavender-500 to-orange-400 rounded-xl flex items-center justify-center shadow-lg">
-                        <i data-lucide="check-circle" class="w-7 h-7 text-white"></i>
+                    <div class="w-12 h-12 bg-gradient-to-br from-teal-500 via-orange-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg relative overflow-hidden">
+                        <!-- Custom Donezo Icon -->
+                        <svg class="w-7 h-7 text-white relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <!-- Zen circle background -->
+                            <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.8"/>
+                            <!-- Checkmark -->
+                            <path d="M8 12L11 15L16 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                            <!-- Peaceful dots -->
+                            <circle cx="9" cy="9" r="1" fill="currentColor" opacity="0.6"/>
+                            <circle cx="15" cy="9" r="1" fill="currentColor" opacity="0.6"/>
+                            <circle cx="9" cy="15" r="1" fill="currentColor" opacity="0.6"/>
+                            <circle cx="15" cy="15" r="1" fill="currentColor" opacity="0.6"/>
+                        </svg>
+                        <!-- Subtle inner glow -->
+                        <div class="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
                     </div>
                     <div>
                         <h1 class="text-xl font-bold text-gray-900">Donezo</h1>
@@ -484,7 +513,6 @@
                 <button id="add-list-btn" class="w-full mt-4 p-3 border-2 border-dashed border-gray-300/50 rounded-xl text-gray-600 hover:border-teal-300 hover:text-teal-600 transition-all duration-300 flex items-center justify-center gap-2 touch-target">
                     <i data-lucide="plus" class="w-5 h-5"></i>
                     <span class="desktop-only">New List</span>
-                    <span class="mobile-only">Add List</span>
                 </button>
             </div>
 
@@ -508,7 +536,6 @@
                     <button id="add-task-btn" class="btn-primary flex items-center gap-2 ml-4">
                         <i data-lucide="plus" class="w-5 h-5"></i>
                         <span class="desktop-only">Add Task</span>
-                        <span class="mobile-only">Add</span>
                     </button>
                 </div>
             </header>
@@ -588,6 +615,63 @@
         </div>
     </div>
 
+    <!-- Add List Modal -->
+    <div id="add-list-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 hidden">
+        <div class="card w-full max-w-md slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Create New List</h2>
+                <button id="close-list-modal" class="p-2 hover:bg-gray-100/50 rounded-lg transition-all duration-300 touch-target">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="add-list-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">List Name *</label>
+                    <input type="text" id="list-name" placeholder="Enter list name..." class="input-field" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Color Theme</label>
+                    <div class="flex gap-3">
+                        <button type="button" class="color-option w-10 h-10 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 touch-target bg-gradient-to-br from-teal-500 to-teal-600" data-color="teal"></button>
+                        <button type="button" class="color-option w-10 h-10 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 touch-target bg-gradient-to-br from-orange-400 to-orange-500" data-color="coral"></button>
+                        <button type="button" class="color-option w-10 h-10 rounded-xl border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 touch-target bg-gradient-to-br from-lavender-500 to-lavender-600" data-color="lavender"></button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Icon</label>
+                    <div class="grid grid-cols-6 gap-2">
+                        <button type="button" class="icon-option w-10 h-10 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 touch-target flex items-center justify-center" data-icon="home" title="Home">
+                            <i data-lucide="home" class="w-5 h-5 text-gray-600"></i>
+                        </button>
+                        <button type="button" class="icon-option w-10 h-10 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 touch-target flex items-center justify-center" data-icon="building" title="Office/Work">
+                            <i data-lucide="building" class="w-5 h-5 text-gray-600"></i>
+                        </button>
+                        <button type="button" class="icon-option w-10 h-10 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 touch-target flex items-center justify-center" data-icon="sparkles" title="Chores/Cleaning">
+                            <i data-lucide="sparkles" class="w-5 h-5 text-gray-600"></i>
+                        </button>
+                        <button type="button" class="icon-option w-10 h-10 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 touch-target flex items-center justify-center" data-icon="shopping-cart" title="Groceries">
+                            <i data-lucide="shopping-cart" class="w-5 h-5 text-gray-600"></i>
+                        </button>
+                        <button type="button" class="icon-option w-10 h-10 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 touch-target flex items-center justify-center" data-icon="calendar" title="Appointments">
+                            <i data-lucide="calendar" class="w-5 h-5 text-gray-600"></i>
+                        </button>
+                        <button type="button" class="icon-option w-10 h-10 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all duration-300 touch-target flex items-center justify-center" data-icon="book-open" title="Notes/Study">
+                            <i data-lucide="book-open" class="w-5 h-5 text-gray-600"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="btn-primary flex-1">Create List</button>
+                    <button type="button" id="cancel-list" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <script>
         // Initialize Lucide icons
         lucide.createIcons();
@@ -601,6 +685,8 @@
         ];
         let activeList = '1';
         let selectedPriority = '';
+        let selectedListColor = 'teal';
+        let selectedListIcon = 'home';
 
         // DOM elements
         const sidebar = document.getElementById('sidebar');
@@ -620,6 +706,14 @@
         const taskReminder = document.getElementById('task-reminder');
         const quickReminderBtn = document.getElementById('quick-reminder-btn');
         const quickReminderOptions = document.getElementById('quick-reminder-options');
+        
+        // New list modal elements
+        const addListBtn = document.getElementById('add-list-btn');
+        const addListModal = document.getElementById('add-list-modal');
+        const closeListModal = document.getElementById('close-list-modal');
+        const cancelList = document.getElementById('cancel-list');
+        const addListForm = document.getElementById('add-list-form');
+        const listName = document.getElementById('list-name');
 
         // Enhanced color and icon mappings
         const colorMap = {
@@ -633,7 +727,11 @@
             'clock': 'clock',
             'bell': 'bell',
             'home': 'home',
+            'building': 'building',
+            'sparkles': 'sparkles',
+            'shopping-cart': 'shopping-cart',
             'calendar': 'calendar',
+            'book-open': 'book-open',
             'star': 'star'
         };
 
@@ -679,16 +777,23 @@
             listsContainer.innerHTML = lists.map((list, index) => {
                 const IconComponent = iconMap[list.icon] || 'check-circle';
                 return `
-                    <button class="list-item w-full flex items-center justify-between p-3 transition-all duration-300 touch-target fade-in" 
-                            style="animation-delay: ${index * 0.1}s" 
-                            data-list-id="${list.id}">
+                    <div class="list-item w-full flex items-center justify-between p-3 transition-all duration-300 touch-target fade-in" 
+                         style="animation-delay: ${index * 0.1}s" 
+                         data-list-id="${list.id}">
                         <div class="flex items-center gap-3">
                             <div class="w-10 h-10 ${colorMap[list.color]} rounded-xl flex items-center justify-center shadow-md">
                                 <i data-lucide="${IconComponent}" class="w-5 h-5 text-white"></i>
                             </div>
                             <span class="font-medium">${list.name}</span>
                         </div>
-                    </button>
+                        ${lists.length > 1 ? `
+                            <button class="delete-list-btn opacity-100 hover:text-red-500 transition-all duration-300 p-2 touch-target rounded-lg hover:bg-red-50" 
+                                    data-list-id="${list.id}" 
+                                    title="Delete list">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        ` : ''}
+                    </div>
                 `;
             }).join('');
             
@@ -764,7 +869,7 @@
                                     ` : ''}
                                 </div>
                                 
-                                <button class="delete-todo opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all duration-300 p-1 touch-target" data-todo-id="${todo.id}">
+                                <button class="delete-todo opacity-100 hover:text-red-500 transition-all duration-300 p-2 touch-target rounded-lg hover:bg-red-50" data-todo-id="${todo.id}" title="Delete task">
                                     <i data-lucide="trash-2" class="w-4 h-4"></i>
                                 </button>
                             </div>
@@ -874,10 +979,44 @@
 
         // Event listeners
         function setupEventListeners() {
-            // List selection
+            // List selection and deletion
             listsContainer.addEventListener('click', (e) => {
                 const listItem = e.target.closest('.list-item');
-                if (listItem) {
+                const deleteListBtn = e.target.closest('.delete-list-btn');
+                
+                if (deleteListBtn) {
+                    e.stopPropagation();
+                    const listId = deleteListBtn.dataset.listId;
+                    const listToDelete = lists.find(list => list.id === listId);
+                    
+                    if (listToDelete && confirm(`Are you sure you want to delete "${listToDelete.name}"? All tasks in this list will be permanently removed.`)) {
+                        // Remove the list
+                        lists = lists.filter(list => list.id !== listId);
+                        
+                        // Remove all tasks from this list
+                        todos = todos.filter(todo => todo.listId !== listId);
+                        
+                        // If we deleted the active list, switch to the first available list
+                        if (activeList === listId) {
+                            activeList = lists.length > 0 ? lists[0].id : null;
+                        }
+                        
+                        // Save changes
+                        saveLists();
+                        saveTodos();
+                        
+                        // Re-render everything
+                        renderLists();
+                        renderTodos();
+                        updateHeader();
+                        
+                        // Close mobile menu after deletion
+                        if (window.innerWidth <= 768) {
+                            sidebar.classList.add('sidebar-mobile-hidden');
+                            sidebar.classList.remove('sidebar-mobile-visible');
+                        }
+                    }
+                } else if (listItem) {
                     activeList = listItem.dataset.listId;
                     renderLists();
                     renderTodos();
@@ -992,6 +1131,65 @@
             if ('Notification' in window && Notification.permission === 'default') {
                 Notification.requestPermission();
             }
+
+            // New list functionality
+            addListBtn.addEventListener('click', () => {
+                addListModal.classList.remove('hidden');
+                listName.focus();
+            });
+
+            closeListModal.addEventListener('click', () => {
+                addListModal.classList.add('hidden');
+                addListForm.reset();
+                resetListSelections();
+            });
+
+            cancelList.addEventListener('click', () => {
+                addListModal.classList.add('hidden');
+                addListForm.reset();
+                resetListSelections();
+            });
+
+            // Color selection for new list
+            document.querySelectorAll('.color-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.color-option').forEach(b => b.classList.remove('border-teal-500', 'ring-2', 'ring-teal-500'));
+                    btn.classList.add('border-teal-500', 'ring-2', 'ring-teal-500');
+                    selectedListColor = btn.dataset.color;
+                });
+            });
+
+            // Icon selection for new list
+            document.querySelectorAll('.icon-option').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    document.querySelectorAll('.icon-option').forEach(b => b.classList.remove('border-teal-500', 'bg-teal-50'));
+                    btn.classList.add('border-teal-500', 'bg-teal-50');
+                    selectedListIcon = btn.dataset.icon;
+                });
+            });
+
+            // Add list form submission
+            addListForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const newList = {
+                    id: Date.now().toString(),
+                    name: listName.value.trim(),
+                    color: selectedListColor,
+                    icon: selectedListIcon
+                };
+                
+                lists.push(newList);
+                saveLists();
+                
+                addListModal.classList.add('hidden');
+                addListForm.reset();
+                resetListSelections();
+                
+                renderLists();
+                renderTodos();
+                updateHeader();
+            });
         }
 
         // Update priority buttons
@@ -1012,6 +1210,25 @@
                     btn.classList.add('border-gray-200/50', 'hover:border-gray-300');
                 }
             });
+        }
+
+        // Reset list selections
+        function resetListSelections() {
+            selectedListColor = 'teal';
+            selectedListIcon = 'home';
+            
+            document.querySelectorAll('.color-option').forEach(btn => {
+                btn.classList.remove('border-teal-500', 'ring-2', 'ring-teal-500');
+            });
+            document.querySelectorAll('.icon-option').forEach(btn => {
+                btn.classList.remove('border-teal-500', 'bg-teal-50');
+            });
+            
+            // Set default selections
+            const defaultColor = document.querySelector('.color-option[data-color="teal"]');
+            const defaultIcon = document.querySelector('.icon-option[data-icon="home"]');
+            if (defaultColor) defaultColor.classList.add('border-teal-500', 'ring-2', 'ring-teal-500');
+            if (defaultIcon) defaultIcon.classList.add('border-teal-500', 'bg-teal-50');
         }
 
         // Initialize the app
