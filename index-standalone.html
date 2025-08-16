@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="Donezo">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#14b8a6">
+    <meta name="msapplication-TileColor" content="#14b8a6">
+    <link rel="manifest" href="./manifest.json">
+    <title>Donezo - Beautiful Todo App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/date-fns@2.29.3/index.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        /* iOS-specific optimizations */
+        @supports (-webkit-touch-callout: none) {
+            body {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -webkit-tap-highlight-color: transparent;
+            }
+        }
+        
+        body {
+            font-family: 'Inter', system-ui, sans-serif;
+            background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 100%);
+            min-height: 100vh;
+            /* iOS safe area support */
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+        }
+        
+        /* Mobile-first responsive design */
+        @media (max-width: 768px) {
+            #app {
+                flex-direction: column;
+            }
+            
+            #sidebar {
+                width: 100%;
+                height: auto;
+                border-right: none;
+                border-bottom: 1px solid #e5e7eb;
+            }
+            
+            .sidebar-mobile-hidden {
+                display: none;
+            }
+            
+            .sidebar-mobile-visible {
+                display: flex;
+            }
+            
+            main {
+                flex: 1;
+                min-height: 0;
+            }
+            
+            .mobile-menu-btn {
+                display: block;
+            }
+            
+            .desktop-only {
+                display: none;
+            }
+        }
+        
+        @media (min-width: 769px) {
+            .mobile-menu-btn {
+                display: none;
+            }
+            
+            .desktop-only {
+                display: block;
+            }
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
+            color: white;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            /* Touch-friendly sizing */
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+        
+        .btn-secondary {
+            background: white;
+            color: #14b8a6;
+            font-weight: 500;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            border: 1px solid #e6fffa;
+            transition: all 0.2s;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .btn-secondary:hover {
+            background: #f8fafc;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        .card {
+            background: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            border: 1px solid #f1f5f9;
+            padding: 1.5rem;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            border: 1px solid #e2e8f0;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+            font-size: 16px; /* Prevents zoom on iOS */
+            min-height: 44px;
+        }
+        
+        .input-field:focus {
+            outline: none;
+            border-color: #14b8a6;
+            box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.1);
+        }
+        
+        .todo-item {
+            background: white;
+            border-radius: 0.5rem;
+            padding: 1rem;
+            box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+            border: 1px solid #f1f5f9;
+            transition: all 0.2s;
+            /* Touch-friendly */
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .todo-item:hover {
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* Touch-friendly buttons */
+        .touch-target {
+            min-width: 44px;
+            min-height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .reminder-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.25rem 0.5rem;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        
+        .reminder-urgent {
+            background: #fed7aa;
+            color: #c2410c;
+        }
+        
+        .reminder-soon {
+            background: #e9d5ff;
+            color: #7c3aed;
+        }
+        
+        .reminder-later {
+            background: #ccfbf1;
+            color: #0d9488;
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease-in-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .slide-up {
+            animation: slideUp 0.3s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from { 
+                transform: translateY(10px);
+                opacity: 0;
+            }
+            to { 
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        /* Mobile modal improvements */
+        @media (max-width: 768px) {
+            #add-task-modal {
+                padding: 1rem;
+            }
+            
+            #add-task-modal .card {
+                max-height: 90vh;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+        }
+        
+        /* iOS momentum scrolling */
+        .ios-scroll {
+            -webkit-overflow-scrolling: touch;
+        }
+    </style>
+</head>
+<body>
+    <div id="app" class="flex h-screen">
+        <!-- Mobile Menu Button -->
+        <button id="mobile-menu-btn" class="mobile-menu-btn fixed top-4 left-4 z-50 p-2 bg-white rounded-lg shadow-lg border border-gray-200">
+            <i data-lucide="menu" class="w-6 h-6 text-gray-700"></i>
+        </button>
+
+        <!-- Sidebar -->
+        <div id="sidebar" class="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col sidebar-mobile-hidden">
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
+                        <i data-lucide="check-circle" class="w-6 h-6 text-white"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-900">Donezo</h1>
+                        <p class="text-sm text-gray-600">Get things done</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-4 ios-scroll">
+                <div id="lists-container" class="space-y-2">
+                    <!-- Lists will be populated here -->
+                </div>
+
+                <button id="add-list-btn" class="w-full mt-4 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-teal-300 hover:text-teal-600 transition-colors duration-200 flex items-center justify-center gap-2 touch-target">
+                    <i data-lucide="plus" class="w-5 h-5"></i>
+                    <span class="desktop-only">New List</span>
+                    <span class="mobile-only">Add List</span>
+                </button>
+            </div>
+
+            <div class="p-4 border-t border-gray-200">
+                <button class="w-full flex items-center gap-3 p-3 rounded-lg hover:bg-gray-50 text-gray-600 transition-colors duration-200 touch-target">
+                    <i data-lucide="settings" class="w-5 h-5"></i>
+                    <span>Settings</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white shadow-sm border-b border-gray-200 px-4 md:px-6 py-4">
+                <div class="flex items-center justify-between">
+                    <div class="flex-1 min-w-0">
+                        <h1 id="current-list-title" class="text-xl md:text-2xl font-bold text-gray-900 truncate">Personal</h1>
+                        <p id="tasks-count" class="text-gray-600 text-sm">0 tasks remaining</p>
+                    </div>
+                    
+                    <button id="add-task-btn" class="btn-primary flex items-center gap-2 ml-4">
+                        <i data-lucide="plus" class="w-5 h-5"></i>
+                        <span class="desktop-only">Add Task</span>
+                        <span class="mobile-only">Add</span>
+                    </button>
+                </div>
+            </header>
+
+            <div class="flex-1 overflow-auto p-4 md:p-6 ios-scroll">
+                <div id="todos-container" class="space-y-3">
+                    <!-- Todos will be populated here -->
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Add Task Modal -->
+    <div id="add-task-modal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50 hidden">
+        <div class="card w-full max-w-md slide-up">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-bold text-gray-900">Add New Task</h2>
+                <button id="close-modal" class="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200 touch-target">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+
+            <form id="add-task-form" class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Task Title *</label>
+                    <input type="text" id="task-title" placeholder="What needs to be done?" class="input-field" required>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                    <textarea id="task-description" placeholder="Add more details..." rows="3" class="input-field resize-none"></textarea>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">List</label>
+                    <select id="task-list" class="input-field">
+                        <!-- Options will be populated -->
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Priority</label>
+                    <div class="flex gap-2">
+                        <button type="button" class="priority-btn px-3 py-2 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all duration-200 touch-target" data-priority="low">Low</button>
+                        <button type="button" class="priority-btn px-3 py-2 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all duration-200 touch-target" data-priority="medium">Medium</button>
+                        <button type="button" class="priority-btn px-3 py-2 rounded-lg border-2 border-gray-200 hover:border-gray-300 transition-all duration-200 touch-target" data-priority="high">High</button>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Reminder</label>
+                    <div class="space-y-2">
+                        <div class="flex gap-2">
+                            <input type="datetime-local" id="task-reminder" class="input-field flex-1">
+                            <button type="button" id="quick-reminder-btn" class="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 touch-target">
+                                <i data-lucide="clock" class="w-5 h-5"></i>
+                            </button>
+                        </div>
+                        <div id="quick-reminder-options" class="hidden p-3 bg-gray-50 rounded-lg border border-gray-200">
+                            <div class="text-sm font-medium text-gray-700 mb-2">Quick Reminders</div>
+                            <div class="flex flex-wrap gap-2">
+                                <button type="button" class="quick-reminder-btn px-3 py-1 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 touch-target" data-hours="1">1 hour</button>
+                                <button type="button" class="quick-reminder-btn px-3 py-1 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 touch-target" data-hours="3">3 hours</button>
+                                <button type="button" class="quick-reminder-btn px-3 py-1 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 touch-target" data-hours="6">6 hours</button>
+                                <button type="button" class="quick-reminder-btn px-3 py-1 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 touch-target" data-hours="24">Tomorrow</button>
+                                <button type="button" class="quick-reminder-btn px-3 py-1 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200 touch-target" data-hours="168">Next week</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="flex gap-3 pt-4">
+                    <button type="submit" class="btn-primary flex-1">Add Task</button>
+                    <button type="button" id="cancel-add" class="btn-secondary">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+
+        // App state
+        let todos = JSON.parse(localStorage.getItem('donezo-todos')) || [];
+        let lists = JSON.parse(localStorage.getItem('donezo-lists')) || [
+            { id: '1', name: 'Personal', color: 'teal', icon: 'check-circle' },
+            { id: '2', name: 'Work', color: 'coral', icon: 'clock' },
+            { id: '3', name: 'Shopping', color: 'lavender', icon: 'bell' }
+        ];
+        let activeList = '1';
+        let selectedPriority = '';
+
+        // DOM elements
+        const sidebar = document.getElementById('sidebar');
+        const mobileMenuBtn = document.getElementById('mobile-menu-btn');
+        const listsContainer = document.getElementById('lists-container');
+        const todosContainer = document.getElementById('todos-container');
+        const currentListTitle = document.getElementById('current-list-title');
+        const tasksCount = document.getElementById('tasks-count');
+        const addTaskBtn = document.getElementById('add-task-btn');
+        const addTaskModal = document.getElementById('add-task-modal');
+        const closeModal = document.getElementById('close-modal');
+        const cancelAdd = document.getElementById('cancel-add');
+        const addTaskForm = document.getElementById('add-task-form');
+        const taskTitle = document.getElementById('task-title');
+        const taskDescription = document.getElementById('task-description');
+        const taskList = document.getElementById('task-list');
+        const taskReminder = document.getElementById('task-reminder');
+        const quickReminderBtn = document.getElementById('quick-reminder-btn');
+        const quickReminderOptions = document.getElementById('quick-reminder-options');
+
+        // Color and icon mappings
+        const colorMap = {
+            teal: 'bg-teal-500',
+            coral: 'bg-coral-500',
+            lavender: 'bg-lavender-500'
+        };
+
+        const iconMap = {
+            'check-circle': 'check-circle',
+            'clock': 'clock',
+            'bell': 'bell',
+            'home': 'home',
+            'calendar': 'calendar',
+            'star': 'star'
+        };
+
+        // Initialize app
+        function init() {
+            renderLists();
+            renderTodos();
+            updateHeader();
+            setupEventListeners();
+            checkReminders();
+            setupMobileMenu();
+        }
+
+        // Mobile menu functionality
+        function setupMobileMenu() {
+            mobileMenuBtn.addEventListener('click', () => {
+                sidebar.classList.toggle('sidebar-mobile-hidden');
+                sidebar.classList.toggle('sidebar-mobile-visible');
+            });
+
+            // Close mobile menu when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!sidebar.contains(e.target) && !mobileMenuBtn.contains(e.target)) {
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.add('sidebar-mobile-hidden');
+                        sidebar.classList.remove('sidebar-mobile-visible');
+                    }
+                }
+            });
+
+            // Handle window resize
+            window.addEventListener('resize', () => {
+                if (window.innerWidth > 768) {
+                    sidebar.classList.remove('sidebar-mobile-hidden', 'sidebar-mobile-visible');
+                } else {
+                    sidebar.classList.add('sidebar-mobile-hidden');
+                }
+            });
+        }
+
+        // Render lists in sidebar
+        function renderLists() {
+            listsContainer.innerHTML = lists.map(list => `
+                <button class="list-item w-full flex items-center justify-between p-3 rounded-lg transition-all duration-200 touch-target ${
+                    activeList === list.id
+                        ? 'bg-teal-50 border border-teal-200 text-teal-700'
+                        : 'hover:bg-gray-50 text-gray-700'
+                }" data-list-id="${list.id}">
+                    <div class="flex items-center gap-3">
+                        <div class="w-8 h-8 ${colorMap[list.color]} rounded-lg flex items-center justify-center">
+                            <i data-lucide="${list.icon}" class="w-4 h-4 text-white"></i>
+                        </div>
+                        <span class="font-medium">${list.name}</span>
+                    </div>
+                </button>
+            `).join('');
+            
+            // Update task list options
+            taskList.innerHTML = lists.map(list => 
+                `<option value="${list.id}">${list.name}</option>`
+            ).join('');
+            
+            lucide.createIcons();
+        }
+
+        // Render todos
+        function renderTodos() {
+            const currentTodos = todos.filter(todo => todo.listId === activeList);
+            
+            if (currentTodos.length === 0) {
+                todosContainer.innerHTML = `
+                    <div class="flex flex-col items-center justify-center h-64 text-gray-500">
+                        <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
+                            <i data-lucide="check-circle" class="w-8 h-8 text-gray-400"></i>
+                        </div>
+                        <h3 class="text-lg font-medium mb-2">No tasks yet</h3>
+                        <p class="text-sm text-gray-400">Add your first task to get started!</p>
+                    </div>
+                `;
+                return;
+            }
+
+            const sortedTodos = [...currentTodos].sort((a, b) => {
+                if (a.completed !== b.completed) return a.completed ? 1 : -1;
+                if (a.reminder && b.reminder) return new Date(a.reminder) - new Date(b.reminder);
+                if (a.reminder) return -1;
+                if (b.reminder) return 1;
+                return new Date(b.createdAt) - new Date(a.createdAt);
+            });
+
+            todosContainer.innerHTML = sortedTodos.map(todo => `
+                <div class="todo-item ${todo.completed ? 'opacity-75' : ''}" data-todo-id="${todo.id}">
+                    <div class="flex items-start gap-3 w-full">
+                        <button class="toggle-todo mt-1 p-1 rounded-full transition-colors duration-200 touch-target ${
+                            todo.completed 
+                                ? 'text-teal-600 hover:text-teal-700' 
+                                : 'text-gray-400 hover:text-teal-500'
+                        }" data-todo-id="${todo.id}">
+                            ${todo.completed 
+                                ? '<i data-lucide="check-circle" class="w-5 h-5 text-teal-600"></i>'
+                                : '<i data-lucide="circle" class="w-5 h-5"></i>'
+                            }
+                        </button>
+                        
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 min-w-0">
+                                    <h3 class="font-medium text-gray-900 ${todo.completed ? 'line-through text-gray-500' : ''}">
+                                        ${todo.title}
+                                    </h3>
+                                    
+                                    ${todo.description ? `
+                                        <p class="text-sm mt-1 ${todo.completed ? 'text-gray-400' : 'text-gray-600'}">
+                                            ${todo.description}
+                                        </p>
+                                    ` : ''}
+                                    
+                                    ${todo.reminder ? `
+                                        <div class="flex items-center gap-1 mt-2">
+                                            <i data-lucide="clock" class="w-3.5 h-3.5 text-gray-400"></i>
+                                            <span class="reminder-badge ${getReminderBadgeClass(todo.reminder)}">
+                                                ${getReminderText(todo.reminder)}
+                                            </span>
+                                        </div>
+                                    ` : ''}
+                                </div>
+                                
+                                <button class="delete-todo opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity p-1 touch-target" data-todo-id="${todo.id}">
+                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="flex items-center gap-2 mt-2">
+                                <span class="text-xs text-gray-400">
+                                    ${new Date(todo.createdAt).toLocaleDateString()}
+                                </span>
+                                
+                                ${todo.priority ? `
+                                    <span class="text-xs px-2 py-1 rounded-full ${
+                                        todo.priority === 'high' 
+                                            ? 'bg-red-100 text-red-700'
+                                            : todo.priority === 'medium'
+                                            ? 'bg-yellow-100 text-yellow-700'
+                                            : 'bg-green-100 text-green-700'
+                                    }">
+                                        ${todo.priority}
+                                    </span>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            lucide.createIcons();
+        }
+
+        // Update header
+        function updateHeader() {
+            const currentList = lists.find(list => list.id === activeList);
+            const currentTodos = todos.filter(todo => todo.listId === activeList);
+            const remainingTasks = currentTodos.filter(todo => !todo.completed).length;
+            
+            currentListTitle.textContent = currentList?.name || 'All Tasks';
+            tasksCount.textContent = `${remainingTasks} tasks remaining`;
+        }
+
+        // Helper functions
+        function getReminderBadgeClass(reminder) {
+            if (!reminder) return '';
+            
+            const now = new Date();
+            const reminderDate = new Date(reminder);
+            const diffInHours = (reminderDate - now) / (1000 * 60 * 60);
+            
+            if (diffInHours < 0) return 'reminder-urgent';
+            if (diffInHours < 24) return 'reminder-soon';
+            return 'reminder-later';
+        }
+
+        function getReminderText(reminder) {
+            if (!reminder) return '';
+            
+            const reminderDate = new Date(reminder);
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const tomorrow = new Date(today);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            if (reminderDate >= today && reminderDate < tomorrow) {
+                return `Today at ${reminderDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+            }
+            if (reminderDate >= tomorrow && reminderDate < new Date(tomorrow.getTime() + 24 * 60 * 60 * 1000)) {
+                return `Tomorrow at ${reminderDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+            }
+            if (reminderDate >= yesterday && reminderDate < today) {
+                return `Yesterday at ${reminderDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}`;
+            }
+            
+            return reminderDate.toLocaleDateString() + ' ' + reminderDate.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+        }
+
+        // Check reminders
+        function checkReminders() {
+            const now = new Date();
+            todos.forEach(todo => {
+                if (todo.reminder && !todo.reminderShown && new Date(todo.reminder) <= now) {
+                    showNotification(todo.title, todo.listName);
+                    todo.reminderShown = true;
+                }
+            });
+            saveTodos();
+        }
+
+        // Show notification
+        function showNotification(title, listName) {
+            if ('Notification' in window && Notification.permission === 'granted') {
+                new Notification(`Reminder: ${title}`, {
+                    body: `From your ${listName} list`,
+                    icon: '/favicon.ico'
+                });
+            }
+        }
+
+        // Save data
+        function saveTodos() {
+            localStorage.setItem('donezo-todos', JSON.stringify(todos));
+        }
+
+        function saveLists() {
+            localStorage.setItem('donezo-lists', JSON.stringify(lists));
+        }
+
+        // Event listeners
+        function setupEventListeners() {
+            // List selection
+            listsContainer.addEventListener('click', (e) => {
+                const listItem = e.target.closest('.list-item');
+                if (listItem) {
+                    activeList = listItem.dataset.listId;
+                    renderLists();
+                    renderTodos();
+                    updateHeader();
+                    
+                    // Close mobile menu after selection
+                    if (window.innerWidth <= 768) {
+                        sidebar.classList.add('sidebar-mobile-hidden');
+                        sidebar.classList.remove('sidebar-mobile-visible');
+                    }
+                }
+            });
+
+            // Add task
+            addTaskBtn.addEventListener('click', () => {
+                addTaskModal.classList.remove('hidden');
+                taskTitle.focus();
+            });
+
+            // Close modal
+            closeModal.addEventListener('click', () => {
+                addTaskModal.classList.add('hidden');
+                addTaskForm.reset();
+                selectedPriority = '';
+                updatePriorityButtons();
+            });
+
+            cancelAdd.addEventListener('click', () => {
+                addTaskModal.classList.add('hidden');
+                addTaskForm.reset();
+                selectedPriority = '';
+                updatePriorityButtons();
+            });
+
+            // Add task form
+            addTaskForm.addEventListener('submit', (e) => {
+                e.preventDefault();
+                
+                const currentList = lists.find(list => list.id === taskList.value);
+                const newTodo = {
+                    id: Date.now().toString(),
+                    title: taskTitle.value.trim(),
+                    description: taskDescription.value.trim(),
+                    listId: taskList.value,
+                    listName: currentList?.name || 'Unknown',
+                    priority: selectedPriority || null,
+                    reminder: taskReminder.value ? new Date(taskReminder.value).toISOString() : null,
+                    completed: false,
+                    createdAt: new Date().toISOString(),
+                    reminderShown: false
+                };
+                
+                todos.push(newTodo);
+                saveTodos();
+                
+                addTaskModal.classList.add('hidden');
+                addTaskForm.reset();
+                selectedPriority = '';
+                updatePriorityButtons();
+                
+                renderTodos();
+                updateHeader();
+            });
+
+            // Priority buttons
+            document.querySelectorAll('.priority-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    selectedPriority = selectedPriority === btn.dataset.priority ? '' : btn.dataset.priority;
+                    updatePriorityButtons();
+                });
+            });
+
+            // Quick reminder
+            quickReminderBtn.addEventListener('click', () => {
+                quickReminderOptions.classList.toggle('hidden');
+            });
+
+            document.querySelectorAll('.quick-reminder-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const hours = parseInt(btn.dataset.hours);
+                    const now = new Date();
+                    const reminderTime = new Date(now.getTime() + hours * 60 * 60 * 1000);
+                    taskReminder.value = reminderTime.toISOString().slice(0, 16);
+                    quickReminderOptions.classList.add('hidden');
+                });
+            });
+
+            // Todo actions
+            todosContainer.addEventListener('click', (e) => {
+                const todoId = e.target.closest('[data-todo-id]')?.dataset.todoId;
+                if (!todoId) return;
+
+                if (e.target.closest('.toggle-todo')) {
+                    const todo = todos.find(t => t.id === todoId);
+                    if (todo) {
+                        todo.completed = !todo.completed;
+                        saveTodos();
+                        renderTodos();
+                        updateHeader();
+                    }
+                } else if (e.target.closest('.delete-todo')) {
+                    if (confirm('Are you sure you want to delete this task?')) {
+                        todos = todos.filter(t => t.id !== todoId);
+                        saveTodos();
+                        renderTodos();
+                        updateHeader();
+                    }
+                }
+            });
+
+            // Request notification permission
+            if ('Notification' in window && Notification.permission === 'default') {
+                Notification.requestPermission();
+            }
+        }
+
+        // Update priority buttons
+        function updatePriorityButtons() {
+            document.querySelectorAll('.priority-btn').forEach(btn => {
+                const priority = btn.dataset.priority;
+                if (selectedPriority === priority) {
+                    btn.classList.remove('border-gray-200', 'hover:border-gray-300');
+                    if (priority === 'high') {
+                        btn.classList.add('bg-red-100', 'text-red-700', 'border-transparent');
+                    } else if (priority === 'medium') {
+                        btn.classList.add('bg-yellow-100', 'text-yellow-700', 'border-transparent');
+                    } else {
+                        btn.classList.add('bg-green-100', 'text-green-700', 'border-transparent');
+                    }
+                } else {
+                    btn.classList.remove('bg-red-100', 'text-red-700', 'bg-yellow-100', 'text-yellow-700', 'bg-green-100', 'text-green-700', 'border-transparent');
+                    btn.classList.add('border-gray-200', 'hover:border-gray-300');
+                }
+            });
+        }
+
+        // Initialize the app
+        init();
+
+        // Check reminders every minute
+        setInterval(checkReminders, 60000);
+    </script>
+</body>
+</html>

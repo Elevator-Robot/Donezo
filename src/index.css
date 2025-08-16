@@ -1,0 +1,51 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  
+  body {
+    @apply bg-gradient-to-br from-teal-50 to-teal-100 min-h-screen font-sans;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg;
+  }
+  
+  .btn-secondary {
+    @apply bg-white hover:bg-gray-50 text-teal-600 font-medium py-2 px-4 rounded-lg border border-teal-200 transition-colors duration-200 shadow-sm hover:shadow-md;
+  }
+  
+  .card {
+    @apply bg-white rounded-xl shadow-lg border border-gray-100 p-6;
+  }
+  
+  .input-field {
+    @apply w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200;
+  }
+  
+  .todo-item {
+    @apply bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200;
+  }
+  
+  .reminder-badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .reminder-urgent {
+    @apply bg-coral-100 text-coral-800;
+  }
+  
+  .reminder-soon {
+    @apply bg-lavender-100 text-lavender-800;
+  }
+  
+  .reminder-later {
+    @apply bg-teal-100 text-teal-800;
+  }
+}
