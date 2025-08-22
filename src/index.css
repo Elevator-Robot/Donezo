@@ -1,16 +1,253 @@
+/* Import multiple fonts for customization */
+@import url('https://fonts.googleapis.com/css2?family=Rock+Salt&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/* Custom CSS Variables for our soothing palette */
+:root {
+  --teal-primary: #14b8a6;
+  --teal-light: #5eead4;
+  --teal-dark: #0d9488;
+  --lavender-primary: #a855f7;
+  --lavender-light: #c084fc;
+  --lavender-dark: #7c3aed;
+  --orange-accent: #fb923c;
+  --orange-light: #fdba74;
+  --orange-dark: #ea580c;
+  --calm-gray: #f8fafc;
+  --warm-white: #fefefe;
+}
+
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200;
   }
   
   body {
-    @apply bg-gradient-to-br from-teal-50 to-teal-100 min-h-screen font-sans;
+    font-family: var(--app-font, 'Rock Salt'), system-ui, sans-serif;
+    min-height: 100vh;
+    /* iOS safe area support */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    overflow-x: hidden;
+  }
+
+  /* Font utility classes */
+  .font-rock-salt { font-family: 'Rock Salt', cursive !important; }
+  .font-pacifico { font-family: 'Pacifico', cursive !important; }
+  .font-inter { font-family: 'Inter', sans-serif !important; }
+  .font-poppins { font-family: 'Poppins', sans-serif !important; }
+  .font-comic { font-family: 'Comic Sans MS', cursive !important; }
+  .font-cursive { font-family: cursive !important; }
+
+  /* Apply font to all elements */
+  * {
+    font-family: inherit;
+  }
+
+  /* iOS-specific optimizations */
+  @supports (-webkit-touch-callout: none) {
+    body {
+      -webkit-touch-callout: none;
+      -webkit-user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+  }
+
+  /* Mobile touch improvements */
+  @media (max-width: 768px) {
+    .todo-item {
+      touch-action: pan-y;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    button {
+      min-height: 44px;
+      min-width: 44px;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    input, textarea {
+      font-size: 16px; /* Prevents zoom on iOS */
+    }
+    
+    /* Improved touch feedback */
+    .todo-item:active {
+      transform: scale(0.98);
+      transition: transform 0.1s ease;
+    }
+    
+    /* Smooth scrolling */
+    * {
+      -webkit-overflow-scrolling: touch;
+    }
+    
+
   }
 }
+
+/* Dynamic Animated Background */
+.animated-background {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: -1;
+  background: linear-gradient(-45deg, #f0fdfa, #e0f2fe, #fef3c7, #fed7aa);
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
+
+/* Starfield for dark mode */
+.starfield {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.8s ease;
+}
+
+.starfield.active {
+  opacity: 1;
+}
+
+.star {
+  position: absolute;
+  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.6) 60%, transparent 100%);
+  border-radius: 50%;
+  opacity: 0.8;
+  animation: twinkle var(--twinkle-duration, 3s) ease-in-out infinite;
+}
+
+/* Dark theme */
+[data-theme="dark"] body,
+body[data-theme="dark"] {
+  background: radial-gradient(1200px 800px at 50% 0%, #0b132b 0%, #0a1024 40%, #060a1a 100%);
+  color: #e5e7eb;
+}
+
+[data-theme="dark"] .animated-background {
+  background: linear-gradient(-45deg, #0f172a, #1e293b, #334155, #475569);
+  background-size: 400% 400%;
+}
+
+[data-theme="dark"] .starfield {
+  opacity: 1;
+}
+
+/* Component surfaces for dark mode */
+[data-theme="dark"] header {
+  background: rgba(12, 18, 32, 0.75) !important;
+  border-bottom: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: 0 2px 16px rgba(0, 0, 0, 0.4) !important;
+}
+
+[data-theme="dark"] .sidebar {
+  background: rgba(12, 18, 32, 0.7) !important;
+  border-right: 1px solid rgba(255,255,255,0.06) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+/* Breathing indicator */
+.breathing-dot {
+  width: 8px;
+  height: 8px;
+  background: linear-gradient(135deg, #14b8a6, #0d9488);
+  border-radius: 50%;
+  animation: breathingPulse 4s ease-in-out infinite;
+}
+
+/* Tranquil mist overlay */
+.tranquil-mist {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(circle at center, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 5;
+  opacity: 0;
+  transition: opacity 2s ease-in-out;
+}
+
+.tranquil-mist.active {
+  opacity: 1;
+}
+
+/* Sparkle particles for tranquil mist */
+.mist-sparkle {
+  position: absolute;
+  width: 3px;
+  height: 3px;
+  background: linear-gradient(45deg, rgba(255, 255, 255, 0.8), rgba(20, 184, 166, 0.6));
+  border-radius: 50%;
+  pointer-events: none;
+  animation: sparkleFloat 6s ease-in-out infinite;
+  box-shadow: 0 0 4px rgba(255, 255, 255, 0.5);
+}
+
+/* Completion particles */
+.completion-particles {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 100;
+}
+
+.particle {
+  position: absolute;
+  background: linear-gradient(45deg, #14b8a6, #5eead4);
+  border-radius: 50%;
+  animation: particleExplosion 2s ease-out forwards;
+}
+
+/* Cloud Ripple Animation */
+@keyframes cloudRipple {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.5);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(3);
+    opacity: 0;
+  }
+}
+
+/* Sparkle Animation */
+@keyframes sparkleFloat {
+  0% {
+    transform: scale(0) rotate(0deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1) rotate(180deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+
 
 @layer components {
   .btn-primary {
@@ -47,5 +284,181 @@
   
   .reminder-later {
     @apply bg-teal-100 text-teal-800;
+  }
+
+  .fill-animation {
+    animation: fillCircle 0.3s ease-in-out;
+  }
+
+  .fill-animation svg,
+  .fill-animation svg * {
+    animation: fillCircleIcon 0.3s ease-in-out;
+  }
+
+  /* Dark mode component styles */
+  [data-theme="dark"] .card,
+  [data-theme="dark"] .todo-item {
+    background: rgba(20, 26, 42, 0.85) !important;
+    border-color: rgba(255,255,255,0.08) !important;
+    box-shadow: 0 10px 30px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06) !important;
+  }
+
+  [data-theme="dark"] .todo-item:hover {
+    background: rgba(17, 24, 39, 0.85) !important;
+    box-shadow: 0 12px 35px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(255, 255, 255, 0.06) inset, 0 0 30px rgba(59, 130, 246, 0.12) !important;
+  }
+
+  [data-theme="dark"] .btn-secondary {
+    background: rgba(17, 24, 39, 0.7) !important;
+    color: #e5e7eb !important;
+    border-color: rgba(255,255,255,0.08) !important;
+  }
+
+  [data-theme="dark"] .input-field {
+    background: rgba(17, 24, 39, 0.7) !important;
+    border-color: rgba(255,255,255,0.08) !important;
+    color: #e5e7eb !important;
+  }
+
+  [data-theme="dark"] .input-field:focus {
+    border-color: #93c5fd !important;
+    box-shadow: 0 0 0 4px rgba(147, 197, 253, 0.15) !important;
+    background: rgba(17, 24, 39, 0.85) !important;
+  }
+
+  [data-theme="dark"] .btn-primary {
+    background: linear-gradient(135deg, #2563eb 0%, #4f46e5 100%) !important;
+    box-shadow: 0 4px 20px rgba(59, 130, 246, 0.35) !important;
+  }
+
+  /* Text color overrides for dark mode */
+  [data-theme="dark"] .text-gray-900 { color: #e5e7eb !important; }
+  [data-theme="dark"] .text-gray-700 { color: #d1d5db !important; }
+  [data-theme="dark"] .text-gray-600 { color: #9ca3af !important; }
+  [data-theme="dark"] .text-gray-500 { color: #9ca3af !important; }
+
+  /* Tranquil mist tint in dark mode */
+  [data-theme="dark"] .tranquil-mist {
+    background: radial-gradient(circle at center, rgba(147, 197, 253, 0.12) 0%, transparent 70%) !important;
+  }
+}
+
+/* Animations */
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes twinkle {
+  0%, 100% { 
+    opacity: 0.2; 
+    filter: drop-shadow(0 0 0px rgba(255,255,255,0.3)); 
+  }
+  50% { 
+    opacity: 1; 
+    filter: drop-shadow(0 0 6px rgba(255,255,255,0.6)); 
+  }
+}
+
+@keyframes breathingPulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.3);
+    opacity: 1;
+  }
+}
+
+@keyframes sparkleFloat {
+  0%, 100% {
+    opacity: 0.4;
+    transform: translateY(0px) translateX(0px) scale(1);
+  }
+  25% {
+    opacity: 0.8;
+    transform: translateY(-8px) translateX(4px) scale(1.2);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px) translateX(-2px) scale(1.1);
+  }
+  75% {
+    opacity: 0.6;
+    transform: translateY(-12px) translateX(6px) scale(1.3);
+  }
+}
+
+@keyframes particleExplosion {
+  0% {
+    opacity: 1;
+    transform: translate(0, 0) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(var(--particle-x, 50px), -100px) scale(0);
+  }
+}
+
+@keyframes fillCircle {
+  0% {
+    background-color: transparent;
+  }
+  100% {
+    background-color: #14b8a6;
+  }
+}
+
+@keyframes fillCircleIcon {
+  0% {
+    fill: transparent;
+  }
+  100% {
+    fill: #14b8a6;
+  }
+}
+
+/* Utility animations */
+.slide-up {
+  animation: slideUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideUp {
+  from { 
+    transform: translateY(30px);
+    opacity: 0;
+  }
+  to { 
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.bounce-gentle {
+  animation: bounceGentle 3s ease-in-out infinite;
+}
+
+@keyframes bounceGentle {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+.fade-in {
+  animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }

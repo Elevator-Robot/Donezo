@@ -331,6 +331,8 @@
                 height: auto;
                 border-right: none;
                 border-bottom: 1px solid rgba(229, 231, 235, 0.3);
+                max-height: 60vh;
+                overflow-y: auto;
             }
             
             .sidebar-mobile-hidden {
@@ -352,6 +354,130 @@
             
             .desktop-only {
                 display: none;
+            }
+
+            /* Mobile-specific improvements */
+            header {
+                padding: 1rem;
+            }
+
+            .current-list-title {
+                font-size: 1.25rem !important;
+                margin-bottom: 0.5rem;
+            }
+
+            .tasks-count {
+                font-size: 0.875rem;
+            }
+
+            /* Mobile task items */
+            .todo-item {
+                padding: 1rem;
+                margin-bottom: 0.75rem;
+                border-radius: 1rem;
+                min-height: 70px;
+            }
+
+            /* Mobile buttons */
+            .btn-primary {
+                padding: 0.875rem 1.25rem;
+                font-size: 0.875rem;
+                min-height: 48px;
+            }
+
+            /* Mobile modals */
+            #add-task-modal,
+            #add-list-modal {
+                padding: 1rem;
+            }
+
+            #add-task-modal .card,
+            #add-list-modal .card {
+                max-height: 85vh;
+                overflow-y: auto;
+                padding: 1.25rem;
+            }
+
+            /* Mobile form fields */
+            .input-field {
+                padding: 1rem;
+                font-size: 16px; /* Prevents zoom on iOS */
+                min-height: 48px;
+            }
+
+            /* Mobile list items */
+            .list-item {
+                padding: 0.875rem;
+                margin-bottom: 0.5rem;
+            }
+
+            /* Mobile breathing indicator */
+            #breathing-indicator {
+                display: none; /* Hide on mobile to save space */
+            }
+
+            /* Mobile theme toggle */
+            #theme-toggle {
+                padding: 0.75rem;
+                min-height: 48px;
+                min-width: 48px;
+            }
+
+            /* Mobile particle adjustments */
+            .particle {
+                width: 6px;
+                height: 6px;
+            }
+
+            /* Mobile swipe improvements */
+            .todo-item {
+                touch-action: pan-y;
+                -webkit-user-select: none;
+                user-select: none;
+            }
+
+            /* Mobile header layout */
+            .header-content {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 0.75rem;
+            }
+
+            .header-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            /* Mobile task content */
+            .task-content {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .task-actions {
+                align-self: flex-end;
+            }
+
+            /* Mobile priority buttons */
+            .priority-btn {
+                padding: 0.75rem 1rem;
+                font-size: 0.875rem;
+                min-height: 44px;
+            }
+
+            /* Mobile color/icon options */
+            .color-option,
+            .icon-option {
+                width: 48px;
+                height: 48px;
+                min-height: 48px;
+            }
+
+            /* Mobile quick reminder buttons */
+            .quick-reminder-btn {
+                padding: 0.5rem 0.75rem;
+                font-size: 0.875rem;
+                min-height: 40px;
             }
         }
         
@@ -939,6 +1065,106 @@
         .ios-scroll {
             -webkit-overflow-scrolling: touch;
         }
+
+        /* Mobile-specific touch improvements */
+        @media (max-width: 768px) {
+            /* Prevent text selection on mobile */
+            * {
+                -webkit-touch-callout: none;
+                -webkit-user-select: none;
+                -khtml-user-select: none;
+                -moz-user-select: none;
+                -ms-user-select: none;
+                user-select: none;
+            }
+
+            /* Allow text selection in inputs */
+            input, textarea {
+                -webkit-user-select: text;
+                -khtml-user-select: text;
+                -moz-user-select: text;
+                -ms-user-select: text;
+                user-select: text;
+            }
+
+            /* Better touch targets */
+            .touch-target {
+                min-width: 48px;
+                min-height: 48px;
+            }
+
+            /* Mobile-specific spacing */
+            .mobile-padding {
+                padding: 1rem;
+            }
+
+            /* Mobile task spacing */
+            .todo-item {
+                margin-bottom: 0.75rem;
+            }
+
+            /* Mobile modal improvements */
+            .modal-mobile {
+                padding: 1rem;
+                margin: 0;
+                border-radius: 0;
+                max-height: 100vh;
+                max-width: 100vw;
+            }
+
+            /* Mobile form improvements */
+            .form-mobile {
+                gap: 1rem;
+            }
+
+            .form-mobile .input-field {
+                margin-bottom: 0.5rem;
+            }
+
+            /* Mobile button improvements */
+            .btn-mobile {
+                min-height: 48px;
+                font-size: 16px;
+                padding: 0.875rem 1.25rem;
+            }
+
+            /* Mobile list improvements */
+            .list-mobile {
+                gap: 0.5rem;
+            }
+
+            .list-mobile .list-item {
+                padding: 0.875rem;
+            }
+
+            /* Mobile priority button improvements */
+            .priority-mobile {
+                flex: 1;
+                min-height: 44px;
+                font-size: 14px;
+            }
+
+            /* Mobile color/icon grid improvements */
+            .grid-mobile {
+                grid-template-columns: repeat(4, 1fr);
+                gap: 0.75rem;
+            }
+
+            /* Mobile reminder improvements */
+            .reminder-mobile {
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+
+            .reminder-mobile .input-field {
+                flex: 1;
+            }
+
+            .reminder-mobile button {
+                min-width: 48px;
+                min-height: 48px;
+            }
+        }
         
         /* Enhanced list items */
         .list-item {
@@ -1055,7 +1281,7 @@
         <!-- Main Content -->
         <main class="flex-1 flex flex-col overflow-hidden">
             <header class="px-4 md:px-6 py-4">
-                <div class="flex items-center justify-between">
+                <div class="header-content flex items-center justify-between">
                     <div class="flex-1 min-w-0">
                         <h1 id="current-list-title" class="text-xl md:text-2xl font-bold text-gray-900 truncate">Personal</h1>
                         <div class="flex items-center gap-4">
@@ -1067,7 +1293,7 @@
                         </div>
                     </div>
                     
-                    <div class="flex items-center gap-2 ml-2">
+                    <div class="header-actions flex items-center gap-2 ml-2">
                         <button id="theme-toggle" class="p-2 rounded-xl border border-gray-200/50 hover:bg-gray-50/50 transition-all duration-300 touch-target" title="Toggle theme">
                             <i id="moon-icon" data-lucide="moon" class="w-5 h-5"></i>
                             <i id="sun-icon" data-lucide="sun" class="w-5 h-5 hidden"></i>
@@ -1386,7 +1612,7 @@
                      style="animation-delay: ${index * 0.1}s" 
                      data-todo-id="${todo.id}"
                      draggable="true">
-                    <div class="flex items-start gap-3 w-full">
+                    <div class="task-content flex items-start gap-3 w-full">
                         <button class="toggle-todo mt-1 p-1 rounded-full transition-all duration-300 touch-target ${
                             todo.completed 
                                 ? 'text-teal-600 hover:text-teal-700' 
@@ -1421,9 +1647,11 @@
                                     ` : ''}
                                 </div>
                                 
-                                <button class="delete-todo opacity-30 hover:opacity-100 hover:text-red-500 transition-all duration-500 p-2 touch-target rounded-lg hover:bg-red-50/50" data-todo-id="${todo.id}" title="Delete task">
-                                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                                </button>
+                                <div class="task-actions">
+                                    <button class="delete-todo opacity-30 hover:opacity-100 hover:text-red-500 transition-all duration-500 p-2 touch-target rounded-lg hover:bg-red-50/50" data-todo-id="${todo.id}" title="Delete task">
+                                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
                             </div>
                             
                             <div class="flex items-center gap-2 mt-2">
