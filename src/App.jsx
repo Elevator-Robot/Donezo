@@ -51,6 +51,12 @@ function App() {
   useEffect(() => {
     localStorage.setItem('donezo-theme', theme)
     document.documentElement.setAttribute('data-theme', theme)
+    // Also set the class for Tailwind dark mode
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
+    }
   }, [theme])
 
   // Save settings to localStorage
@@ -219,7 +225,7 @@ function App() {
         
         <main className="flex-1 flex flex-col overflow-hidden">
           <motion.header 
-            className="bg-white/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 px-6 py-4"
+            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4"
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5 }}
@@ -229,16 +235,16 @@ function App() {
                 {/* Menu Button */}
                 <motion.button
                   onClick={toggleSidebar}
-                  className="md:hidden p-2 rounded-xl hover:bg-gray-50/50 transition-all duration-300"
+                  className="md:hidden p-2 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-300"
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Menu size={20} className="text-gray-700" />
+                  <Menu size={20} className="text-gray-700 dark:text-gray-300" />
                 </motion.button>
                 
                 <div>
                   <motion.h1 
-                    className="text-2xl font-bold text-gray-900"
+                    className="text-2xl font-bold text-gray-900 dark:text-white"
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.2 }}
@@ -247,7 +253,7 @@ function App() {
                   </motion.h1>
                   {/* Task Counter - moved under the title */}
                   <motion.p 
-                    className="text-gray-600 text-sm font-medium mt-1"
+                    className="text-gray-600 dark:text-gray-400 text-sm font-medium mt-1"
                     initial={{ x: -20, opacity: 0 }}
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
@@ -262,7 +268,7 @@ function App() {
                   whileHover={{ scale: 1.05, rotate: 5 }}
                   whileTap={{ scale: 0.95, rotate: -5 }}
                   onClick={toggleTheme}
-                  className="p-2 rounded-xl border border-gray-200/50 hover:bg-gray-50/50 transition-all duration-300"
+                  className="p-2 rounded-xl border border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-300"
                   title="Toggle theme"
                 >
                   <motion.div
@@ -270,7 +276,7 @@ function App() {
                     animate={{ rotate: theme === 'dark' ? 180 : 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    {theme === 'light' ? <Moon size={18} /> : <Sun size={18} />}
+                    {theme === 'light' ? <Moon size={18} className="text-gray-700 dark:text-gray-300" /> : <Sun size={18} className="text-gray-700 dark:text-gray-300" />}
                   </motion.div>
                 </motion.button>
                 
@@ -292,7 +298,7 @@ function App() {
             </div>
           </motion.header>
 
-          <div className="flex-1 overflow-auto p-6">
+          <div className="flex-1 overflow-auto p-6 bg-gray-50/50 dark:bg-gray-900/50">
             <TodoList
               todos={currentTodos}
               onToggle={toggleTodo}

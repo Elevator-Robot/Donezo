@@ -64,13 +64,18 @@ const colorMap = {
   rose: 'bg-rose-500',
   cyan: 'bg-cyan-500',
   amber: 'bg-amber-500',
-  lime: 'bg-lime-500',
-  sky: 'bg-sky-500',
-  violet: 'bg-violet-500',
-  fuchsia: 'bg-fuchsia-500',
-  slate: 'bg-slate-500',
-  gray: 'bg-gray-500',
-  zinc: 'bg-zinc-500'
+  lime: 'bg-lime-500'
+}
+
+const gradientMap = {
+  sunset: 'bg-gradient-to-r from-orange-400 to-pink-500',
+  ocean: 'bg-gradient-to-r from-blue-400 to-cyan-500',
+  forest: 'bg-gradient-to-r from-green-400 to-emerald-500',
+  lavender: 'bg-gradient-to-r from-purple-400 to-pink-500',
+  fire: 'bg-gradient-to-r from-red-400 to-orange-500',
+  sky: 'bg-gradient-to-r from-sky-400 to-blue-500',
+  spring: 'bg-gradient-to-r from-green-400 to-teal-500',
+  berry: 'bg-gradient-to-r from-purple-400 to-indigo-500'
 }
 
 function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClose, onOpenSettings }) {
@@ -117,7 +122,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
 
   return (
     <motion.div
-      className="w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full"
+      className="sidebar w-80 bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col h-full"
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -162,7 +167,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className={`w-8 h-8 ${colorMap[list.color]} rounded-lg flex items-center justify-center`}>
+                <div className={`w-8 h-8 ${colorMap[list.color] || gradientMap[list.color]} rounded-lg flex items-center justify-center`}>
                   <ListIcon className="w-4 h-4 text-white" />
                 </div>
                 <span className={`font-medium ${
@@ -175,7 +180,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                     e.stopPropagation()
                     deleteList(list.id)
                   }}
-                  className="ml-auto p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors opacity-0 group-hover:opacity-100"
+                  className="ml-auto p-1 rounded hover:bg-red-100 dark:hover:bg-red-900/20 transition-colors"
                 >
                   <Trash2 className="w-4 h-4 text-red-500" />
                 </button>
@@ -247,17 +252,33 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                     Color
                   </label>
-                  <div className="grid grid-cols-7 gap-2">
-                    {Object.entries(colorMap).map(([color, className]) => (
-                      <button
-                        key={color}
-                        onClick={() => setNewListColor(color)}
-                        className={`w-10 h-10 rounded-lg ${className} ${
-                          newListColor === color ? 'ring-2 ring-gray-400 ring-offset-2' : ''
-                        } hover:scale-110 transition-transform`}
-                        title={color}
-                      />
-                    ))}
+                  <div className="space-y-2">
+                    {/* First row - Solid colors */}
+                    <div className="grid grid-cols-7 gap-2">
+                      {Object.entries(colorMap).map(([color, className]) => (
+                        <button
+                          key={color}
+                          onClick={() => setNewListColor(color)}
+                          className={`w-10 h-10 rounded-lg ${className} ${
+                            newListColor === color ? 'ring-2 ring-gray-400 ring-offset-2' : ''
+                          } hover:scale-110 transition-transform`}
+                          title={color}
+                        />
+                      ))}
+                    </div>
+                    {/* Second row - Gradient colors */}
+                    <div className="grid grid-cols-8 gap-2">
+                      {Object.entries(gradientMap).map(([gradient, className]) => (
+                        <button
+                          key={gradient}
+                          onClick={() => setNewListColor(gradient)}
+                          className={`w-10 h-10 rounded-lg ${className} ${
+                            newListColor === gradient ? 'ring-2 ring-gray-400 ring-offset-2' : ''
+                          } hover:scale-110 transition-transform`}
+                          title={gradient}
+                        />
+                      ))}
+                    </div>
                   </div>
                 </div>
 

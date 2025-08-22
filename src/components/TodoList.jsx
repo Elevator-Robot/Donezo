@@ -148,14 +148,17 @@ function TodoList({ todos, onToggle, onDelete }) {
         onTouchMove={onTouchMove}
         onTouchEnd={() => onTouchEnd(todo.id)}
       >
-        {/* Delete background indicator */}
+        {/* Delete background indicator - very subtle version */}
         <motion.div
-          className="absolute inset-0 bg-red-500 rounded-lg flex items-center justify-center"
+          className="absolute right-0 top-0 bottom-0 w-16 bg-gray-50 dark:bg-gray-700 rounded-r-lg flex items-center justify-center opacity-0"
           initial={{ x: '100%' }}
-          animate={{ x: shouldShowDelete ? '0%' : '100%' }}
+          animate={{ 
+            x: shouldShowDelete ? '0%' : '100%',
+            opacity: shouldShowDelete ? 0.8 : 0
+          }}
           transition={{ duration: 0.2 }}
         >
-          <Trash2 className="text-white" size={24} />
+          <Trash2 className="text-gray-400 dark:text-gray-500" size={18} />
         </motion.div>
 
         {/* Todo item */}
@@ -225,8 +228,8 @@ function TodoList({ todos, onToggle, onDelete }) {
               <motion.p
                 className={`font-medium ${
                   todo.completed 
-                    ? 'line-through text-gray-500' 
-                    : 'text-gray-900'
+                    ? 'line-through text-gray-500 dark:text-gray-400' 
+                    : 'text-gray-900 dark:text-white'
                 }`}
                 animate={{
                   textDecoration: todo.completed ? 'line-through' : 'none',
@@ -239,7 +242,7 @@ function TodoList({ todos, onToggle, onDelete }) {
               
               {todo.description && (
                 <motion.p
-                  className="text-sm text-gray-600 mt-1"
+                  className="text-sm text-gray-600 dark:text-gray-400 mt-1"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ delay: 0.1 }}
@@ -266,10 +269,10 @@ function TodoList({ todos, onToggle, onDelete }) {
                 <motion.span
                   className={`px-2 py-1 rounded-full text-xs font-medium ${
                     todo.priority === 'high' 
-                      ? 'bg-red-100 text-red-800' 
+                      ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' 
                       : todo.priority === 'medium'
-                      ? 'bg-yellow-100 text-yellow-800'
-                      : 'bg-green-100 text-green-800'
+                      ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
+                      : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
                   }`}
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -278,6 +281,20 @@ function TodoList({ todos, onToggle, onDelete }) {
                   {todo.priority}
                 </motion.span>
               )}
+              
+              {/* Delete button */}
+              <motion.button
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(todo.id)
+                }}
+                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
+                title="Delete task"
+              >
+                <Trash2 className="w-4 h-4 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors" />
+              </motion.button>
             </div>
           </div>
         </motion.div>
@@ -290,13 +307,13 @@ function TodoList({ todos, onToggle, onDelete }) {
       {/* Active Tasks */}
       <div>
         <motion.h3 
-          className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2"
+          className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2"
           initial={{ opacity: 0, y: -10 }}
           animate={{ opacity: 1, y: 0 }}
         >
           <span>Active Tasks</span>
           <motion.span 
-            className="bg-teal-100 text-teal-800 px-2 py-1 rounded-full text-sm font-medium"
+            className="bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 px-2 py-1 rounded-full text-sm font-medium"
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.2 }}
@@ -313,7 +330,7 @@ function TodoList({ todos, onToggle, onDelete }) {
               className="text-center py-12"
             >
               <motion.div
-                className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4"
+                className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
                 animate={{ 
                   scale: [1, 1.1, 1],
                   rotate: [0, 5, -5, 0]
@@ -329,10 +346,10 @@ function TodoList({ todos, onToggle, onDelete }) {
                   transition: { duration: 0.5 }
                 }}
               >
-                <CheckCircle className="w-8 h-8 text-gray-400" />
+                <CheckCircle className="w-8 h-8 text-gray-400 dark:text-gray-500" />
               </motion.div>
               <motion.p 
-                className="text-gray-500 text-lg"
+                className="text-gray-500 dark:text-gray-400 text-lg"
                 animate={{ 
                   y: [0, -5, 0],
                   transition: { 
@@ -345,7 +362,7 @@ function TodoList({ todos, onToggle, onDelete }) {
                 All caught up! 🎉
               </motion.p>
               <motion.p 
-                className="text-gray-400 text-sm mt-1"
+                className="text-gray-400 dark:text-gray-500 text-sm mt-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}
@@ -366,13 +383,13 @@ function TodoList({ todos, onToggle, onDelete }) {
         <div>
           <motion.button
             onClick={() => setShowCompleted(!showCompleted)}
-            className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-4"
+            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-4"
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
             {showCompleted ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
             <span className="font-medium">Completed Tasks</span>
-            <span className="bg-gray-100 text-gray-600 px-2 py-1 rounded-full text-sm">
+            <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-full text-sm">
               {sortedCompletedTodos.length}
             </span>
           </motion.button>
