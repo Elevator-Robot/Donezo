@@ -16,9 +16,11 @@ function App() {
   const [lists, setLists] = useState(() => {
     const saved = localStorage.getItem('donezo-lists')
     return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'Personal', color: 'teal', icon: 'CheckCircle' },
-      { id: '2', name: 'Work', color: 'coral', icon: 'Clock' },
-      { id: '3', name: 'Shopping', color: 'lavender', icon: 'Bell' }
+      { id: '1', name: 'Personal', color: 'teal', icon: 'Heart' },
+      { id: '2', name: 'Work', color: 'blue', icon: 'Zap' },
+      { id: '3', name: 'Shopping', color: 'pink', icon: 'ShoppingBag' },
+      { id: '4', name: 'Health', color: 'emerald', icon: 'Activity' },
+      { id: '5', name: 'Learning', color: 'purple', icon: 'BookOpen' }
     ]
   })
   

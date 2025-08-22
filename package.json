@@ -1,6 +1,7 @@
 {
   "name": "donezo-todo-app",
   "version": "1.0.0",
+  "type": "module",
   "description": "A beautiful and functional to-do list app with reminders",
   "main": "index.js",
   "scripts": {
