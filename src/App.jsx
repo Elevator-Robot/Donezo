@@ -5,7 +5,7 @@ import Sidebar from './components/Sidebar'
 import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
 import Settings from './components/Settings'
-import { CheckCircle, Clock, Plus, Moon, Sun, Menu } from 'lucide-react'
+import { CheckCircle, Clock, Plus, Moon, Sun, Menu, Zap, Bot } from 'lucide-react'
 
 function App() {
   const [todos, setTodos] = useState(() => {
@@ -38,6 +38,7 @@ function App() {
       font: 'Rock Salt'
     }
   })
+  const [showThemeTransition, setShowThemeTransition] = useState(false)
 
   // Save to localStorage whenever todos or lists change
   useEffect(() => {
@@ -49,8 +50,10 @@ function App() {
   }, [lists])
 
   useEffect(() => {
+    console.log('Theme changed to:', theme)
     localStorage.setItem('donezo-theme', theme)
     document.documentElement.setAttribute('data-theme', theme)
+    console.log('Applied data-theme attribute:', document.documentElement.getAttribute('data-theme'))
     // Also set the class for Tailwind dark mode
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
@@ -69,8 +72,6 @@ function App() {
     // Apply font
     document.documentElement.style.setProperty('--app-font', `'${settings.font}'`)
   }, [settings])
-
-
 
   const addTodo = (todo) => {
     // Debug logging
@@ -126,7 +127,53 @@ function App() {
   }
 
   const toggleTheme = () => {
-    setTheme(prev => prev === 'light' ? 'dark' : 'light')
+    console.log('=== THEME TOGGLE DEBUG ===')
+    console.log('Current theme before toggle:', theme)
+    console.log('Current theme type:', typeof theme)
+    
+    setTheme(prev => {
+      let newTheme
+      console.log('Previous theme in setter:', prev)
+      if (prev === 'light') {
+        newTheme = 'dark'
+        console.log('Switching from light to dark')
+      } else if (prev === 'dark') {
+        newTheme = 'cyberpunk'
+        console.log('Switching from dark to cyberpunk')
+      } else {
+        newTheme = 'light'
+        console.log('Switching from cyberpunk to light')
+      }
+      
+      console.log('New theme will be:', newTheme)
+      return newTheme
+    })
+  }
+
+  const getThemeIcon = () => {
+    switch (theme) {
+      case 'light':
+        return <Sun size={18} className="text-gray-700 dark:text-gray-300" />
+      case 'dark':
+        return <Moon size={18} className="text-gray-700 dark:text-gray-300" />
+      case 'cyberpunk':
+        return <Bot size={18} className="text-gray-700 dark:text-gray-300" />
+      default:
+        return <Sun size={18} className="text-gray-700 dark:text-gray-300" />
+    }
+  }
+
+  const getThemeTitle = () => {
+    switch (theme) {
+      case 'light':
+        return 'Switch to Dark'
+      case 'dark':
+        return 'Switch to Cyberpunk'
+      case 'cyberpunk':
+        return 'Switch to Light'
+      default:
+        return 'Toggle theme'
+    }
   }
 
   const toggleSidebar = () => {
@@ -145,7 +192,7 @@ function App() {
       <div className="flex h-screen relative">
         {/* Animated Background */}
         <motion.div 
-          className="animated-background"
+          className={`animated-background ${theme === 'cyberpunk' ? 'cyberpunk-bg' : ''}`}
           animate={{
             backgroundPosition: ['0% 50%', '100% 50%', '0% 50%']
           }}
@@ -155,6 +202,23 @@ function App() {
             ease: "linear"
           }}
         />
+        
+        {/* Cyberpunk Grid Overlay */}
+        <div className={`cyberpunk-grid ${theme === 'cyberpunk' ? 'opacity-100' : 'opacity-0'}`} />
+        
+        {/* Matrix Rain Animation */}
+        <div className={`matrix-rain ${theme === 'cyberpunk' ? 'opacity-100' : 'opacity-0'}`}>
+          <div className="matrix-column">01 10 11 00 01 10 11 00 01 10 11 00 01 10 11 00 01 10 11 00</div>
+          <div className="matrix-column">10 01 00 11 10 01 00 11 10 01 00 11 10 01 00 11 10 01 00 11</div>
+          <div className="matrix-column">11 00 01 10 11 00 01 10 11 00 01 10 11 00 01 10 11 00 01 10</div>
+          <div className="matrix-column">00 11 10 01 00 11 10 01 00 11 10 01 00 11 10 01 00 11 10 01</div>
+          <div className="matrix-column">01 10 11 00 01 10 11 00 01 10 11 00 01 10 11 00 01 10 11 00</div>
+          <div className="matrix-column">10 01 00 11 10 01 00 11 10 01 00 11 10 01 00 11 10 01 00 11</div>
+          <div className="matrix-column">11 00 01 10 11 00 01 10 11 00 01 10 11 00 01 10 11 00 01 10</div>
+          <div className="matrix-column">00 11 10 01 00 11 10 01 00 11 10 01 00 11 10 01 00 11 10 01</div>
+          <div className="matrix-column">01 10 11 00 01 10 11 00 01 10 11 00 01 10 11 00 01 10 11 00</div>
+          <div className="matrix-column">10 01 00 11 10 01 00 11 10 01 00 11 10 01 00 11 10 01 00 11</div>
+        </div>
         
         {/* Starfield for Dark Mode */}
         <motion.div 
@@ -189,6 +253,18 @@ function App() {
         
         {/* Completion Particles Container */}
         <div className="completion-particles"></div>
+
+        {/* Theme Transition Overlay */}
+        <AnimatePresence>
+          {showThemeTransition && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="cyberpunk-transition"
+            />
+          )}
+        </AnimatePresence>
 
         {/* Sidebar Overlay for Mobile */}
         <AnimatePresence>
@@ -225,7 +301,9 @@ function App() {
         
         <main className="flex-1 flex flex-col overflow-hidden">
           <motion.header 
-            className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4"
+            className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4 ${
+              theme === 'cyberpunk' ? 'cyberpunk-header' : ''
+            }`}
             initial={{ y: -20, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.5 }}
@@ -264,19 +342,39 @@ function App() {
               </div>
               
               <div className="flex items-center gap-4">
+                {/* Debug theme indicator */}
+                <div className={`text-xs px-2 py-1 rounded ${
+                  theme === 'light' ? 'bg-gray-100 text-gray-700' :
+                  theme === 'dark' ? 'bg-gray-800 text-gray-300' :
+                  'bg-cyan-100 text-cyan-700'
+                }`}>
+                  Theme: {theme}
+                </div>
+                
+                {/* Test button to directly set cyberpunk theme */}
+                <button
+                  onClick={() => {
+                    console.log('Setting theme to cyberpunk directly')
+                    setTheme('cyberpunk')
+                  }}
+                  className="px-2 py-1 bg-cyan-500 text-white text-xs rounded"
+                >
+                  Test Cyberpunk
+                </button>
+                
                 <motion.button
                   whileHover={{ scale: 1.05, rotate: 5 }}
                   whileTap={{ scale: 0.95, rotate: -5 }}
                   onClick={toggleTheme}
                   className="p-2 rounded-xl border border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-300"
-                  title="Toggle theme"
+                  title={getThemeTitle()}
                 >
                   <motion.div
                     initial={false}
-                    animate={{ rotate: theme === 'dark' ? 180 : 0 }}
+                    animate={{ rotate: theme === 'dark' ? 180 : theme === 'cyberpunk' ? 360 : 0 }}
                     transition={{ duration: 0.3 }}
                   >
-                    {theme === 'light' ? <Moon size={18} className="text-gray-700 dark:text-gray-300" /> : <Sun size={18} className="text-gray-700 dark:text-gray-300" />}
+                    {getThemeIcon()}
                   </motion.div>
                 </motion.button>
                 
@@ -286,12 +384,7 @@ function App() {
                   onClick={() => setShowAddTodo(true)}
                   className="btn-primary flex items-center gap-2 px-4 py-2"
                 >
-                  <motion.div
-                    animate={{ rotate: showAddTodo ? 45 : 0 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <Plus size={18} />
-                  </motion.div>
+                  <Plus size={18} />
                   <span className="hidden sm:inline font-semibold">Add Task</span>
                 </motion.button>
               </div>

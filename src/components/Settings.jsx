@@ -7,6 +7,7 @@ const fontOptions = [
   { name: 'Pacifico', value: 'Pacifico', preview: 'font-pacifico' },
   { name: 'Inter', value: 'Inter', preview: 'font-inter' },
   { name: 'Poppins', value: 'Poppins', preview: 'font-poppins' },
+  { name: 'Quicksand', value: 'Quicksand', preview: 'font-quicksand' },
   { name: 'Comic Sans', value: 'Comic Sans MS', preview: 'font-comic' },
   { name: 'Cursive', value: 'cursive', preview: 'font-cursive' }
 ]

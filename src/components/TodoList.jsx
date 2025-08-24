@@ -2,6 +2,44 @@ import React, { useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, Circle, Trash2, Clock, Bell, ChevronDown, ChevronUp } from 'lucide-react'
 
+// Utility functions for date formatting
+const isToday = (date) => {
+  const today = new Date()
+  return date.getDate() === today.getDate() &&
+         date.getMonth() === today.getMonth() &&
+         date.getFullYear() === today.getFullYear()
+}
+
+const isTomorrow = (date) => {
+  const tomorrow = new Date()
+  tomorrow.setDate(tomorrow.getDate() + 1)
+  return date.getDate() === tomorrow.getDate() &&
+         date.getMonth() === tomorrow.getMonth() &&
+         date.getFullYear() === tomorrow.getFullYear()
+}
+
+const isYesterday = (date) => {
+  const yesterday = new Date()
+  yesterday.setDate(yesterday.getDate() - 1)
+  return date.getDate() === yesterday.getDate() &&
+         date.getMonth() === yesterday.getMonth() &&
+         date.getFullYear() === yesterday.getFullYear()
+}
+
+const format = (date, formatStr) => {
+  const hours = date.getHours()
+  const minutes = date.getMinutes()
+  const ampm = hours >= 12 ? 'PM' : 'AM'
+  const displayHours = hours % 12 || 12
+  const displayMinutes = minutes.toString().padStart(2, '0')
+  
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+  
+  return formatStr
+    .replace('h:mm a', `${displayHours}:${displayMinutes} ${ampm}`)
+    .replace('MMM d', `${months[date.getMonth()]} ${date.getDate()}`)
+}
+
 function TodoList({ todos, onToggle, onDelete }) {
   const [fillingTodo, setFillingTodo] = useState(null)
   const [completingTodos, setCompletingTodos] = useState(new Set())
@@ -72,23 +110,78 @@ function TodoList({ todos, onToggle, onDelete }) {
     const particlesContainer = document.querySelector('.completion-particles')
     if (!particlesContainer) return
 
+    // Check if we're in cyberpunk theme
+    const isCyberpunkTheme = document.documentElement.getAttribute('data-theme') === 'cyberpunk'
+
     for (let i = 0; i < 8; i++) {
       const particle = document.createElement('div')
-      particle.className = 'particle'
-      particle.style.cssText = `
-        left: ${Math.random() * 100}%;
-        top: ${Math.random() * 100}%;
-        --particle-x: ${(Math.random() - 0.5) * 200}px;
-        width: ${Math.random() * 8 + 4}px;
-        height: ${Math.random() * 8 + 4}px;
-      `
+      
+      if (isCyberpunkTheme) {
+        // Create cyberpunk particles for cyberpunk theme
+        if (i < 3) {
+          particle.className = 'cyberpunk-particle'
+          particle.style.cssText = `
+            left: ${Math.random() * 100}%;
+            top: ${Math.random() * 100}%;
+            --particle-x: ${(Math.random() - 0.5) * 200}px;
+            width: ${Math.random() * 8 + 4}px;
+            height: ${Math.random() * 8 + 4}px;
+            animation-delay: ${Math.random() * 0.5}s;
+          `
+        } else {
+          // Create hologram effects for cyberpunk theme
+          particle.className = 'cyberpunk-hologram'
+          particle.style.cssText = `
+            left: ${Math.random() * 100}%;
+            top: ${Math.random() * 100}%;
+            animation-delay: ${Math.random() * 1}s;
+          `
+        }
+        
+        // Add Matrix-style binary text particles
+        if (i === 7) {
+          const textParticle = document.createElement('div')
+          textParticle.className = 'matrix-text-particle'
+          textParticle.style.cssText = `
+            position: absolute;
+            left: ${Math.random() * 100}%;
+            top: ${Math.random() * 100}%;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            text-shadow: 0 0 5px #00ff00;
+            animation: matrixTextFloat 3s ease-out forwards;
+            pointer-events: none;
+            z-index: 1000;
+          `
+          textParticle.textContent = Math.random() > 0.5 ? '01' : '10'
+          particlesContainer.appendChild(textParticle)
+          
+          setTimeout(() => {
+            if (textParticle.parentNode) {
+              textParticle.parentNode.removeChild(textParticle)
+            }
+          }, 3000)
+        }
+      } else {
+        // Regular particles for other themes
+        particle.className = 'particle'
+        particle.style.cssText = `
+          left: ${Math.random() * 100}%;
+          top: ${Math.random() * 100}%;
+          --particle-x: ${(Math.random() - 0.5) * 200}px;
+          width: ${Math.random() * 8 + 4}px;
+          height: ${Math.random() * 8 + 4}px;
+        `
+      }
+      
       particlesContainer.appendChild(particle)
       
       setTimeout(() => {
         if (particle.parentNode) {
           particle.parentNode.removeChild(particle)
         }
-      }, 2000)
+      }, isCyberpunkTheme ? 3000 : 2000)
     }
   }
 

@@ -64,7 +64,13 @@ const colorMap = {
   rose: 'bg-rose-500',
   cyan: 'bg-cyan-500',
   amber: 'bg-amber-500',
-  lime: 'bg-lime-500'
+  lime: 'bg-lime-500',
+  sage: 'bg-gray-500',
+  moss: 'bg-gray-600',
+  earth: 'bg-amber-700',
+  bark: 'bg-amber-800',
+  soil: 'bg-amber-900',
+  stone: 'bg-gray-400'
 }
 
 const gradientMap = {
