@@ -423,7 +423,7 @@ function TodoList({ todos, onToggle, onDelete }) {
               className="text-center py-12"
             >
               <motion.div
-                className="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mx-auto mb-4"
+                className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4 relative"
                 animate={{ 
                   scale: [1, 1.1, 1],
                   rotate: [0, 5, -5, 0]
@@ -439,10 +439,14 @@ function TodoList({ todos, onToggle, onDelete }) {
                   transition: { duration: 0.5 }
                 }}
               >
-                <CheckCircle className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                {/* Neon glow effect */}
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 opacity-20 blur-sm animate-pulse"></div>
+                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 opacity-15 blur-md animate-pulse" style={{animationDelay: '0.5s'}}></div>
+                
+                <CheckCircle className="w-8 h-8 text-blue-400 dark:text-blue-300 relative z-10 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] dark:drop-shadow-[0_0_8px_rgba(147,197,253,0.8)]" />
               </motion.div>
               <motion.p 
-                className="text-gray-500 dark:text-gray-400 text-lg"
+                className="text-green-400 dark:text-green-300 text-lg font-semibold"
                 animate={{ 
                   y: [0, -5, 0],
                   transition: { 
@@ -455,7 +459,7 @@ function TodoList({ todos, onToggle, onDelete }) {
                 All caught up! 🎉
               </motion.p>
               <motion.p 
-                className="text-gray-400 dark:text-gray-500 text-sm mt-1"
+                className="text-cyan-400 dark:text-cyan-300 text-sm mt-1"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.5 }}

@@ -123,22 +123,112 @@
   animation: gradientShift 15s ease infinite;
 }
 
+/* Neuron Background for Cyberpunk Theme */
+.cyberpunk-bg {
+  background: radial-gradient(ellipse at center, rgba(0, 255, 0, 0.1) 0%, transparent 70%),
+              radial-gradient(ellipse at 30% 20%, rgba(0, 255, 0, 0.05) 0%, transparent 50%),
+              radial-gradient(ellipse at 70% 80%, rgba(0, 255, 0, 0.05) 0%, transparent 50%),
+              radial-gradient(ellipse at 20% 60%, rgba(0, 255, 0, 0.03) 0%, transparent 40%),
+              radial-gradient(ellipse at 80% 40%, rgba(0, 255, 0, 0.03) 0%, transparent 40%),
+              linear-gradient(-45deg, #0a0a0a, #1a1a1a, #2a2a2a, #0a0a0a) !important;
+  background-size: 400% 400% !important;
+  animation: neuronPulse 20s ease-in-out infinite !important;
+}
+
+/* Neuron Pulsation Animation */
+@keyframes neuronPulse {
+  0%, 100% {
+    background-position: 0% 50%;
+    background-size: 400% 400%;
+  }
+  25% {
+    background-position: 100% 50%;
+    background-size: 450% 450%;
+  }
+  50% {
+    background-position: 100% 100%;
+    background-size: 500% 500%;
+  }
+  75% {
+    background-position: 0% 100%;
+    background-size: 450% 450%;
+  }
+}
+
+/* Additional Neuron Connections */
+.cyberpunk-bg::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(circle at 25% 25%, rgba(0, 255, 0, 0.03) 2px, transparent 2px),
+    radial-gradient(circle at 75% 75%, rgba(0, 255, 0, 0.03) 2px, transparent 2px),
+    radial-gradient(circle at 50% 50%, rgba(0, 255, 0, 0.02) 3px, transparent 3px),
+    radial-gradient(circle at 10% 90%, rgba(0, 255, 0, 0.02) 1px, transparent 1px),
+    radial-gradient(circle at 90% 10%, rgba(0, 255, 0, 0.02) 1px, transparent 1px);
+  background-size: 200px 200px, 300px 300px, 150px 150px, 100px 100px, 100px 100px;
+  animation: neuronConnections 15s ease-in-out infinite;
+  opacity: 0.1;
+}
+
+.cyberpunk-bg::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    linear-gradient(45deg, transparent 40%, rgba(0, 255, 0, 0.02) 50%, transparent 60%),
+    linear-gradient(-45deg, transparent 40%, rgba(0, 255, 0, 0.02) 50%, transparent 60%),
+    linear-gradient(90deg, transparent 40%, rgba(0, 255, 0, 0.01) 50%, transparent 60%),
+    linear-gradient(0deg, transparent 40%, rgba(0, 255, 0, 0.01) 50%, transparent 60%);
+  background-size: 400px 400px, 300px 300px, 500px 500px, 600px 600px;
+  animation: neuronSignals 25s ease-in-out infinite;
+  opacity: 0.08;
+}
+
+@keyframes neuronConnections {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 0.1;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.15;
+  }
+}
+
+@keyframes neuronSignals {
+  0% {
+    transform: translateX(-50px) translateY(-50px);
+    opacity: 0.08;
+  }
+  25% {
+    transform: translateX(50px) translateY(-30px);
+    opacity: 0.12;
+  }
+  50% {
+    transform: translateX(30px) translateY(50px);
+    opacity: 0.08;
+  }
+  75% {
+    transform: translateX(-30px) translateY(30px);
+    opacity: 0.12;
+  }
+  100% {
+    transform: translateX(-50px) translateY(-50px);
+    opacity: 0.08;
+  }
+}
+
 .nature-bg {
   background: linear-gradient(-45deg, #ecfdf5, #f0fdf4, #fefce8, #fef3c7) !important;
   background-size: 400% 400% !important;
   animation: natureGradientShift 20s ease infinite !important;
-}
-
-.cyberpunk-bg {
-  background: linear-gradient(-45deg, #0a0a0a, #1a1a1a, #2a2a2a, #0a0a0a) !important;
-  background-size: 400% 400% !important;
-  animation: cyberpunkGradientShift 8s ease infinite !important;
-}
-
-.nature-header {
-  background: rgba(132, 204, 22, 0.2) !important;
-  border-bottom: 3px solid #84cc16 !important;
-  box-shadow: 0 4px 20px rgba(132, 204, 22, 0.3) !important;
 }
 
 .cyberpunk-header {
@@ -163,9 +253,9 @@
 
 .star {
   position: absolute;
-  background: radial-gradient(circle, rgba(255,255,255,0.95) 0%, rgba(255,255,255,0.6) 60%, transparent 100%);
+  background: radial-gradient(circle, rgba(255,255,255,0.3) 0%, rgba(255,255,255,0.1) 60%, transparent 100%);
   border-radius: 50%;
-  opacity: 0.8;
+  opacity: 0.4;
   animation: twinkle var(--twinkle-duration, 3s) ease-in-out infinite;
 }
 
@@ -629,12 +719,12 @@ body[data-theme="nature"] {
 
 @keyframes twinkle {
   0%, 100% { 
-    opacity: 0.2; 
-    filter: drop-shadow(0 0 0px rgba(255,255,255,0.3)); 
+    opacity: 0.1; 
+    filter: drop-shadow(0 0 0px rgba(255,255,255,0.1)); 
   }
   50% { 
-    opacity: 1; 
-    filter: drop-shadow(0 0 6px rgba(255,255,255,0.6)); 
+    opacity: 0.3; 
+    filter: drop-shadow(0 0 3px rgba(255,255,255,0.2)); 
   }
 }
 
@@ -768,6 +858,29 @@ body[data-theme="cyberpunk"] {
   animation: gentlePulse 10s ease-in-out infinite;
   animation-delay: 2s;
   position: relative;
+}
+
+/* Softer sidebar list item highlights */
+[data-theme="cyberpunk"] .sidebar .todo-item,
+[data-theme="cyberpunk"] .sidebar .flex.items-center.gap-3 {
+  background: rgba(26, 26, 26, 0.6) !important;
+  border: 1px solid rgba(0, 255, 0, 0.2) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.1) !important;
+}
+
+[data-theme="cyberpunk"] .sidebar .todo-item:hover,
+[data-theme="cyberpunk"] .sidebar .flex.items-center.gap-3:hover {
+  background: rgba(42, 42, 42, 0.7) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 0, 0.2) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+}
+
+/* Active sidebar item - much softer */
+[data-theme="cyberpunk"] .sidebar .flex.items-center.gap-3.bg-teal-50,
+[data-theme="cyberpunk"] .sidebar .flex.items-center.gap-3.dark\:bg-teal-900\/20 {
+  background: rgba(0, 255, 0, 0.08) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.15) !important;
 }
 
 /* Holographic Button Effects */
@@ -1315,5 +1428,53 @@ body[data-theme="cyberpunk"] {
   100% {
     opacity: 0;
     transform: translateY(-40px) scale(0.8);
+  }
+}
+
+/* Cyberpunk Theme - Neon Donezo Icon */
+[data-theme="cyberpunk"] .w-16.h-16.bg-blue-50 {
+  background: radial-gradient(circle, rgba(0, 255, 255, 0.1) 0%, rgba(0, 255, 0, 0.05) 50%, transparent 100%) !important;
+  border: 1px solid rgba(0, 255, 255, 0.3) !important;
+  box-shadow: 
+    0 0 20px rgba(0, 255, 255, 0.4),
+    0 0 40px rgba(0, 255, 255, 0.2),
+    inset 0 0 20px rgba(0, 255, 255, 0.1) !important;
+}
+
+[data-theme="cyberpunk"] .w-16.h-16.bg-blue-50 .absolute.inset-0.rounded-full.bg-gradient-to-r.from-blue-400.to-cyan-400 {
+  background: linear-gradient(45deg, rgba(0, 255, 255, 0.4), rgba(0, 255, 0, 0.3)) !important;
+  opacity: 0.4 !important;
+  animation: neonPulse 2s ease-in-out infinite !important;
+}
+
+[data-theme="cyberpunk"] .w-16.h-16.bg-blue-50 .absolute.inset-0.rounded-full.bg-gradient-to-r.from-purple-400.to-pink-400 {
+  background: linear-gradient(-45deg, rgba(255, 0, 255, 0.3), rgba(255, 0, 128, 0.2)) !important;
+  opacity: 0.3 !important;
+  animation: neonPulse 2s ease-in-out infinite reverse !important;
+}
+
+[data-theme="cyberpunk"] .w-16.h-16.bg-blue-50 .text-blue-400 {
+  color: #00ffff !important;
+  filter: drop-shadow(0 0 10px #00ffff) drop-shadow(0 0 20px #00ffff) !important;
+  animation: neonGlow 1.5s ease-in-out infinite alternate !important;
+}
+
+@keyframes neonPulse {
+  0%, 100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.05);
+  }
+}
+
+@keyframes neonGlow {
+  0% {
+    filter: drop-shadow(0 0 5px #00ffff) drop-shadow(0 0 10px #00ffff);
+  }
+  100% {
+    filter: drop-shadow(0 0 15px #00ffff) drop-shadow(0 0 25px #00ffff) drop-shadow(0 0 35px #00ffff);
   }
 }

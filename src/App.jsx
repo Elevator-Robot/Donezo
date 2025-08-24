@@ -342,26 +342,6 @@ function App() {
               </div>
               
               <div className="flex items-center gap-4">
-                {/* Debug theme indicator */}
-                <div className={`text-xs px-2 py-1 rounded ${
-                  theme === 'light' ? 'bg-gray-100 text-gray-700' :
-                  theme === 'dark' ? 'bg-gray-800 text-gray-300' :
-                  'bg-cyan-100 text-cyan-700'
-                }`}>
-                  Theme: {theme}
-                </div>
-                
-                {/* Test button to directly set cyberpunk theme */}
-                <button
-                  onClick={() => {
-                    console.log('Setting theme to cyberpunk directly')
-                    setTheme('cyberpunk')
-                  }}
-                  className="px-2 py-1 bg-cyan-500 text-white text-xs rounded"
-                >
-                  Test Cyberpunk
-                </button>
-                
                 <motion.button
                   whileHover={{ scale: 1.05, rotate: 5 }}
                   whileTap={{ scale: 0.95, rotate: -5 }}
