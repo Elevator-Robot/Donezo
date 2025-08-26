@@ -4,68 +4,125 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar'
 import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
+import AddGroceryItem from './components/AddGroceryItem'
+import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
-import { CheckCircle, Clock, Plus, Moon, Sun, Menu, Zap, Bot } from 'lucide-react'
+import Auth from './components/Auth'
+import { CheckCircle, Clock, Plus, Moon, Sun, Menu, Zap, Bot, ShoppingCart, Repeat } from 'lucide-react'
+import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 
 function App() {
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('donezo-current-user')
+    return saved ? JSON.parse(saved) : null
+  })
+  
   const [todos, setTodos] = useState(() => {
-    const saved = localStorage.getItem('donezo-todos')
+    if (!currentUser) return []
+    const saved = localStorage.getItem(`donezo-user-${currentUser.id}-todos`)
     return saved ? JSON.parse(saved) : []
   })
   
   const [lists, setLists] = useState(() => {
-    const saved = localStorage.getItem('donezo-lists')
+    if (!currentUser) return []
+    const saved = localStorage.getItem(`donezo-user-${currentUser.id}-lists`)
     return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'Personal', color: 'teal', icon: 'Heart' },
-      { id: '2', name: 'Work', color: 'blue', icon: 'Zap' },
-      { id: '3', name: 'Shopping', color: 'pink', icon: 'ShoppingBag' },
-      { id: '4', name: 'Health', color: 'emerald', icon: 'Activity' },
-      { id: '5', name: 'Learning', color: 'purple', icon: 'BookOpen' }
+      { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
+      { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
+      { id: '3', name: 'Grocery', color: 'green', icon: 'ShoppingCart', type: 'grocery' },
+      { id: '4', name: 'Shopping', color: 'pink', icon: 'ShoppingBag', type: 'task' },
+      { id: '5', name: 'Health', color: 'emerald', icon: 'Activity', type: 'task' },
+      { id: '6', name: 'Learning', color: 'purple', icon: 'BookOpen', type: 'task' },
+      { id: '7', name: 'Home Projects', color: 'orange', icon: 'Home', type: 'task' },
+      { id: '8', name: 'Reading List', color: 'indigo', icon: 'Book', type: 'task' }
     ]
   })
   
   const [activeList, setActiveList] = useState('1')
   const [showAddTodo, setShowAddTodo] = useState(false)
+  const [showAddGrocery, setShowAddGrocery] = useState(false)
+  const [showRecurringTask, setShowRecurringTask] = useState(false)
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('donezo-theme')
+    if (!currentUser) return 'light'
+    const saved = localStorage.getItem(`donezo-user-${currentUser.id}-theme`)
     return saved || 'light'
   })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem('donezo-settings')
-    return saved ? JSON.parse(saved) : {
-      font: 'Rock Salt'
-    }
+    if (!currentUser) return { font: 'Rock Salt' }
+    const saved = localStorage.getItem(`donezo-user-${currentUser.id}-settings`)
+    return saved ? JSON.parse(saved) : { font: 'Rock Salt' }
   })
   const [showThemeTransition, setShowThemeTransition] = useState(false)
 
-  // Save to localStorage whenever todos or lists change
-  useEffect(() => {
-    localStorage.setItem('donezo-todos', JSON.stringify(todos))
-  }, [todos])
+  // Handle authentication success
+  const handleAuthSuccess = (user, userData) => {
+    setCurrentUser(user)
+    setTodos(userData.todos || [])
+    setLists(userData.lists || [
+      { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
+      { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
+      { id: '3', name: 'Grocery', color: 'green', icon: 'ShoppingCart', type: 'grocery' },
+      { id: '4', name: 'Shopping', color: 'pink', icon: 'ShoppingBag', type: 'task' },
+      { id: '5', name: 'Health', color: 'emerald', icon: 'Activity', type: 'task' },
+      { id: '6', name: 'Learning', color: 'purple', icon: 'BookOpen', type: 'task' },
+      { id: '7', name: 'Home Projects', color: 'orange', icon: 'Home', type: 'task' },
+      { id: '8', name: 'Reading List', color: 'indigo', icon: 'Book', type: 'task' }
+    ])
+    setTheme(userData.theme || 'light')
+    setSettings(userData.settings || { font: 'Rock Salt' })
+  }
 
-  useEffect(() => {
-    localStorage.setItem('donezo-lists', JSON.stringify(lists))
-  }, [lists])
+  // Handle logout
+  const handleLogout = () => {
+    setCurrentUser(null)
+    setTodos([])
+    setLists([])
+    setTheme('light')
+    setSettings({ font: 'Rock Salt' })
+    setActiveList('1')
+    setShowAddTodo(false)
+    setShowAddGrocery(false)
+    setShowRecurringTask(false)
+    setSidebarOpen(false)
+    setShowSettings(false)
+  }
 
+  // Save user data to localStorage whenever it changes
   useEffect(() => {
-    console.log('Theme changed to:', theme)
-    localStorage.setItem('donezo-theme', theme)
-    document.documentElement.setAttribute('data-theme', theme)
-    console.log('Applied data-theme attribute:', document.documentElement.getAttribute('data-theme'))
-    // Also set the class for Tailwind dark mode
-    if (theme === 'dark') {
-      document.documentElement.classList.add('dark')
-    } else {
-      document.documentElement.classList.remove('dark')
+    if (currentUser) {
+      localStorage.setItem(`donezo-user-${currentUser.id}-todos`, JSON.stringify(todos))
     }
-  }, [theme])
+  }, [todos, currentUser])
+
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(`donezo-user-${currentUser.id}-lists`, JSON.stringify(lists))
+    }
+  }, [lists, currentUser])
+
+  useEffect(() => {
+    if (currentUser) {
+      console.log('Theme changed to:', theme)
+      localStorage.setItem(`donezo-user-${currentUser.id}-theme`, theme)
+      document.documentElement.setAttribute('data-theme', theme)
+      console.log('Applied data-theme attribute:', document.documentElement.getAttribute('data-theme'))
+      // Also set the class for Tailwind dark mode
+      if (theme === 'dark') {
+        document.documentElement.classList.add('dark')
+      } else {
+        document.documentElement.classList.remove('dark')
+      }
+    }
+  }, [theme, currentUser])
 
   // Save settings to localStorage
   useEffect(() => {
-    localStorage.setItem('donezo-settings', JSON.stringify(settings))
-  }, [settings])
+    if (currentUser) {
+      localStorage.setItem(`donezo-user-${currentUser.id}-settings`, JSON.stringify(settings))
+    }
+  }, [settings, currentUser])
 
   // Apply font settings
   useEffect(() => {
@@ -94,14 +151,62 @@ function App() {
     setShowAddTodo(false)
   }
 
+  const addRecurringTask = (recurringTask) => {
+    console.log('App.jsx addRecurringTask called with:', recurringTask)
+    
+    const newRecurringTask = {
+      ...recurringTask,
+      id: Date.now().toString(),
+      completed: false,
+      createdAt: new Date().toISOString()
+    }
+    
+    // Generate the first few instances of the recurring task
+    const instances = generateRecurringInstances(newRecurringTask, 5)
+    
+    setTodos(prev => {
+      const updatedTodos = [...prev, ...instances]
+      console.log('Updated todos with recurring instances:', updatedTodos)
+      return updatedTodos
+    })
+    setShowRecurringTask(false)
+  }
+
   const toggleTodo = (id) => {
-    setTodos(prev => prev.map(todo => 
-      todo.id === id ? { 
-        ...todo, 
-        completed: !todo.completed,
-        completedAt: !todo.completed ? new Date().toISOString() : null
-      } : todo
-    ))
+    setTodos(prev => {
+      const updatedTodos = prev.map(todo => {
+        if (todo.id === id) {
+          const updatedTodo = {
+            ...todo,
+            completed: !todo.completed,
+            completedAt: !todo.completed ? new Date().toISOString() : null
+          }
+          
+          // If this is a recurring task instance and it's being completed,
+          // create the next instance
+          if (updatedTodo.completed && todo.isRecurringInstance && todo.parentRecurringTaskId) {
+            const parentTask = prev.find(t => t.id === todo.parentRecurringTaskId)
+            if (parentTask && parentTask.recurrence) {
+              const nextDueDate = calculateNextDueDate(parentTask.recurrence, todo.dueDate)
+              const nextInstance = {
+                ...parentTask,
+                id: `${parentTask.id}-${Date.now()}`,
+                dueDate: nextDueDate,
+                completed: false,
+                createdAt: new Date().toISOString()
+              }
+              return [updatedTodo, nextInstance]
+            }
+          }
+          
+          return updatedTodo
+        }
+        return todo
+      })
+      
+      // Flatten the array in case we added new instances
+      return updatedTodos.flat()
+    })
   }
 
   const deleteTodo = (id) => {
@@ -111,7 +216,8 @@ function App() {
   const addList = (list) => {
     const newList = {
       ...list,
-      id: Date.now().toString()
+      id: Date.now().toString(),
+      type: list.type || 'task'
     }
     setLists(prev => [...prev, newList])
   }
@@ -184,8 +290,22 @@ function App() {
     setSettings(newSettings)
   }
 
+  const handleAddButtonClick = () => {
+    const currentList = lists.find(list => list.id === activeList)
+    if (currentList?.type === 'grocery') {
+      setShowAddGrocery(true)
+    } else {
+      setShowAddTodo(true)
+    }
+  }
+
   const currentTodos = todos.filter(todo => todo.listId === activeList)
   const currentList = lists.find(list => list.id === activeList)
+
+  // Show authentication screen if no user is logged in
+  if (!currentUser) {
+    return <Auth onAuthSuccess={handleAuthSuccess} />
+  }
 
   return (
     <Router>
@@ -296,6 +416,8 @@ function App() {
             deleteList={deleteList}
             onClose={() => setSidebarOpen(false)}
             onOpenSettings={() => setShowSettings(true)}
+            currentUser={currentUser}
+            onLogout={handleLogout}
           />
         </motion.div>
         
@@ -336,7 +458,7 @@ function App() {
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
                   >
-                    {currentTodos.filter(t => !t.completed).length} tasks remaining
+                    {currentTodos.filter(t => !t.completed).length} {currentList?.type === 'grocery' ? 'items' : 'tasks'} remaining
                   </motion.p>
                 </div>
               </div>
@@ -357,15 +479,34 @@ function App() {
                     {getThemeIcon()}
                   </motion.div>
                 </motion.button>
+
+                {/* Recurring Task Button - only show for task lists */}
+                {currentList?.type === 'task' && (
+                  <motion.button
+                    whileHover={{ scale: 1.05, y: -2 }}
+                    whileTap={{ scale: 0.95, y: 0 }}
+                    onClick={() => setShowRecurringTask(true)}
+                    className="btn-secondary flex items-center gap-2 px-4 py-2"
+                  >
+                    <Repeat size={18} />
+                    <span className="hidden sm:inline font-semibold">Recurring</span>
+                  </motion.button>
+                )}
                 
                 <motion.button
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95, y: 0 }}
-                  onClick={() => setShowAddTodo(true)}
+                  onClick={handleAddButtonClick}
                   className="btn-primary flex items-center gap-2 px-4 py-2"
                 >
-                  <Plus size={18} />
-                  <span className="hidden sm:inline font-semibold">Add Task</span>
+                  {currentList?.type === 'grocery' ? (
+                    <ShoppingCart size={18} />
+                  ) : (
+                    <Plus size={18} />
+                  )}
+                  <span className="hidden sm:inline font-semibold">
+                    {currentList?.type === 'grocery' ? 'Add Item' : 'Add Task'}
+                  </span>
                 </motion.button>
               </div>
             </div>
@@ -387,6 +528,32 @@ function App() {
               key="add-todo"
               onAdd={addTodo}
               onClose={() => setShowAddTodo(false)}
+              lists={lists}
+              activeList={activeList}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* AddGroceryItem Modal */}
+        <AnimatePresence mode="wait">
+          {showAddGrocery && (
+            <AddGroceryItem
+              key="add-grocery"
+              onAdd={addTodo}
+              onClose={() => setShowAddGrocery(false)}
+              lists={lists}
+              activeList={activeList}
+            />
+          )}
+        </AnimatePresence>
+
+        {/* RecurringTaskModal */}
+        <AnimatePresence mode="wait">
+          {showRecurringTask && (
+            <RecurringTaskModal
+              key="add-recurring"
+              onAdd={addRecurringTask}
+              onClose={() => setShowRecurringTask(false)}
               lists={lists}
               activeList={activeList}
             />

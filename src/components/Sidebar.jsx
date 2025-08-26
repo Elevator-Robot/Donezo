@@ -23,7 +23,11 @@ import {
   Plane,
   Gift,
   ShoppingBag,
-  Activity
+  ShoppingCart,
+  Activity,
+  Book,
+  User,
+  LogOut
 } from 'lucide-react'
 
 // Simple, focused icon mapping for practical list types
@@ -33,6 +37,7 @@ const iconMap = {
   Music: Music,
   Camera: Camera,
   BookOpen: BookOpen,
+  Book: Book,
   Coffee: Coffee,
   Pizza: Pizza,
   Flower: Flower,
@@ -40,6 +45,7 @@ const iconMap = {
   Plane: Plane,
   Gift: Gift,
   ShoppingBag: ShoppingBag,
+  ShoppingCart: ShoppingCart,
   Activity: Activity,
   Home: Home,
   Calendar: Calendar,
@@ -84,7 +90,7 @@ const gradientMap = {
   berry: 'bg-gradient-to-r from-purple-400 to-indigo-500'
 }
 
-function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClose, onOpenSettings }) {
+function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClose, onOpenSettings, currentUser, onLogout }) {
   const [showAddList, setShowAddList] = useState(false)
   const [newListName, setNewListName] = useState('')
   const [newListColor, setNewListColor] = useState('teal')
@@ -149,6 +155,30 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
             <X className="w-5 h-5 text-gray-600 dark:text-gray-300" />
           </button>
         </div>
+
+        {/* User Profile Section */}
+        {currentUser && (
+          <div className="flex items-center gap-3 p-3 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-full flex items-center justify-center">
+              <User className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-medium text-gray-900 dark:text-white text-sm truncate">
+                {currentUser.username}
+              </p>
+              <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                {currentUser.email}
+              </p>
+            </div>
+            <button
+              onClick={onLogout}
+              className="p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+              title="Sign Out"
+            >
+              <LogOut className="w-4 h-4 text-red-500" />
+            </button>
+          </div>
+        )}
       </div>
 
       {/* Lists */}

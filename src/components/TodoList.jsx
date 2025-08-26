@@ -1,511 +1,268 @@
-import React, { useState, useEffect } from 'react'
+import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle, Circle, Trash2, Clock, Bell, ChevronDown, ChevronUp } from 'lucide-react'
-
-// Utility functions for date formatting
-const isToday = (date) => {
-  const today = new Date()
-  return date.getDate() === today.getDate() &&
-         date.getMonth() === today.getMonth() &&
-         date.getFullYear() === today.getFullYear()
-}
-
-const isTomorrow = (date) => {
-  const tomorrow = new Date()
-  tomorrow.setDate(tomorrow.getDate() + 1)
-  return date.getDate() === tomorrow.getDate() &&
-         date.getMonth() === tomorrow.getMonth() &&
-         date.getFullYear() === tomorrow.getFullYear()
-}
-
-const isYesterday = (date) => {
-  const yesterday = new Date()
-  yesterday.setDate(yesterday.getDate() - 1)
-  return date.getDate() === yesterday.getDate() &&
-         date.getMonth() === yesterday.getMonth() &&
-         date.getFullYear() === yesterday.getFullYear()
-}
-
-const format = (date, formatStr) => {
-  const hours = date.getHours()
-  const minutes = date.getMinutes()
-  const ampm = hours >= 12 ? 'PM' : 'AM'
-  const displayHours = hours % 12 || 12
-  const displayMinutes = minutes.toString().padStart(2, '0')
-  
-  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-  
-  return formatStr
-    .replace('h:mm a', `${displayHours}:${displayMinutes} ${ampm}`)
-    .replace('MMM d', `${months[date.getMonth()]} ${date.getDate()}`)
-}
+import { CheckCircle, Clock, Trash2, Repeat, AlertTriangle, Calendar } from 'lucide-react'
+import { formatDueDate, isOverdue, getPriorityColor, getPriorityBackground, getRecurrenceDescription } from '../utils/recurringTaskUtils'
 
 function TodoList({ todos, onToggle, onDelete }) {
-  const [fillingTodo, setFillingTodo] = useState(null)
-  const [completingTodos, setCompletingTodos] = useState(new Set())
-  const [showCompleted, setShowCompleted] = useState(false)
-  const [swipedTodo, setSwipedTodo] = useState(null)
-  const [touchStart, setTouchStart] = useState(null)
-  const [touchEnd, setTouchEnd] = useState(null)
-
-  // Minimum swipe distance for delete
-  const minSwipeDistance = 80
-
-  const onTouchStart = (e, todoId) => {
-    setTouchEnd(null)
-    setTouchStart(e.targetTouches[0].clientX)
-    setSwipedTodo(todoId)
-  }
-
-  const onTouchMove = (e) => {
-    setTouchEnd(e.targetTouches[0].clientX)
-  }
-
-  const onTouchEnd = (todoId) => {
-    if (!touchStart || !touchEnd) return
-    const distance = touchStart - touchEnd
-    const isLeftSwipe = distance > minSwipeDistance
-
-    if (isLeftSwipe) {
-      // Trigger delete animation
-      setCompletingTodos(prev => new Set([...prev, todoId]))
-      setTimeout(() => {
-        onDelete(todoId)
-        setCompletingTodos(prev => {
-          const newSet = new Set(prev)
-          newSet.delete(todoId)
-          return newSet
-        })
-      }, 300)
-    }
+  const createCompletionParticles = (event, todo) => {
+    const rect = event.currentTarget.getBoundingClientRect()
+    const centerX = rect.left + rect.width / 2
+    const centerY = rect.top + rect.height / 2
     
-    setSwipedTodo(null)
-  }
-
-  const handleToggle = (todo) => {
-    if (fillingTodo === todo.id) return
-    
-    setFillingTodo(todo.id)
-    onToggle(todo.id)
-    
-    if (!todo.completed) {
-      // Add to completing set for exit animation
-      setCompletingTodos(prev => new Set([...prev, todo.id]))
-      
-      // Create completion particles
-      createCompletionParticles()
-      
-      // Haptic feedback for mobile
-      if ('vibrate' in navigator) {
-        navigator.vibrate(50)
-      }
-    }
-    
-    setTimeout(() => {
-      setFillingTodo(null)
-    }, 1000)
-  }
-
-  const createCompletionParticles = () => {
     const particlesContainer = document.querySelector('.completion-particles')
     if (!particlesContainer) return
-
-    // Check if we're in cyberpunk theme
-    const isCyberpunkTheme = document.documentElement.getAttribute('data-theme') === 'cyberpunk'
-
-    for (let i = 0; i < 8; i++) {
+    
+    // Create particles based on theme
+    const theme = document.documentElement.getAttribute('data-theme')
+    const particleCount = 8
+    
+    for (let i = 0; i < particleCount; i++) {
       const particle = document.createElement('div')
+      particle.className = theme === 'cyberpunk' ? 'cyberpunk-particle' : 'completion-particle'
       
-      if (isCyberpunkTheme) {
-        // Create cyberpunk particles for cyberpunk theme
-        if (i < 3) {
-          particle.className = 'cyberpunk-particle'
-          particle.style.cssText = `
-            left: ${Math.random() * 100}%;
-            top: ${Math.random() * 100}%;
-            --particle-x: ${(Math.random() - 0.5) * 200}px;
-            width: ${Math.random() * 8 + 4}px;
-            height: ${Math.random() * 8 + 4}px;
-            animation-delay: ${Math.random() * 0.5}s;
-          `
-        } else {
-          // Create hologram effects for cyberpunk theme
-          particle.className = 'cyberpunk-hologram'
-          particle.style.cssText = `
-            left: ${Math.random() * 100}%;
-            top: ${Math.random() * 100}%;
-            animation-delay: ${Math.random() * 1}s;
-          `
-        }
-        
-        // Add Matrix-style binary text particles
-        if (i === 7) {
-          const textParticle = document.createElement('div')
-          textParticle.className = 'matrix-text-particle'
-          textParticle.style.cssText = `
-            position: absolute;
-            left: ${Math.random() * 100}%;
-            top: ${Math.random() * 100}%;
-            color: #00ff00;
-            font-family: 'Courier New', monospace;
-            font-size: 12px;
-            text-shadow: 0 0 5px #00ff00;
-            animation: matrixTextFloat 3s ease-out forwards;
-            pointer-events: none;
-            z-index: 1000;
-          `
-          textParticle.textContent = Math.random() > 0.5 ? '01' : '10'
-          particlesContainer.appendChild(textParticle)
-          
-          setTimeout(() => {
-            if (textParticle.parentNode) {
-              textParticle.parentNode.removeChild(textParticle)
-            }
-          }, 3000)
-        }
-      } else {
-        // Regular particles for other themes
-        particle.className = 'particle'
-        particle.style.cssText = `
-          left: ${Math.random() * 100}%;
-          top: ${Math.random() * 100}%;
-          --particle-x: ${(Math.random() - 0.5) * 200}px;
-          width: ${Math.random() * 8 + 4}px;
-          height: ${Math.random() * 8 + 4}px;
-        `
-      }
+      const angle = (i / particleCount) * Math.PI * 2
+      const velocity = 100 + Math.random() * 50
+      const startX = centerX
+      const startY = centerY
+      
+      particle.style.left = startX + 'px'
+      particle.style.top = startY + 'px'
       
       particlesContainer.appendChild(particle)
       
-      setTimeout(() => {
-        if (particle.parentNode) {
-          particle.parentNode.removeChild(particle)
+      // Animate particle
+      const animation = particle.animate([
+        {
+          transform: 'translate(0, 0) scale(1)',
+          opacity: 1
+        },
+        {
+          transform: `translate(${Math.cos(angle) * velocity}px, ${Math.sin(angle) * velocity}px) scale(0)`,
+          opacity: 0
         }
-      }, isCyberpunkTheme ? 3000 : 2000)
+      ], {
+        duration: 1000,
+        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+      })
+      
+      animation.onfinish = () => {
+        particle.remove()
+      }
+    }
+    
+    // Add hologram effect for cyberpunk theme
+    if (theme === 'cyberpunk') {
+      const hologram = document.createElement('div')
+      hologram.className = 'cyberpunk-hologram'
+      hologram.style.left = centerX + 'px'
+      hologram.style.top = centerY + 'px'
+      
+      particlesContainer.appendChild(hologram)
+      
+      const hologramAnimation = hologram.animate([
+        {
+          transform: 'scale(0) rotate(0deg)',
+          opacity: 1
+        },
+        {
+          transform: 'scale(2) rotate(360deg)',
+          opacity: 0
+        }
+      ], {
+        duration: 1500,
+        easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+      })
+      
+      hologramAnimation.onfinish = () => {
+        hologram.remove()
+      }
     }
   }
 
-  const getReminderBadgeClass = (reminder) => {
-    if (!reminder) return ''
-    
-    const now = new Date()
-    const reminderDate = new Date(reminder)
-    const diffInHours = (reminderDate - now) / (1000 * 60 * 60)
-    
-    if (diffInHours < 0) return 'reminder-urgent'
-    if (diffInHours < 24) return 'reminder-soon'
-    return 'reminder-later'
-  }
-
-  const getReminderText = (reminder) => {
-    if (!reminder) return ''
-    
-    const reminderDate = new Date(reminder)
-    
-    if (isToday(reminderDate)) {
-      return `Today at ${format(reminderDate, 'h:mm a')}`
-    }
-    if (isTomorrow(reminderDate)) {
-      return `Tomorrow at ${format(reminderDate, 'h:mm a')}`
-    }
-    if (isYesterday(reminderDate)) {
-      return `Yesterday at ${format(reminderDate, 'h:mm a')}`
-    }
-    
-    return format(reminderDate, 'MMM d, h:mm a')
-  }
-
-  const sortedIncompleteTodos = todos
-    .filter(todo => !todo.completed && !completingTodos.has(todo.id))
-    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-
-  const sortedCompletedTodos = todos
-    .filter(todo => todo.completed)
-    .sort((a, b) => new Date(b.completedAt) - new Date(a.completedAt))
-
-  const renderTodoItem = (todo) => {
-    const isSwiped = swipedTodo === todo.id
-    const swipeDistance = touchStart && touchEnd ? touchStart - touchEnd : 0
-    const shouldShowDelete = swipeDistance > minSwipeDistance / 2
-
+  if (todos.length === 0) {
     return (
       <motion.div
-        key={todo.id}
-        layout
+        className="flex flex-col items-center justify-center py-12"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, x: -300, scale: 0.8 }}
-        transition={{ duration: 0.3 }}
-        className="relative"
-        onTouchStart={(e) => onTouchStart(e, todo.id)}
-        onTouchMove={onTouchMove}
-        onTouchEnd={() => onTouchEnd(todo.id)}
+        transition={{ duration: 0.5 }}
       >
-        {/* Delete background indicator - very subtle version */}
         <motion.div
-          className="absolute right-0 top-0 bottom-0 w-16 bg-gray-50 dark:bg-gray-700 rounded-r-lg flex items-center justify-center opacity-0"
-          initial={{ x: '100%' }}
+          className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4 relative"
           animate={{ 
-            x: shouldShowDelete ? '0%' : '100%',
-            opacity: shouldShowDelete ? 0.8 : 0
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0]
           }}
-          transition={{ duration: 0.2 }}
-        >
-          <Trash2 className="text-gray-400 dark:text-gray-500" size={18} />
-        </motion.div>
-
-        {/* Todo item */}
-        <motion.div
-          className="todo-item relative z-10"
-          animate={{ 
-            x: isSwiped ? -Math.min(swipeDistance, minSwipeDistance) : 0 
+          transition={{ 
+            duration: 2, 
+            repeat: Infinity,
+            ease: "easeInOut"
           }}
-          transition={{ duration: 0.1 }}
-          whileHover={{ 
-            scale: 1.02,
-            y: -2,
-            transition: { duration: 0.2 }
-          }}
-          whileTap={{ 
-            scale: 0.98,
-            transition: { duration: 0.1 }
+          whileHover={{
+            scale: 1.2,
+            rotate: [0, 10, -10, 0],
+            transition: { duration: 0.5 }
           }}
         >
-          <div className="flex items-center gap-4">
-            <motion.button
-              onClick={() => handleToggle(todo)}
-              className="relative flex-shrink-0"
-              whileHover={{ 
-                scale: 1.2,
-                rotate: [0, -10, 10, 0],
-                transition: { duration: 0.3 }
-              }}
-              whileTap={{ 
-                scale: 0.8,
-                transition: { duration: 0.1 }
-              }}
-            >
-              {todo.completed ? (
-                <motion.div
-                  initial={{ scale: 0, rotate: -180 }}
-                  animate={{ scale: 1, rotate: 0 }}
-                  transition={{ 
-                    type: "spring",
-                    stiffness: 500,
-                    damping: 15
-                  }}
-                >
-                  <CheckCircle className="w-6 h-6 text-teal-500" />
-                </motion.div>
-              ) : (
-                <>
-                  <Circle className="w-6 h-6 text-gray-400" />
-                  {fillingTodo === todo.id && (
-                    <motion.div
-                      className="absolute inset-0 bg-teal-500 rounded-full"
-                      initial={{ scale: 0, opacity: 0 }}
-                      animate={{ scale: 1, opacity: 1 }}
-                      exit={{ scale: 0, opacity: 0 }}
-                      transition={{ 
-                        type: "spring",
-                        stiffness: 400,
-                        damping: 20
-                      }}
-                    />
-                  )}
-                </>
-              )}
-            </motion.button>
-
-            <div className="flex-1 min-w-0">
-              <motion.p
-                className={`font-medium ${
-                  todo.completed 
-                    ? 'line-through text-gray-500 dark:text-gray-400' 
-                    : 'text-gray-900 dark:text-white'
-                }`}
-                animate={{
-                  textDecoration: todo.completed ? 'line-through' : 'none',
-                  color: todo.completed ? '#6b7280' : '#111827'
-                }}
-                transition={{ duration: 0.3 }}
-              >
-                {todo.title}
-              </motion.p>
-              
-              {todo.description && (
-                <motion.p
-                  className="text-sm text-gray-600 dark:text-gray-400 mt-1"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ delay: 0.1 }}
-                >
-                  {todo.description}
-                </motion.p>
-              )}
-            </div>
-
-            <div className="flex items-center gap-2">
-              {todo.reminder && (
-                <motion.div
-                  className="reminder-badge"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.2 }}
-                >
-                  <Clock className="w-3 h-3 mr-1" />
-                  {new Date(todo.reminder).toLocaleDateString()}
-                </motion.div>
-              )}
-              
-              {todo.priority && (
-                <motion.span
-                  className={`px-2 py-1 rounded-full text-xs font-medium ${
-                    todo.priority === 'high' 
-                      ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300' 
-                      : todo.priority === 'medium'
-                      ? 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300'
-                      : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                  }`}
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.3 }}
-                >
-                  {todo.priority}
-                </motion.span>
-              )}
-              
-              {/* Delete button */}
-              <motion.button
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDelete(todo.id)
-                }}
-                className="p-1.5 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                title="Delete task"
-              >
-                <Trash2 className="w-4 h-4 text-gray-400 dark:text-gray-500 hover:text-red-500 dark:hover:text-red-400 transition-colors" />
-              </motion.button>
-            </div>
-          </div>
+          {/* Neon glow effect */}
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 opacity-20 blur-sm animate-pulse"></div>
+          <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 opacity-15 blur-md animate-pulse" style={{animationDelay: '0.5s'}}></div>
+          
+          <CheckCircle className="w-8 h-8 text-blue-400 dark:text-blue-300 relative z-10 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] dark:drop-shadow-[0_0_8px_rgba(147,197,253,0.8)]" />
         </motion.div>
+        <motion.p
+          className="text-green-400 dark:text-green-300 text-lg font-semibold"
+          animate={{
+            y: [0, -5, 0],
+            transition: {
+              duration: 2,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }
+          }}
+        >
+          All caught up! 🎉
+        </motion.p>
+        <motion.p
+          className="text-cyan-400 dark:text-cyan-300 text-sm mt-1"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.5 }}
+        >
+          Add a new task to get started
+        </motion.p>
       </motion.div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Active Tasks */}
-      <div>
-        <motion.h3 
-          className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2"
-          initial={{ opacity: 0, y: -10 }}
-          animate={{ opacity: 1, y: 0 }}
-        >
-          <span>Active Tasks</span>
-          <motion.span 
-            className="bg-teal-100 dark:bg-teal-900/30 text-teal-800 dark:text-teal-300 px-2 py-1 rounded-full text-sm font-medium"
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.2 }}
+    <div className="space-y-3">
+      <AnimatePresence mode="popLayout">
+        {todos.map((todo) => (
+          <motion.div
+            key={todo.id}
+            layout
+            initial={{ opacity: 0, y: 20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.3 }}
+            className={`card p-4 transition-all duration-300 ${
+              todo.completed ? 'opacity-75' : ''
+            } ${isOverdue(todo.dueDate, todo.dueTime) && !todo.completed ? 'border-red-300 dark:border-red-600' : ''}`}
           >
-            {sortedIncompleteTodos.length}
-          </motion.span>
-        </motion.h3>
-
-        <AnimatePresence mode="popLayout">
-          {sortedIncompleteTodos.length === 0 ? (
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-center py-12"
-            >
-              <motion.div
-                className="w-16 h-16 bg-blue-50 dark:bg-blue-900/20 rounded-full flex items-center justify-center mx-auto mb-4 relative"
-                animate={{ 
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0]
-                }}
-                transition={{ 
-                  duration: 2, 
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }}
-                whileHover={{
-                  scale: 1.2,
-                  rotate: [0, 10, -10, 0],
-                  transition: { duration: 0.5 }
-                }}
-              >
-                {/* Neon glow effect */}
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-blue-400 to-cyan-400 opacity-20 blur-sm animate-pulse"></div>
-                <div className="absolute inset-0 rounded-full bg-gradient-to-r from-purple-400 to-pink-400 opacity-15 blur-md animate-pulse" style={{animationDelay: '0.5s'}}></div>
-                
-                <CheckCircle className="w-8 h-8 text-blue-400 dark:text-blue-300 relative z-10 drop-shadow-[0_0_8px_rgba(59,130,246,0.8)] dark:drop-shadow-[0_0_8px_rgba(147,197,253,0.8)]" />
-              </motion.div>
-              <motion.p 
-                className="text-green-400 dark:text-green-300 text-lg font-semibold"
-                animate={{ 
-                  y: [0, -5, 0],
-                  transition: { 
-                    duration: 2, 
-                    repeat: Infinity,
-                    ease: "easeInOut"
+            <div className="flex items-start gap-3">
+              {/* Checkbox */}
+              <motion.button
+                onClick={(e) => {
+                  onToggle(todo.id)
+                  if (!todo.completed) {
+                    createCompletionParticles(e, todo)
                   }
                 }}
+                className={`flex-shrink-0 w-6 h-6 rounded-full border-2 transition-all duration-300 ${
+                  todo.completed
+                    ? 'bg-green-500 border-green-500'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-green-400 dark:hover:border-green-400'
+                }`}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.9 }}
               >
-                All caught up! 🎉
-              </motion.p>
-              <motion.p 
-                className="text-cyan-400 dark:text-cyan-300 text-sm mt-1"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                transition={{ delay: 0.5 }}
-              >
-                Add a new task to get started
-              </motion.p>
-            </motion.div>
-          ) : (
-            <div className="space-y-3">
-              {sortedIncompleteTodos.map(renderTodoItem)}
+                {todo.completed && (
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <CheckCircle className="w-5 h-5 text-white" />
+                  </motion.div>
+                )}
+              </motion.button>
+
+              {/* Task Content */}
+              <div className="flex-1 min-w-0">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="flex-1 min-w-0">
+                    <motion.h3
+                      className={`font-medium text-gray-900 dark:text-white ${
+                        todo.completed ? 'line-through text-gray-500 dark:text-gray-400' : ''
+                      }`}
+                      initial={false}
+                      animate={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {todo.title}
+                    </motion.h3>
+                    
+                    {todo.description && (
+                      <motion.p
+                        className={`text-sm text-gray-600 dark:text-gray-400 mt-1 ${
+                          todo.completed ? 'line-through' : ''
+                        }`}
+                        initial={false}
+                        animate={{ textDecoration: todo.completed ? 'line-through' : 'none' }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        {todo.description}
+                      </motion.p>
+                    )}
+
+                    {/* Task Metadata */}
+                    <div className="flex items-center gap-3 mt-2 flex-wrap">
+                      {/* Priority */}
+                      {todo.priority && (
+                        <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getPriorityBackground(todo.priority)}`}>
+                          {todo.priority.charAt(0).toUpperCase() + todo.priority.slice(1)}
+                        </span>
+                      )}
+
+                      {/* Due Date */}
+                      {todo.dueDate && (
+                        <div className={`flex items-center gap-1 text-xs ${
+                          isOverdue(todo.dueDate, todo.dueTime) && !todo.completed 
+                            ? 'text-red-600 dark:text-red-400' 
+                            : 'text-gray-500 dark:text-gray-400'
+                        }`}>
+                          <Calendar className="w-3 h-3" />
+                          <span>{formatDueDate(todo.dueDate, todo.dueTime)}</span>
+                          {isOverdue(todo.dueDate, todo.dueTime) && !todo.completed && (
+                            <AlertTriangle className="w-3 h-3 text-red-500" />
+                          )}
+                        </div>
+                      )}
+
+                      {/* Recurring Task Indicator */}
+                      {todo.isRecurring && (
+                        <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
+                          <Repeat className="w-3 h-3" />
+                          <span>{getRecurrenceDescription(todo.recurrence)}</span>
+                        </div>
+                      )}
+
+                      {/* Reminders */}
+                      {todo.reminders && todo.reminders.length > 0 && (
+                        <div className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400">
+                          <Clock className="w-3 h-3" />
+                          <span>{todo.reminders.length} reminder{todo.reminders.length > 1 ? 's' : ''}</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Delete Button */}
+                  <motion.button
+                    onClick={() => onDelete(todo.id)}
+                    className="flex-shrink-0 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.9 }}
+                  >
+                    <Trash2 className="w-4 h-4 text-red-500" />
+                  </motion.button>
+                </div>
+              </div>
             </div>
-          )}
-        </AnimatePresence>
-      </div>
-
-      {/* Completed Tasks */}
-      {sortedCompletedTodos.length > 0 && (
-        <div>
-          <motion.button
-            onClick={() => setShowCompleted(!showCompleted)}
-            className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors mb-4"
-            whileHover={{ scale: 1.02 }}
-            whileTap={{ scale: 0.98 }}
-          >
-            {showCompleted ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
-            <span className="font-medium">Completed Tasks</span>
-            <span className="bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-400 px-2 py-1 rounded-full text-sm">
-              {sortedCompletedTodos.length}
-            </span>
-          </motion.button>
-
-          <AnimatePresence>
-            {showCompleted && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-3"
-              >
-                {sortedCompletedTodos.map(renderTodoItem)}
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      )}
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   )
 }
