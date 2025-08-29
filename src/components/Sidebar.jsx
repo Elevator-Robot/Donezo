@@ -88,10 +88,8 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
   const [showAddList, setShowAddList] = useState(false)
   const [newListName, setNewListName] = useState('')
   const [newListColor, setNewListColor] = useState('teal')
-  const [newListIcon, setNewListIcon] = useState('Heart')
   const [newListType, setNewListType] = useState('task') // 'task' or 'item'
   const [showColorPicker, setShowColorPicker] = useState(false)
-  const [showIconPicker, setShowIconPicker] = useState(false)
   const [touchStart, setTouchStart] = useState(null)
 
   const handleTouchStart = (e) => {
@@ -115,23 +113,24 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
 
   const handleAddList = () => {
     if (newListName.trim()) {
-      addList({
+      const newList = {
         name: newListName,
         color: newListColor,
-        icon: newListIcon,
+        icon: 'Heart', // Default icon
         type: newListType
-      })
+      }
+      
+      console.log('Creating new list with type:', newListType)
+      console.log('New list object:', newList)
+      
+      addList(newList)
       setNewListName('')
       setNewListColor('teal')
-      setNewListIcon('Heart')
       setNewListType('task')
       setShowColorPicker(false)
-      setShowIconPicker(false)
       setShowAddList(false)
     }
   }
-
-  const IconComponent = iconMap[newListIcon]
 
   return (
     <motion.div
@@ -332,7 +331,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 gap-4">
                   {/* Color Selection Button */}
                   <div className="relative">
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -340,10 +339,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                     </label>
                     <button
                       type="button"
-                      onClick={() => {
-                        setShowColorPicker(!showColorPicker)
-                        setShowIconPicker(false)
-                      }}
+                      onClick={() => setShowColorPicker(!showColorPicker)}
                       className="w-full flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                     >
                       <div className={`w-6 h-6 rounded-full ${colorMap[newListColor] || gradientMap[newListColor]} border-2 border-gray-200 dark:border-gray-600`}></div>
@@ -426,112 +422,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                     )}
                   </div>
 
-                  {/* Icon Selection Button */}
-                  <div className="relative">
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Icon
-                    </label>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setShowIconPicker(!showIconPicker)
-                        setShowColorPicker(false)
-                      }}
-                      className="w-full flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                    >
-                      {(() => {
-                        const IconComponent = iconMap[newListIcon] || Heart
-                        return (
-                          <div className={`w-6 h-6 ${colorMap[newListColor] || gradientMap[newListColor]} rounded-lg flex items-center justify-center`}>
-                            <IconComponent className="w-3 h-3 text-white" />
-                          </div>
-                        )
-                      })()}
-                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {newListIcon}
-                      </span>
-                      <div className="ml-auto">
-                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                        </svg>
-                      </div>
-                    </button>
-
-                    {/* Icon Picker Popup */}
-                    {showIconPicker && (
-                      <div className="absolute bottom-full left-0 right-0 mb-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-xl z-50">
-                        <div className="flex items-center justify-between mb-3">
-                          <h4 className="text-sm font-medium text-gray-900 dark:text-white">Choose Icon</h4>
-                          <button
-                            type="button"
-                            onClick={() => setShowIconPicker(false)}
-                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                          >
-                            <X size={16} />
-                          </button>
-                        </div>
-                        
-                        <div className="flex items-center justify-center mb-4">
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const iconNames = Object.keys(iconMap)
-                              const currentIndex = iconNames.indexOf(newListIcon)
-                              const prevIndex = currentIndex > 0 ? currentIndex - 1 : iconNames.length - 1
-                              setNewListIcon(iconNames[prevIndex])
-                            }}
-                            className="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                          >
-                            <svg className="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-                            </svg>
-                          </button>
-                          
-                          <div className="mx-6 flex items-center justify-center">
-                            {(() => {
-                              const IconComponent = iconMap[newListIcon] || Heart
-                              return (
-                                <div className={`w-20 h-20 ${colorMap[newListColor] || gradientMap[newListColor]} rounded-xl flex items-center justify-center shadow-lg`}>
-                                  <IconComponent className="w-10 h-10 text-white" />
-                                </div>
-                              )
-                            })()}
-                          </div>
-                          
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const iconNames = Object.keys(iconMap)
-                              const currentIndex = iconNames.indexOf(newListIcon)
-                              const nextIndex = currentIndex < iconNames.length - 1 ? currentIndex + 1 : 0
-                              setNewListIcon(iconNames[nextIndex])
-                            }}
-                            className="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                          >
-                            <svg className="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                            </svg>
-                          </button>
-                        </div>
-                        
-                        <div className="text-center mb-4">
-                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
-                            {newListIcon}
-                          </p>
-                        </div>
-                        
-                        <div className="flex justify-center">
-                          <button
-                            type="button"
-                            onClick={() => setShowIconPicker(false)}
-                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
-                          >
-                            Select Icon
-                          </button>
-                        </div>
-                      </div>
-                    )}
-                  </div>
+                  {/* Removed Icon Selection Button */}
                 </div>
 
                 <div className="flex gap-3 pt-4">

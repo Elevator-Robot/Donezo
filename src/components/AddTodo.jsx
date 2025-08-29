@@ -4,7 +4,6 @@ import { X } from 'lucide-react'
 
 function AddTodo({ onAdd, onClose, lists, activeList }) {
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
   const [listId, setListId] = useState(activeList)
   const [priority, setPriority] = useState('')
 
@@ -21,7 +20,6 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
       // Debug logging
       console.log('Adding task:', {
         title: title.trim(),
-        description: description.trim(),
         listId,
         listName: currentList?.name || 'Unknown',
         priority: priority || null
@@ -29,7 +27,6 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
       
       onAdd({
         title: title.trim(),
-        description: description.trim(),
         listId,
         listName: currentList?.name || 'Unknown',
         priority: priority || null
@@ -37,7 +34,6 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
       
       // Clear form
       setTitle('')
-      setDescription('')
       setPriority('')
     }
   }
@@ -82,19 +78,6 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
               className="input-field"
               required
               autoFocus
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add more details..."
-              rows={3}
-              className="input-field resize-none"
             />
           </div>
 

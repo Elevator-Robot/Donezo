@@ -214,11 +214,13 @@ function App() {
   }
 
   const addList = (list) => {
+    console.log('Adding new list:', list)
     const newList = {
       ...list,
       id: Date.now().toString(),
       type: list.type || 'task'
     }
+    console.log('Final list object:', newList)
     setLists(prev => [...prev, newList])
   }
 
@@ -292,9 +294,15 @@ function App() {
 
   const handleAddButtonClick = () => {
     const currentList = lists.find(list => list.id === activeList)
+    console.log('Current list:', currentList)
+    console.log('Current list type:', currentList?.type)
+    console.log('Active list ID:', activeList)
+    
     if (currentList?.type === 'grocery' || currentList?.type === 'item') {
+      console.log('Opening AddGroceryItem modal')
       setShowAddGrocery(true)
     } else {
+      console.log('Opening AddTodo modal')
       setShowAddTodo(true)
     }
   }

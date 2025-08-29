@@ -152,38 +152,26 @@ function TodoList({ todos, onToggle, onDelete }) {
           >
             <div className="flex items-start gap-3">
               {/* Checkbox */}
-              <motion.button
+              <button
                 onClick={(e) => {
                   onToggle(todo.id)
                   if (!todo.completed) {
                     createCompletionParticles(e, todo)
                   }
                 }}
-                className={`flex-shrink-0 w-6 h-6 rounded-full border-2 transition-all duration-300 ${
+                className={`flex-shrink-0 w-4 h-4 rounded-full border transition-all duration-200 ${
                   todo.completed
-                    ? 'bg-green-500 border-green-500'
-                    : 'border-gray-300 dark:border-gray-600 hover:border-green-400 dark:hover:border-green-400'
+                    ? 'border-teal-500 [data-theme="cyberpunk"]:border-[#00ff00] [data-theme="cyberpunk"]:animate-[cyberpunkPulse_2s_ease-in-out_infinite]'
+                    : 'border-gray-300 dark:border-gray-600 hover:border-teal-400 dark:hover:border-teal-400 [data-theme="cyberpunk"]:hover:border-[#00ff00]'
                 }`}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-              >
-                {todo.completed && (
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <CheckCircle className="w-5 h-5 text-white" />
-                  </motion.div>
-                )}
-              </motion.button>
+              />
 
               {/* Task Content */}
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <motion.h3
-                      className={`font-medium text-gray-900 dark:text-white ${
+                      className={`font-medium text-gray-600 dark:text-gray-400 ${
                         todo.completed ? 'line-through text-gray-500 dark:text-gray-400' : ''
                       }`}
                       initial={false}
@@ -240,7 +228,7 @@ function TodoList({ todos, onToggle, onDelete }) {
 
                       {/* Reminders */}
                       {todo.reminders && todo.reminders.length > 0 && (
-                        <div className="flex items-center gap-1 text-xs text-purple-600 dark:text-purple-400">
+                        <div className="flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400">
                           <Clock className="w-3 h-3" />
                           <span>{todo.reminders.length} reminder{todo.reminders.length > 1 ? 's' : ''}</span>
                         </div>

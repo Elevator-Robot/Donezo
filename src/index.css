@@ -931,14 +931,12 @@ body[data-theme="cyberpunk"] {
 
 @keyframes gentleBorder {
   0% {
-    transform: rotate(0deg);
     opacity: 0.3;
   }
   50% {
     opacity: 0.5;
   }
   100% {
-    transform: rotate(360deg);
     opacity: 0.3;
   }
 }
@@ -973,33 +971,31 @@ body[data-theme="cyberpunk"] {
 /* Holographic Animation Keyframes */
 @keyframes hologramFloat {
   0%, 100% {
-    transform: translateY(0px) rotateX(0deg);
+    transform: translateY(0px);
     box-shadow: 0 0 15px rgba(0, 255, 0, 0.3);
   }
   25% {
-    transform: translateY(-3px) rotateX(1deg);
+    transform: translateY(-3px);
     box-shadow: 0 3px 20px rgba(0, 255, 0, 0.4);
   }
   50% {
-    transform: translateY(-5px) rotateX(2deg);
+    transform: translateY(-5px);
     box-shadow: 0 5px 25px rgba(0, 255, 0, 0.5);
   }
   75% {
-    transform: translateY(-3px) rotateX(1deg);
+    transform: translateY(-3px);
     box-shadow: 0 3px 20px rgba(0, 255, 0, 0.4);
   }
 }
 
 @keyframes hologramBorder {
   0% {
-    transform: rotate(0deg);
     opacity: 0.5;
   }
   50% {
     opacity: 0.8;
   }
   100% {
-    transform: rotate(360deg);
     opacity: 0.5;
   }
 }
@@ -1299,19 +1295,19 @@ body[data-theme="cyberpunk"] {
 @keyframes hologramFloat {
   0%, 100% {
     opacity: 0.3;
-    transform: scale(1) rotate(0deg);
+    transform: scale(1);
   }
   25% {
     opacity: 0.8;
-    transform: scale(1.2) rotate(90deg);
+    transform: scale(1.2);
   }
   50% {
     opacity: 1;
-    transform: scale(1.5) rotate(180deg);
+    transform: scale(1.5);
   }
   75% {
     opacity: 0.6;
-    transform: scale(1.1) rotate(270deg);
+    transform: scale(1.1);
   }
 }
 
@@ -1466,7 +1462,7 @@ body[data-theme="cyberpunk"] {
   }
   50% {
     opacity: 0.6;
-    transform: scale(1.05);
+    transform: scale(1.02);
   }
 }
 
@@ -1476,5 +1472,16 @@ body[data-theme="cyberpunk"] {
   }
   100% {
     filter: drop-shadow(0 0 15px #00ffff) drop-shadow(0 0 25px #00ffff) drop-shadow(0 0 35px #00ffff);
+  }
+}
+
+@keyframes cyberpunkPulse {
+  0%, 100% {
+    box-shadow: 0 0 5px rgba(0, 255, 0, 0.5);
+    transform: scale(1);
+  }
+  50% {
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.8), 0 0 25px rgba(0, 255, 0, 0.4);
+    transform: scale(1.1);
   }
 }
