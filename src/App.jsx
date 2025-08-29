@@ -292,7 +292,7 @@ function App() {
 
   const handleAddButtonClick = () => {
     const currentList = lists.find(list => list.id === activeList)
-    if (currentList?.type === 'grocery') {
+    if (currentList?.type === 'grocery' || currentList?.type === 'item') {
       setShowAddGrocery(true)
     } else {
       setShowAddTodo(true)
@@ -458,15 +458,15 @@ function App() {
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
                   >
-                    {currentTodos.filter(t => !t.completed).length} {currentList?.type === 'grocery' ? 'items' : 'tasks'} remaining
+                    {currentTodos.filter(t => !t.completed).length} {currentList?.type === 'grocery' || currentList?.type === 'item' ? 'items' : 'tasks'} remaining
                   </motion.p>
                 </div>
               </div>
               
               <div className="flex items-center gap-4">
                 <motion.button
-                  whileHover={{ scale: 1.05, rotate: 5 }}
-                  whileTap={{ scale: 0.95, rotate: -5 }}
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95, y: 0 }}
                   onClick={toggleTheme}
                   className="p-2 rounded-xl border border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-300"
                   title={getThemeTitle()}
@@ -499,13 +499,13 @@ function App() {
                   onClick={handleAddButtonClick}
                   className="btn-primary flex items-center gap-2 px-4 py-2"
                 >
-                  {currentList?.type === 'grocery' ? (
+                  {currentList?.type === 'grocery' || currentList?.type === 'item' ? (
                     <ShoppingCart size={18} />
                   ) : (
                     <Plus size={18} />
                   )}
                   <span className="hidden sm:inline font-semibold">
-                    {currentList?.type === 'grocery' ? 'Add Item' : 'Add Task'}
+                    {currentList?.type === 'grocery' || currentList?.type === 'item' ? 'Add Item' : 'Add Task'}
                   </span>
                 </motion.button>
               </div>

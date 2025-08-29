@@ -70,13 +70,7 @@ const colorMap = {
   rose: 'bg-rose-500',
   cyan: 'bg-cyan-500',
   amber: 'bg-amber-500',
-  lime: 'bg-lime-500',
-  sage: 'bg-gray-500',
-  moss: 'bg-gray-600',
-  earth: 'bg-amber-700',
-  bark: 'bg-amber-800',
-  soil: 'bg-amber-900',
-  stone: 'bg-gray-400'
+  lime: 'bg-lime-500'
 }
 
 const gradientMap = {
@@ -95,6 +89,9 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
   const [newListName, setNewListName] = useState('')
   const [newListColor, setNewListColor] = useState('teal')
   const [newListIcon, setNewListIcon] = useState('Heart')
+  const [newListType, setNewListType] = useState('task') // 'task' or 'item'
+  const [showColorPicker, setShowColorPicker] = useState(false)
+  const [showIconPicker, setShowIconPicker] = useState(false)
   const [touchStart, setTouchStart] = useState(null)
 
   const handleTouchStart = (e) => {
@@ -121,11 +118,15 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
       addList({
         name: newListName,
         color: newListColor,
-        icon: newListIcon
+        icon: newListIcon,
+        type: newListType
       })
       setNewListName('')
       setNewListColor('teal')
       setNewListIcon('Heart')
+      setNewListType('task')
+      setShowColorPicker(false)
+      setShowIconPicker(false)
       setShowAddList(false)
     }
   }
@@ -264,7 +265,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 w-96 max-w-[90vw]"
+              className="bg-white dark:bg-gray-800 rounded-xl p-6 w-96 max-w-[90vw] relative"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Create New List</h2>
@@ -285,75 +286,270 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Color
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    List Type
                   </label>
-                  <div className="space-y-2">
-                    {/* First row - Solid colors */}
-                    <div className="grid grid-cols-7 gap-2">
-                      {Object.entries(colorMap).map(([color, className]) => (
-                        <button
-                          key={color}
-                          onClick={() => setNewListColor(color)}
-                          className={`w-10 h-10 rounded-lg ${className} ${
-                            newListColor === color ? 'ring-2 ring-gray-400 ring-offset-2' : ''
-                          } hover:scale-110 transition-transform`}
-                          title={color}
-                        />
-                      ))}
-                    </div>
-                    {/* Second row - Gradient colors */}
-                    <div className="grid grid-cols-8 gap-2">
-                      {Object.entries(gradientMap).map(([gradient, className]) => (
-                        <button
-                          key={gradient}
-                          onClick={() => setNewListColor(gradient)}
-                          className={`w-10 h-10 rounded-lg ${className} ${
-                            newListColor === gradient ? 'ring-2 ring-gray-400 ring-offset-2' : ''
-                          } hover:scale-110 transition-transform`}
-                          title={gradient}
-                        />
-                      ))}
-                    </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setNewListType('task')}
+                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                        newListType === 'task'
+                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
+                          <CheckCircle className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Task List</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">With priorities & dates</p>
+                        </div>
+                      </div>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => setNewListType('item')}
+                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                        newListType === 'item'
+                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
+                          <ShoppingCart className="w-4 h-4 text-white" />
+                        </div>
+                        <div className="text-left">
+                          <h3 className="font-semibold text-gray-900 dark:text-white">Item List</h3>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Simple items only</p>
+                        </div>
+                      </div>
+                    </button>
                   </div>
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Icon
-                  </label>
-                  <div className="grid grid-cols-7 gap-2">
-                    {Object.entries(iconMap).map(([iconName, IconComp]) => (
-                      <button
-                        key={iconName}
-                        onClick={() => setNewListIcon(iconName)}
-                        className={`w-10 h-10 rounded-lg border-2 ${
-                          newListIcon === iconName 
-                            ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20' 
-                            : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                        } flex items-center justify-center transition-all hover:scale-105`}
-                        title={iconName}
-                      >
-                        <IconComp className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                      </button>
-                    ))}
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Color Selection Button */}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Color
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowColorPicker(!showColorPicker)
+                        setShowIconPicker(false)
+                      }}
+                      className="w-full flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      <div className={`w-6 h-6 rounded-full ${colorMap[newListColor] || gradientMap[newListColor]} border-2 border-gray-200 dark:border-gray-600`}></div>
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+                        {newListColor}
+                      </span>
+                      <div className="ml-auto">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+
+                    {/* Color Picker Popup */}
+                    {showColorPicker && (
+                      <div className="absolute bottom-full left-0 right-0 mb-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-xl z-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-gray-900 dark:text-white">Choose Color</h4>
+                          <button
+                            type="button"
+                            onClick={() => setShowColorPicker(false)}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        
+                        <div className="flex items-center justify-center mb-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allColors = [...Object.keys(colorMap), ...Object.keys(gradientMap)]
+                              const currentIndex = allColors.indexOf(newListColor)
+                              const prevIndex = currentIndex > 0 ? currentIndex - 1 : allColors.length - 1
+                              setNewListColor(allColors[prevIndex])
+                            }}
+                            className="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <svg className="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          
+                          <div className="mx-6 flex items-center justify-center">
+                            <div className={`w-20 h-20 rounded-xl shadow-lg ${colorMap[newListColor] || gradientMap[newListColor]} border-2 border-gray-200 dark:border-gray-600`}></div>
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const allColors = [...Object.keys(colorMap), ...Object.keys(gradientMap)]
+                              const currentIndex = allColors.indexOf(newListColor)
+                              const nextIndex = currentIndex < allColors.length - 1 ? currentIndex + 1 : 0
+                              setNewListColor(allColors[nextIndex])
+                            }}
+                            className="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <svg className="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        <div className="text-center mb-4">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+                            {newListColor}
+                          </p>
+                        </div>
+                        
+                        <div className="flex justify-center">
+                          <button
+                            type="button"
+                            onClick={() => setShowColorPicker(false)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                          >
+                            Select Color
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Icon Selection Button */}
+                  <div className="relative">
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Icon
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowIconPicker(!showIconPicker)
+                        setShowColorPicker(false)
+                      }}
+                      className="w-full flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    >
+                      {(() => {
+                        const IconComponent = iconMap[newListIcon] || Heart
+                        return (
+                          <div className={`w-6 h-6 ${colorMap[newListColor] || gradientMap[newListColor]} rounded-lg flex items-center justify-center`}>
+                            <IconComponent className="w-3 h-3 text-white" />
+                          </div>
+                        )
+                      })()}
+                      <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                        {newListIcon}
+                      </span>
+                      <div className="ml-auto">
+                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </div>
+                    </button>
+
+                    {/* Icon Picker Popup */}
+                    {showIconPicker && (
+                      <div className="absolute bottom-full left-0 right-0 mb-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-xl z-50">
+                        <div className="flex items-center justify-between mb-3">
+                          <h4 className="text-sm font-medium text-gray-900 dark:text-white">Choose Icon</h4>
+                          <button
+                            type="button"
+                            onClick={() => setShowIconPicker(false)}
+                            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                          >
+                            <X size={16} />
+                          </button>
+                        </div>
+                        
+                        <div className="flex items-center justify-center mb-4">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const iconNames = Object.keys(iconMap)
+                              const currentIndex = iconNames.indexOf(newListIcon)
+                              const prevIndex = currentIndex > 0 ? currentIndex - 1 : iconNames.length - 1
+                              setNewListIcon(iconNames[prevIndex])
+                            }}
+                            className="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <svg className="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                          </button>
+                          
+                          <div className="mx-6 flex items-center justify-center">
+                            {(() => {
+                              const IconComponent = iconMap[newListIcon] || Heart
+                              return (
+                                <div className={`w-20 h-20 ${colorMap[newListColor] || gradientMap[newListColor]} rounded-xl flex items-center justify-center shadow-lg`}>
+                                  <IconComponent className="w-10 h-10 text-white" />
+                                </div>
+                              )
+                            })()}
+                          </div>
+                          
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const iconNames = Object.keys(iconMap)
+                              const currentIndex = iconNames.indexOf(newListIcon)
+                              const nextIndex = currentIndex < iconNames.length - 1 ? currentIndex + 1 : 0
+                              setNewListIcon(iconNames[nextIndex])
+                            }}
+                            className="p-3 rounded-lg bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                          >
+                            <svg className="w-6 h-6 text-gray-700 dark:text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </button>
+                        </div>
+                        
+                        <div className="text-center mb-4">
+                          <p className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
+                            {newListIcon}
+                          </p>
+                        </div>
+                        
+                        <div className="flex justify-center">
+                          <button
+                            type="button"
+                            onClick={() => setShowIconPicker(false)}
+                            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors text-sm font-medium"
+                          >
+                            Select Icon
+                          </button>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </div>
-              </div>
 
-              <div className="flex gap-3 mt-6">
-                <button
-                  onClick={() => setShowAddList(false)}
-                  className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleAddList}
-                  className="flex-1 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
-                >
-                  Create List
-                </button>
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={() => setShowAddList(false)}
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleAddList}
+                    className="flex-1 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+                  >
+                    Create List
+                  </button>
+                </div>
               </div>
             </motion.div>
           </motion.div>

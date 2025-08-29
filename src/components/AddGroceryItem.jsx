@@ -8,6 +8,9 @@ function AddGroceryItem({ onAdd, onClose, lists, activeList }) {
   const [category, setCategory] = useState('general')
   const [listId, setListId] = useState(activeList)
 
+  const currentList = lists.find(list => list.id === listId)
+  const isGroceryList = currentList?.type === 'grocery'
+
   const categories = [
     { value: 'general', label: 'General', icon: '🛒' },
     { value: 'produce', label: 'Produce', icon: '🥬' },
@@ -50,9 +53,12 @@ function AddGroceryItem({ onAdd, onClose, lists, activeList }) {
     setCategory('general')
   }
 
-  const quickItems = [
+  const quickItems = isGroceryList ? [
     'Milk', 'Bread', 'Eggs', 'Bananas', 'Apples', 'Chicken', 'Rice', 'Pasta',
     'Tomatoes', 'Onions', 'Cheese', 'Yogurt', 'Butter', 'Potatoes', 'Carrots'
+  ] : [
+    'Item 1', 'Item 2', 'Item 3', 'Item 4', 'Item 5', 'Item 6', 'Item 7', 'Item 8',
+    'Item 9', 'Item 10', 'Item 11', 'Item 12', 'Item 13', 'Item 14', 'Item 15'
   ]
 
   return (
@@ -75,7 +81,9 @@ function AddGroceryItem({ onAdd, onClose, lists, activeList }) {
             <div className="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center">
               <ShoppingCart className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
-            <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add Grocery Item</h2>
+            <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+              {isGroceryList ? 'Add Grocery Item' : 'Add Item'}
+            </h2>
           </div>
           <button
             onClick={onClose}
@@ -88,13 +96,13 @@ function AddGroceryItem({ onAdd, onClose, lists, activeList }) {
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Item Name *
+              {isGroceryList ? 'Item Name' : 'Item'} *
             </label>
             <input
               type="text"
               value={itemName}
               onChange={(e) => setItemName(e.target.value)}
-              placeholder="What do you need to buy?"
+              placeholder={isGroceryList ? "What do you need to buy?" : "What item do you need?"}
               className="input-field"
               required
               autoFocus
@@ -144,7 +152,7 @@ function AddGroceryItem({ onAdd, onClose, lists, activeList }) {
               onChange={(e) => setListId(e.target.value)}
               className="input-field"
             >
-              {lists.map((list) => (
+              {lists.filter(list => list.type === 'grocery' || list.type === 'item').map((list) => (
                 <option key={list.id} value={list.id}>
                   {list.name}
                 </option>
@@ -155,7 +163,7 @@ function AddGroceryItem({ onAdd, onClose, lists, activeList }) {
           {/* Quick Add Items */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Quick Add Common Items
+              Quick Add Common {isGroceryList ? 'Items' : 'Items'}
             </label>
             <div className="flex flex-wrap gap-2">
               {quickItems.map((item) => (
