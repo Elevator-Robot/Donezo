@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+gitimport React, { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { X, Type, Heart } from 'lucide-react'
 
