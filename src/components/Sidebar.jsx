@@ -264,7 +264,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white dark:bg-gray-800 rounded-xl p-6 w-96 max-w-[90vw] relative"
+              className="bg-white dark:bg-gray-800 rounded-xl p-6 w-96 max-w-[90vw] relative add-list-modal"
               onClick={(e) => e.stopPropagation()}
             >
               <h2 className="text-xl font-bold text-gray-800 dark:text-white mb-4">Create New List</h2>
@@ -292,9 +292,9 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                     <button
                       type="button"
                       onClick={() => setNewListType('task')}
-                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                      className={`p-4 rounded-lg border-2 transition-all duration-200 list-type-button ${
                         newListType === 'task'
-                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 selected'
                           : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                       }`}
                     >
@@ -312,9 +312,9 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                     <button
                       type="button"
                       onClick={() => setNewListType('item')}
-                      className={`p-4 rounded-lg border-2 transition-all duration-200 ${
+                      className={`p-4 rounded-lg border-2 transition-all duration-200 list-type-button ${
                         newListType === 'item'
-                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 selected'
                           : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                       }`}
                     >
@@ -340,7 +340,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                     <button
                       type="button"
                       onClick={() => setShowColorPicker(!showColorPicker)}
-                      className="w-full flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                      className="w-full flex items-center gap-3 p-3 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors color-selector-button"
                     >
                       <div className={`w-6 h-6 rounded-full ${colorMap[newListColor] || gradientMap[newListColor]} border-2 border-gray-200 dark:border-gray-600`}></div>
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300 capitalize">
@@ -355,7 +355,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
 
                     {/* Color Picker Popup */}
                     {showColorPicker && (
-                      <div className="absolute bottom-full left-0 right-0 mb-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-xl z-50">
+                      <div className="absolute bottom-full left-0 right-0 mb-2 p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600 shadow-xl z-50 color-picker-popup">
                         <div className="flex items-center justify-between mb-3">
                           <h4 className="text-sm font-medium text-gray-900 dark:text-white">Choose Color</h4>
                           <button
@@ -429,14 +429,14 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                   <button
                     type="button"
                     onClick={() => setShowAddList(false)}
-                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                    className="flex-1 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors cancel-button"
                   >
                     Cancel
                   </button>
                   <button
                     type="button"
                     onClick={handleAddList}
-                    className="flex-1 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors"
+                    className="flex-1 px-4 py-2 bg-teal-500 text-white rounded-lg hover:bg-teal-600 transition-colors create-list-button"
                   >
                     Create List
                   </button>

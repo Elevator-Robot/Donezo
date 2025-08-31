@@ -1485,3 +1485,138 @@ body[data-theme="cyberpunk"] {
     transform: scale(1.1);
   }
 }
+
+/* Cyberpunk Heart Checkbox */
+[data-theme="cyberpunk"] .cyberpunk-heart-completed {
+  color: #00ff00 !important;
+}
+
+/* Cyberpunk Add List Modal */
+[data-theme="cyberpunk"] .add-list-modal {
+  background: rgba(10, 10, 10, 0.95) !important;
+  border: 2px solid #00ff00 !important;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.3), inset 0 0 0 1px rgba(0, 255, 0, 0.1) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+[data-theme="cyberpunk"] .add-list-modal h2 {
+  color: #00ff00 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 0, 0.5) !important;
+}
+
+[data-theme="cyberpunk"] .add-list-modal label {
+  color: #00ff00 !important;
+}
+
+[data-theme="cyberpunk"] .add-list-modal input {
+  background: rgba(26, 26, 26, 0.9) !important;
+  border: 1px solid #00ff00 !important;
+  color: #00ff00 !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+[data-theme="cyberpunk"] .add-list-modal input:focus {
+  border-color: #00ff41 !important;
+  box-shadow: 0 0 15px rgba(0, 255, 65, 0.5) !important;
+  background: rgba(42, 42, 42, 0.95) !important;
+}
+
+[data-theme="cyberpunk"] .add-list-modal input::placeholder {
+  color: rgba(0, 255, 0, 0.5) !important;
+}
+
+[data-theme="cyberpunk"] .list-type-button {
+  background: rgba(26, 26, 26, 0.6) !important;
+  border: 1px solid rgba(0, 255, 0, 0.2) !important;
+  box-shadow: 0 0 8px rgba(0, 255, 0, 0.1) !important;
+}
+
+[data-theme="cyberpunk"] .list-type-button:hover {
+  background: rgba(42, 42, 42, 0.7) !important;
+  box-shadow: 0 0 12px rgba(0, 255, 0, 0.2) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+}
+
+[data-theme="cyberpunk"] .list-type-button.selected {
+  background: rgba(0, 255, 0, 0.08) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 0, 0.15) !important;
+}
+
+[data-theme="cyberpunk"] .list-type-button h3 {
+  color: #00ff00 !important;
+}
+
+[data-theme="cyberpunk"] .list-type-button p {
+  color: rgba(0, 255, 0, 0.7) !important;
+}
+
+[data-theme="cyberpunk"] .color-selector-button {
+  background: rgba(26, 26, 26, 0.6) !important;
+  border: 1px solid rgba(0, 255, 0, 0.2) !important;
+  color: #00ff00 !important;
+}
+
+[data-theme="cyberpunk"] .color-selector-button:hover {
+  background: rgba(42, 42, 42, 0.7) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+}
+
+[data-theme="cyberpunk"] .color-picker-popup {
+  background: rgba(10, 10, 10, 0.95) !important;
+  border: 2px solid #00ff00 !important;
+  box-shadow: 0 0 30px rgba(0, 255, 0, 0.3) !important;
+  backdrop-filter: blur(10px) !important;
+}
+
+[data-theme="cyberpunk"] .color-picker-popup h4 {
+  color: #00ff00 !important;
+}
+
+[data-theme="cyberpunk"] .color-picker-popup button {
+  background: rgba(26, 26, 26, 0.6) !important;
+  color: #00ff00 !important;
+  border: 1px solid rgba(0, 255, 0, 0.2) !important;
+}
+
+[data-theme="cyberpunk"] .color-picker-popup button:hover {
+  background: rgba(42, 42, 42, 0.7) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+}
+
+[data-theme="cyberpunk"] .color-picker-popup p {
+  color: #00ff00 !important;
+}
+
+[data-theme="cyberpunk"] .select-color-button {
+  background: linear-gradient(135deg, #00ff00 0%, #00ff41 100%) !important;
+  color: #0a0a0a !important;
+  font-weight: bold !important;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.5) !important;
+}
+
+[data-theme="cyberpunk"] .select-color-button:hover {
+  box-shadow: 0 0 25px rgba(0, 255, 0, 0.7) !important;
+}
+
+[data-theme="cyberpunk"] .cancel-button {
+  background: rgba(26, 26, 26, 0.6) !important;
+  border: 1px solid rgba(0, 255, 0, 0.2) !important;
+  color: #00ff00 !important;
+}
+
+[data-theme="cyberpunk"] .cancel-button:hover {
+  background: rgba(42, 42, 42, 0.7) !important;
+  border-color: rgba(0, 255, 0, 0.3) !important;
+}
+
+[data-theme="cyberpunk"] .create-list-button {
+  background: linear-gradient(135deg, #00ff00 0%, #00ff41 100%) !important;
+  color: #0a0a0a !important;
+  font-weight: bold !important;
+  box-shadow: 0 0 20px rgba(0, 255, 0, 0.5) !important;
+}
+
+[data-theme="cyberpunk"] .create-list-button:hover {
+  box-shadow: 0 0 25px rgba(0, 255, 0, 0.7) !important;
+}

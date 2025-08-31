@@ -161,7 +161,7 @@ function TodoList({ todos, onToggle, onDelete }) {
                 }}
                 className={`flex-shrink-0 w-5 h-5 transition-all duration-300 hover:scale-110 ${
                   todo.completed
-                    ? 'text-teal-500 [data-theme="cyberpunk"]:text-[#00ff00] [data-theme="cyberpunk"]:animate-[cyberpunkPulse_2s_ease-in-out_infinite]'
+                    ? 'text-teal-500 cyberpunk-heart-completed [data-theme="cyberpunk"]:animate-[cyberpunkPulse_2s_ease-in-out_infinite]'
                     : 'text-gray-300 dark:text-gray-600 hover:text-teal-400 dark:hover:text-teal-400 [data-theme="cyberpunk"]:hover:text-[#00ff00]'
                 }`}
               >
