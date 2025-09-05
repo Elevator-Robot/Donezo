@@ -23,7 +23,7 @@ import {
   Plane,
   Gift,
   ShoppingBag,
-  ShoppingCart,
+
   Activity,
   Book,
   User,
@@ -45,7 +45,7 @@ const iconMap = {
   Plane: Plane,
   Gift: Gift,
   ShoppingBag: ShoppingBag,
-  ShoppingCart: ShoppingCart,
+
   Activity: Activity,
   Home: Home,
   Calendar: Calendar,
@@ -88,7 +88,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
   const [showAddList, setShowAddList] = useState(false)
   const [newListName, setNewListName] = useState('')
   const [newListColor, setNewListColor] = useState('teal')
-  const [newListType, setNewListType] = useState('task') // 'task' or 'item'
+
   const [showColorPicker, setShowColorPicker] = useState(false)
   const [touchStart, setTouchStart] = useState(null)
 
@@ -117,16 +117,12 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
         name: newListName,
         color: newListColor,
         icon: 'Heart', // Default icon
-        type: newListType
+        type: 'task'
       }
-      
-      console.log('Creating new list with type:', newListType)
-      console.log('New list object:', newList)
       
       addList(newList)
       setNewListName('')
       setNewListColor('teal')
-      setNewListType('task')
       setShowColorPicker(false)
       setShowAddList(false)
     }
@@ -284,52 +280,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                    List Type
-                  </label>
-                  <div className="grid grid-cols-2 gap-3">
-                    <button
-                      type="button"
-                      onClick={() => setNewListType('task')}
-                      className={`p-4 rounded-lg border-2 transition-all duration-200 list-type-button ${
-                        newListType === 'task'
-                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 selected'
-                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-teal-500 rounded-lg flex items-center justify-center">
-                          <CheckCircle className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">Task List</h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">With priorities & dates</p>
-                        </div>
-                      </div>
-                    </button>
 
-                    <button
-                      type="button"
-                      onClick={() => setNewListType('item')}
-                      className={`p-4 rounded-lg border-2 transition-all duration-200 list-type-button ${
-                        newListType === 'item'
-                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20 selected'
-                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-blue-500 rounded-lg flex items-center justify-center">
-                          <ShoppingCart className="w-4 h-4 text-white" />
-                        </div>
-                        <div className="text-left">
-                          <h3 className="font-semibold text-gray-900 dark:text-white">Item List</h3>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Simple items only</p>
-                        </div>
-                      </div>
-                    </button>
-                  </div>
-                </div>
 
                 <div className="grid grid-cols-1 gap-4">
                   {/* Color Selection Button */}

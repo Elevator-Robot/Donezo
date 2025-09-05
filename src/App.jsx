@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import Sidebar from './components/Sidebar'
 import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
-import AddGroceryItem from './components/AddGroceryItem'
+
 import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
 import Auth from './components/Auth'
@@ -40,7 +40,6 @@ function App() {
   
   const [activeList, setActiveList] = useState('1')
   const [showAddTodo, setShowAddTodo] = useState(false)
-  const [showAddGrocery, setShowAddGrocery] = useState(false)
   const [showRecurringTask, setShowRecurringTask] = useState(false)
   const [theme, setTheme] = useState(() => {
     if (!currentUser) return 'light'
@@ -76,6 +75,10 @@ function App() {
 
   // Handle logout
   const handleLogout = () => {
+    // Clear current user from localStorage
+    localStorage.removeItem('donezo-current-user')
+    
+    // Reset all state
     setCurrentUser(null)
     setTodos([])
     setLists([])
@@ -83,7 +86,6 @@ function App() {
     setSettings({ font: 'Rock Salt' })
     setActiveList('1')
     setShowAddTodo(false)
-    setShowAddGrocery(false)
     setShowRecurringTask(false)
     setSidebarOpen(false)
     setShowSettings(false)
@@ -117,6 +119,13 @@ function App() {
     }
   }, [theme, currentUser])
 
+  // Save current user to localStorage
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem('donezo-current-user', JSON.stringify(currentUser))
+    }
+  }, [currentUser])
+
   // Save settings to localStorage
   useEffect(() => {
     if (currentUser) {
@@ -129,6 +138,15 @@ function App() {
     // Apply font
     document.documentElement.style.setProperty('--app-font', `'${settings.font}'`)
   }, [settings])
+
+  // Apply theme when currentUser changes (for logout)
+  useEffect(() => {
+    if (!currentUser) {
+      // Reset theme to light when logged out
+      document.documentElement.setAttribute('data-theme', 'light')
+      document.documentElement.classList.remove('dark')
+    }
+  }, [currentUser])
 
   const addTodo = (todo) => {
     // Debug logging
@@ -214,13 +232,11 @@ function App() {
   }
 
   const addList = (list) => {
-    console.log('Adding new list:', list)
     const newList = {
       ...list,
       id: Date.now().toString(),
-      type: list.type || 'task'
+      type: 'task'
     }
-    console.log('Final list object:', newList)
     setLists(prev => [...prev, newList])
   }
 
@@ -293,18 +309,7 @@ function App() {
   }
 
   const handleAddButtonClick = () => {
-    const currentList = lists.find(list => list.id === activeList)
-    console.log('Current list:', currentList)
-    console.log('Current list type:', currentList?.type)
-    console.log('Active list ID:', activeList)
-    
-    if (currentList?.type === 'grocery' || currentList?.type === 'item') {
-      console.log('Opening AddGroceryItem modal')
-      setShowAddGrocery(true)
-    } else {
-      console.log('Opening AddTodo modal')
-      setShowAddTodo(true)
-    }
+    setShowAddTodo(true)
   }
 
   const currentTodos = todos.filter(todo => todo.listId === activeList)
@@ -466,7 +471,7 @@ function App() {
                     animate={{ x: 0, opacity: 1 }}
                     transition={{ delay: 0.3 }}
                   >
-                    {currentTodos.filter(t => !t.completed).length} {currentList?.type === 'grocery' || currentList?.type === 'item' ? 'items' : 'tasks'} remaining
+                    {currentTodos.filter(t => !t.completed).length} tasks remaining
                   </motion.p>
                 </div>
               </div>
@@ -507,13 +512,9 @@ function App() {
                   onClick={handleAddButtonClick}
                   className="btn-primary flex items-center gap-2 px-4 py-2"
                 >
-                  {currentList?.type === 'grocery' || currentList?.type === 'item' ? (
-                    <ShoppingCart size={18} />
-                  ) : (
-                    <Plus size={18} />
-                  )}
+                  <Plus size={18} />
                   <span className="hidden sm:inline font-semibold">
-                    {currentList?.type === 'grocery' || currentList?.type === 'item' ? 'Add Item' : 'Add Task'}
+                    Add Task
                   </span>
                 </motion.button>
               </div>
@@ -542,18 +543,7 @@ function App() {
           )}
         </AnimatePresence>
 
-        {/* AddGroceryItem Modal */}
-        <AnimatePresence mode="wait">
-          {showAddGrocery && (
-            <AddGroceryItem
-              key="add-grocery"
-              onAdd={addTodo}
-              onClose={() => setShowAddGrocery(false)}
-              lists={lists}
-              activeList={activeList}
-            />
-          )}
-        </AnimatePresence>
+
 
         {/* RecurringTaskModal */}
         <AnimatePresence mode="wait">
@@ -575,6 +565,8 @@ function App() {
           settings={settings}
           onSettingsChange={handleSettingsChange}
         />
+
+
       </div>
     </Router>
   )
