@@ -22,8 +22,8 @@ function TodoList({ todos, onToggle, onDelete }) {
     dragCurrentX.current = e.touches ? e.touches[0].clientX : e.clientX
     const deltaX = dragCurrentX.current - dragStartX.current
     
-    // Only allow left swipes (negative deltaX)
-    if (deltaX < 0) {
+    // Only allow right swipes (positive deltaX)
+    if (deltaX > 0) {
       setSwipeStates(prev => ({ ...prev, [todoId]: { startX: dragStartX.current, currentX: dragCurrentX.current } }))
     }
   }
@@ -33,9 +33,9 @@ function TodoList({ todos, onToggle, onDelete }) {
     setIsDragging(false)
     
     const deltaX = dragCurrentX.current - dragStartX.current
-    const threshold = -100 // Minimum swipe distance to trigger completion
+    const threshold = 100 // Minimum swipe distance to trigger completion (right swipe)
     
-    if (deltaX < threshold) {
+    if (deltaX > threshold) {
       // Trigger completion with particles
       const rect = e.currentTarget.getBoundingClientRect()
       const centerX = rect.left + rect.width / 2
@@ -193,7 +193,7 @@ function TodoList({ todos, onToggle, onDelete }) {
         {todos.map((todo) => {
           const swipeState = swipeStates[todo.id]
           const deltaX = swipeState ? swipeState.currentX - swipeState.startX : 0
-          const isSwipeActive = deltaX < -20
+          const isSwipeActive = deltaX > 20
           
           return (
             <motion.div
@@ -204,7 +204,7 @@ function TodoList({ todos, onToggle, onDelete }) {
                 opacity: 1, 
                 y: 0, 
                 scale: 1,
-                x: Math.max(deltaX, -150) // Limit swipe distance
+                x: Math.min(deltaX, 150) // Limit swipe distance (positive for right swipe)
               }}
               exit={{ opacity: 0, y: -20, scale: 0.95 }}
               transition={{ duration: 0.3 }}
@@ -224,7 +224,7 @@ function TodoList({ todos, onToggle, onDelete }) {
               {/* Swipe completion indicator */}
               {isSwipeActive && (
                 <motion.div
-                  className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-transparent flex items-center justify-end pr-4"
+                  className="absolute inset-0 bg-gradient-to-l from-teal-500/20 to-transparent flex items-center justify-start pl-4"
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2 }}

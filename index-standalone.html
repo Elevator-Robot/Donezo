@@ -1217,11 +1217,11 @@
             left: 0;
             right: 0;
             bottom: 0;
-            background: linear-gradient(to right, rgba(20, 184, 166, 0.2), transparent);
+            background: linear-gradient(to left, rgba(20, 184, 166, 0.2), transparent);
             display: flex;
             align-items: center;
-            justify-content: flex-end;
-            padding-right: 1rem;
+            justify-content: flex-start;
+            padding-left: 1rem;
             opacity: 0;
             transition: opacity 0.2s ease-out;
             pointer-events: none;
@@ -1807,12 +1807,13 @@
             }
         }
 
-        // Swipe handling functions
+        // Simple swipe handling functions
         function handleSwipeStart(e, todoId) {
+            console.log('Swipe start:', todoId);
+            e.preventDefault();
             isSwipeDragging = true;
             touchStartX = e.touches ? e.touches[0].clientX : e.clientX;
             currentSwipeX = touchStartX;
-            swipeStates[todoId] = { startX: touchStartX, currentX: touchStartX };
         }
 
         function handleSwipeMove(e, todoId) {
@@ -1821,10 +1822,19 @@
             currentSwipeX = e.touches ? e.touches[0].clientX : e.clientX;
             const deltaX = currentSwipeX - touchStartX;
             
-            // Only allow left swipes (negative deltaX)
-            if (deltaX < 0) {
-                swipeStates[todoId] = { startX: touchStartX, currentX: currentSwipeX };
-                updateSwipeVisual(todoId, deltaX);
+            // Only allow right swipes (positive deltaX)
+            if (deltaX > 0) {
+                const todoElement = document.querySelector(`[data-todo-id="${todoId}"]`);
+                if (todoElement) {
+                    const maxSwipe = Math.min(deltaX, 150);
+                    todoElement.style.transform = `translateX(${maxSwipe}px)`;
+                    
+                    if (deltaX > 10) {
+                        todoElement.classList.add('swipe-active');
+                    } else {
+                        todoElement.classList.remove('swipe-active');
+                    }
+                }
             }
         }
 
@@ -1833,9 +1843,12 @@
             isSwipeDragging = false;
             
             const deltaX = currentSwipeX - touchStartX;
-            const threshold = -100; // Minimum swipe distance to trigger completion
+            const threshold = 50; // Minimum swipe distance to trigger completion
             
-            if (deltaX < threshold) {
+            console.log('Swipe end:', deltaX, 'threshold:', threshold);
+            
+            if (deltaX > threshold) {
+                console.log('Triggering completion for:', todoId);
                 // Trigger completion
                 const todo = todos.find(t => t.id === todoId);
                 if (todo && !todo.completed) {
@@ -1844,34 +1857,14 @@
                 }
             }
             
-            // Reset swipe state
-            delete swipeStates[todoId];
-            resetSwipeVisual(todoId);
-        }
-
-        function updateSwipeVisual(todoId, deltaX) {
+            // Reset visual state
             const todoElement = document.querySelector(`[data-todo-id="${todoId}"]`);
-            if (!todoElement) return;
-            
-            const isSwipeActive = deltaX < -20;
-            const maxSwipe = Math.max(deltaX, -150);
-            
-            todoElement.style.transform = `translateX(${maxSwipe}px)`;
-            
-            if (isSwipeActive) {
-                todoElement.classList.add('swipe-active');
-            } else {
+            if (todoElement) {
+                todoElement.style.transform = '';
                 todoElement.classList.remove('swipe-active');
             }
         }
 
-        function resetSwipeVisual(todoId) {
-            const todoElement = document.querySelector(`[data-todo-id="${todoId}"]`);
-            if (!todoElement) return;
-            
-            todoElement.style.transform = '';
-            todoElement.classList.remove('swipe-active');
-        }
 
         function createCompletionParticles(event, todo) {
             const rect = event.currentTarget.getBoundingClientRect();
