@@ -7,25 +7,17 @@ import AddTodo from './components/AddTodo'
 
 import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
-import Auth from './components/Auth'
 import { CheckCircle, Clock, Plus, Moon, Sun, Menu, Zap, Bot, ShoppingCart, Repeat } from 'lucide-react'
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 
 function App() {
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('donezo-current-user')
-    return saved ? JSON.parse(saved) : null
-  })
-  
   const [todos, setTodos] = useState(() => {
-    if (!currentUser) return []
-    const saved = localStorage.getItem(`donezo-user-${currentUser.id}-todos`)
+    const saved = localStorage.getItem('donezo-todos')
     return saved ? JSON.parse(saved) : []
   })
   
   const [lists, setLists] = useState(() => {
-    if (!currentUser) return []
-    const saved = localStorage.getItem(`donezo-user-${currentUser.id}-lists`)
+    const saved = localStorage.getItem('donezo-lists')
     return saved ? JSON.parse(saved) : [
       { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
       { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
@@ -42,96 +34,44 @@ function App() {
   const [showAddTodo, setShowAddTodo] = useState(false)
   const [showRecurringTask, setShowRecurringTask] = useState(false)
   const [theme, setTheme] = useState(() => {
-    if (!currentUser) return 'light'
-    const saved = localStorage.getItem(`donezo-user-${currentUser.id}-theme`)
+    const saved = localStorage.getItem('donezo-theme')
     return saved || 'light'
   })
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(() => {
-    if (!currentUser) return { font: 'Rock Salt' }
-    const saved = localStorage.getItem(`donezo-user-${currentUser.id}-settings`)
+    const saved = localStorage.getItem('donezo-settings')
     return saved ? JSON.parse(saved) : { font: 'Rock Salt' }
   })
   const [showThemeTransition, setShowThemeTransition] = useState(false)
 
-  // Handle authentication success
-  const handleAuthSuccess = (user, userData) => {
-    setCurrentUser(user)
-    setTodos(userData.todos || [])
-    setLists(userData.lists || [
-      { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
-      { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
-      { id: '3', name: 'Grocery', color: 'green', icon: 'ShoppingCart', type: 'grocery' },
-      { id: '4', name: 'Shopping', color: 'pink', icon: 'ShoppingBag', type: 'task' },
-      { id: '5', name: 'Health', color: 'emerald', icon: 'Activity', type: 'task' },
-      { id: '6', name: 'Learning', color: 'purple', icon: 'BookOpen', type: 'task' },
-      { id: '7', name: 'Home Projects', color: 'orange', icon: 'Home', type: 'task' },
-      { id: '8', name: 'Reading List', color: 'indigo', icon: 'Book', type: 'task' }
-    ])
-    setTheme(userData.theme || 'light')
-    setSettings(userData.settings || { font: 'Rock Salt' })
-  }
 
-  // Handle logout
-  const handleLogout = () => {
-    // Clear current user from localStorage
-    localStorage.removeItem('donezo-current-user')
-    
-    // Reset all state
-    setCurrentUser(null)
-    setTodos([])
-    setLists([])
-    setTheme('light')
-    setSettings({ font: 'Rock Salt' })
-    setActiveList('1')
-    setShowAddTodo(false)
-    setShowRecurringTask(false)
-    setSidebarOpen(false)
-    setShowSettings(false)
-  }
-
-  // Save user data to localStorage whenever it changes
+  // Save data to localStorage whenever it changes
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(`donezo-user-${currentUser.id}-todos`, JSON.stringify(todos))
-    }
-  }, [todos, currentUser])
+    localStorage.setItem('donezo-todos', JSON.stringify(todos))
+  }, [todos])
 
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(`donezo-user-${currentUser.id}-lists`, JSON.stringify(lists))
-    }
-  }, [lists, currentUser])
+    localStorage.setItem('donezo-lists', JSON.stringify(lists))
+  }, [lists])
 
   useEffect(() => {
-    if (currentUser) {
-      console.log('Theme changed to:', theme)
-      localStorage.setItem(`donezo-user-${currentUser.id}-theme`, theme)
-      document.documentElement.setAttribute('data-theme', theme)
-      console.log('Applied data-theme attribute:', document.documentElement.getAttribute('data-theme'))
-      // Also set the class for Tailwind dark mode
-      if (theme === 'dark') {
-        document.documentElement.classList.add('dark')
-      } else {
-        document.documentElement.classList.remove('dark')
-      }
+    console.log('Theme changed to:', theme)
+    localStorage.setItem('donezo-theme', theme)
+    document.documentElement.setAttribute('data-theme', theme)
+    console.log('Applied data-theme attribute:', document.documentElement.getAttribute('data-theme'))
+    // Also set the class for Tailwind dark mode
+    if (theme === 'dark') {
+      document.documentElement.classList.add('dark')
+    } else {
+      document.documentElement.classList.remove('dark')
     }
-  }, [theme, currentUser])
-
-  // Save current user to localStorage
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem('donezo-current-user', JSON.stringify(currentUser))
-    }
-  }, [currentUser])
+  }, [theme])
 
   // Save settings to localStorage
   useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(`donezo-user-${currentUser.id}-settings`, JSON.stringify(settings))
-    }
-  }, [settings, currentUser])
+    localStorage.setItem('donezo-settings', JSON.stringify(settings))
+  }, [settings])
 
   // Apply font settings
   useEffect(() => {
@@ -139,14 +79,6 @@ function App() {
     document.documentElement.style.setProperty('--app-font', `'${settings.font}'`)
   }, [settings])
 
-  // Apply theme when currentUser changes (for logout)
-  useEffect(() => {
-    if (!currentUser) {
-      // Reset theme to light when logged out
-      document.documentElement.setAttribute('data-theme', 'light')
-      document.documentElement.classList.remove('dark')
-    }
-  }, [currentUser])
 
   const addTodo = (todo) => {
     // Debug logging
@@ -315,10 +247,6 @@ function App() {
   const currentTodos = todos.filter(todo => todo.listId === activeList)
   const currentList = lists.find(list => list.id === activeList)
 
-  // Show authentication screen if no user is logged in
-  if (!currentUser) {
-    return <Auth onAuthSuccess={handleAuthSuccess} />
-  }
 
   return (
     <Router>
@@ -429,8 +357,6 @@ function App() {
             deleteList={deleteList}
             onClose={() => setSidebarOpen(false)}
             onOpenSettings={() => setShowSettings(true)}
-            currentUser={currentUser}
-            onLogout={handleLogout}
           />
         </motion.div>
         
