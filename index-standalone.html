@@ -830,9 +830,6 @@
             animation: micro-bounce 0.2s ease-out;
         }
 
-        .toggle-todo:active {
-            animation: micro-pulse 0.3s ease-out;
-        }
 
         .delete-todo:active {
             animation: micro-shake 0.3s ease-out;
@@ -1179,14 +1176,6 @@
             background-color: rgba(20, 184, 166, 0.05);
         }
         
-        /* Enhanced toggle buttons */
-        .toggle-todo {
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        
-        .toggle-todo:hover {
-            transform: scale(1.2);
-        }
         
         /* Enhanced delete button */
         .delete-todo {
@@ -1209,6 +1198,71 @@
         .mobile-menu-btn:hover {
             transform: scale(1.05);
             box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        /* Swipe functionality styles */
+        .todo-item {
+            transition: transform 0.2s ease-out, background-color 0.2s ease-out;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .todo-item.swipe-active {
+            background-color: rgba(20, 184, 166, 0.1);
+        }
+
+        .swipe-completion-indicator {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(to right, rgba(20, 184, 166, 0.2), transparent);
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 1rem;
+            opacity: 0;
+            transition: opacity 0.2s ease-out;
+            pointer-events: none;
+        }
+
+        .todo-item.swipe-active .swipe-completion-indicator {
+            opacity: 1;
+        }
+
+        .swipe-completion-text {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: #0d9488;
+            font-weight: 500;
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+
+        /* Completion particles */
+        .completion-particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 9999;
+        }
+
+        .completion-particle {
+            position: absolute;
+            width: 8px;
+            height: 8px;
+            background: linear-gradient(45deg, #10b981, #059669);
+            border-radius: 50%;
+            pointer-events: none;
         }
     </style>
 </head>
@@ -1460,6 +1514,8 @@
         let touchStartX = 0;
         let touchStartY = 0;
         let currentSwipeX = 0;
+        let swipeStates = {};
+        let isSwipeDragging = false;
 
         // DOM elements
         const sidebar = document.getElementById('sidebar');
@@ -1517,7 +1573,6 @@
             checkReminders();
             setupMobileMenu();
             initTheme();
-            setupSwipeGestures();
             setupDragAndDrop();
             startMoodBasedThemes();
         }
@@ -1611,19 +1666,23 @@
                 <div class="todo-item ${todo.completed ? 'opacity-75' : ''} fade-in task-breathing" 
                      style="animation-delay: ${index * 0.1}s" 
                      data-todo-id="${todo.id}"
-                     draggable="true">
-                    <div class="task-content flex items-start gap-3 w-full">
-                        <button class="toggle-todo mt-1 p-1 rounded-full transition-all duration-300 touch-target ${
-                            todo.completed 
-                                ? 'text-teal-600 hover:text-teal-700' 
-                                : 'text-gray-400 hover:text-teal-500'
-                        }" data-todo-id="${todo.id}">
-                            ${todo.completed 
-                                ? '<i data-lucide="check-circle" class="w-5 h-5 text-teal-600"></i>'
-                                : '<i data-lucide="circle" class="w-5 h-5"></i>'
-                            }
-                        </button>
-                        
+                     ontouchstart="handleSwipeStart(event, '${todo.id}')"
+                     ontouchmove="handleSwipeMove(event, '${todo.id}')"
+                     ontouchend="handleSwipeEnd(event, '${todo.id}')"
+                     onmousedown="handleSwipeStart(event, '${todo.id}')"
+                     onmousemove="handleSwipeMove(event, '${todo.id}')"
+                     onmouseup="handleSwipeEnd(event, '${todo.id}')"
+                     onmouseleave="handleSwipeEnd(event, '${todo.id}')">
+                    
+                    <!-- Swipe completion indicator -->
+                    <div class="swipe-completion-indicator">
+                        <div class="swipe-completion-text">
+                            <i data-lucide="check-circle" class="w-6 h-6"></i>
+                            <span>Complete</span>
+                        </div>
+                    </div>
+                    
+                    <div class="task-content flex items-start gap-3 w-full relative z-10">
                         <div class="flex-1 min-w-0">
                             <div class="flex items-start justify-between gap-2">
                                 <div class="flex-1 min-w-0">
@@ -1745,6 +1804,124 @@
                     body: `From your ${listName} list`,
                     icon: '/favicon.ico'
                 });
+            }
+        }
+
+        // Swipe handling functions
+        function handleSwipeStart(e, todoId) {
+            isSwipeDragging = true;
+            touchStartX = e.touches ? e.touches[0].clientX : e.clientX;
+            currentSwipeX = touchStartX;
+            swipeStates[todoId] = { startX: touchStartX, currentX: touchStartX };
+        }
+
+        function handleSwipeMove(e, todoId) {
+            if (!isSwipeDragging) return;
+            e.preventDefault();
+            currentSwipeX = e.touches ? e.touches[0].clientX : e.clientX;
+            const deltaX = currentSwipeX - touchStartX;
+            
+            // Only allow left swipes (negative deltaX)
+            if (deltaX < 0) {
+                swipeStates[todoId] = { startX: touchStartX, currentX: currentSwipeX };
+                updateSwipeVisual(todoId, deltaX);
+            }
+        }
+
+        function handleSwipeEnd(e, todoId) {
+            if (!isSwipeDragging) return;
+            isSwipeDragging = false;
+            
+            const deltaX = currentSwipeX - touchStartX;
+            const threshold = -100; // Minimum swipe distance to trigger completion
+            
+            if (deltaX < threshold) {
+                // Trigger completion
+                const todo = todos.find(t => t.id === todoId);
+                if (todo && !todo.completed) {
+                    createCompletionParticles(e, todo);
+                    toggleTodo(todoId);
+                }
+            }
+            
+            // Reset swipe state
+            delete swipeStates[todoId];
+            resetSwipeVisual(todoId);
+        }
+
+        function updateSwipeVisual(todoId, deltaX) {
+            const todoElement = document.querySelector(`[data-todo-id="${todoId}"]`);
+            if (!todoElement) return;
+            
+            const isSwipeActive = deltaX < -20;
+            const maxSwipe = Math.max(deltaX, -150);
+            
+            todoElement.style.transform = `translateX(${maxSwipe}px)`;
+            
+            if (isSwipeActive) {
+                todoElement.classList.add('swipe-active');
+            } else {
+                todoElement.classList.remove('swipe-active');
+            }
+        }
+
+        function resetSwipeVisual(todoId) {
+            const todoElement = document.querySelector(`[data-todo-id="${todoId}"]`);
+            if (!todoElement) return;
+            
+            todoElement.style.transform = '';
+            todoElement.classList.remove('swipe-active');
+        }
+
+        function createCompletionParticles(event, todo) {
+            const rect = event.currentTarget.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            const particlesContainer = document.getElementById('completion-particles');
+            if (!particlesContainer) return;
+            
+            const particleCount = 8;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'completion-particle';
+                
+                const angle = (i / particleCount) * Math.PI * 2;
+                const velocity = 100 + Math.random() * 50;
+                
+                particle.style.left = centerX + 'px';
+                particle.style.top = centerY + 'px';
+                
+                particlesContainer.appendChild(particle);
+                
+                const animation = particle.animate([
+                    {
+                        transform: 'translate(0, 0) scale(1)',
+                        opacity: 1
+                    },
+                    {
+                        transform: `translate(${Math.cos(angle) * velocity}px, ${Math.sin(angle) * velocity}px) scale(0)`,
+                        opacity: 0
+                    }
+                ], {
+                    duration: 1000,
+                    easing: 'cubic-bezier(0.25, 0.46, 0.45, 0.94)'
+                });
+                
+                animation.onfinish = () => {
+                    particle.remove();
+                };
+            }
+        }
+
+        function toggleTodo(todoId) {
+            const todo = todos.find(t => t.id === todoId);
+            if (todo) {
+                todo.completed = !todo.completed;
+                saveTodos();
+                renderTodos();
+                updateHeader();
             }
         }
 
@@ -1905,20 +2082,7 @@
                 const todoId = e.target.closest('[data-todo-id]')?.dataset.todoId;
                 if (!todoId) return;
 
-                if (e.target.closest('.toggle-todo')) {
-                    const toggleBtn = e.target.closest('.toggle-todo');
-                    toggleBtn.classList.add('micro-pulse');
-                    setTimeout(() => toggleBtn.classList.remove('micro-pulse'), 600);
-                    
-                    const todo = todos.find(t => t.id === todoId);
-                    if (todo && !todo.completed) {
-                        // Task is being completed - dissolve it
-                        const todoElement = e.target.closest('.todo-item');
-                        if (todoElement) {
-                            dissolveTask(todoElement);
-                        }
-                    }
-                } else if (e.target.closest('.delete-todo')) {
+                if (e.target.closest('.delete-todo')) {
                     const deleteBtn = e.target.closest('.delete-todo');
                     deleteBtn.classList.add('micro-shake');
                     setTimeout(() => deleteBtn.classList.remove('micro-shake'), 500);
@@ -2264,73 +2428,6 @@
             }
         }
 
-        // Swipe gesture functionality
-        function setupSwipeGestures() {
-            let startX = 0;
-            let startY = 0;
-            let currentX = 0;
-            let isSwiping = false;
-
-            document.addEventListener('touchstart', (e) => {
-                const todoItem = e.target.closest('.todo-item');
-                if (!todoItem) return;
-
-                startX = e.touches[0].clientX;
-                startY = e.touches[0].clientY;
-                isSwiping = false;
-            });
-
-            document.addEventListener('touchmove', (e) => {
-                if (!startX) return;
-
-                currentX = e.touches[0].clientX;
-                const deltaX = currentX - startX;
-                const deltaY = Math.abs(e.touches[0].clientY - startY);
-
-                // Only trigger swipe if horizontal movement is greater than vertical
-                if (Math.abs(deltaX) > 50 && deltaY < 100) {
-                    isSwiping = true;
-                    const todoItem = e.target.closest('.todo-item');
-                    if (todoItem) {
-                        e.preventDefault();
-                        const swipeDistance = Math.max(-100, Math.min(0, deltaX));
-                        todoItem.style.transform = `translateX(${swipeDistance}px)`;
-                    }
-                }
-            });
-
-            document.addEventListener('touchend', (e) => {
-                if (!isSwiping) return;
-
-                const todoItem = e.target.closest('.todo-item');
-                if (!todoItem) return;
-
-                const deltaX = currentX - startX;
-                
-                if (deltaX < -100) {
-                    // Swipe left - complete task
-                    const todoId = todoItem.dataset.todoId;
-                    const todo = todos.find(t => t.id === todoId);
-                    if (todo && !todo.completed) {
-                        dissolveTask(todoItem);
-                    }
-                } else if (deltaX > 100) {
-                    // Swipe right - delete task
-                    const todoId = todoItem.dataset.todoId;
-                    if (confirm('Delete this task?')) {
-                        todos = todos.filter(t => t.id !== todoId);
-                        saveTodos();
-                        renderTodos();
-                        updateHeader();
-                    }
-                }
-
-                // Reset position
-                todoItem.style.transform = '';
-                startX = 0;
-                isSwiping = false;
-            });
-        }
 
         // Drag and drop functionality
         function setupDragAndDrop() {

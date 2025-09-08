@@ -1,9 +1,61 @@
-import React from 'react'
+import React, { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { CheckCircle, Clock, Trash2, Repeat, AlertTriangle, Calendar } from 'lucide-react'
 import { formatDueDate, isOverdue, getPriorityColor, getPriorityBackground, getRecurrenceDescription } from '../utils/recurringTaskUtils'
 
 function TodoList({ todos, onToggle, onDelete }) {
+  const [swipeStates, setSwipeStates] = useState({})
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStartX = useRef(0)
+  const dragCurrentX = useRef(0)
+
+  const handleSwipeStart = (e, todoId) => {
+    setIsDragging(true)
+    dragStartX.current = e.touches ? e.touches[0].clientX : e.clientX
+    dragCurrentX.current = dragStartX.current
+    setSwipeStates(prev => ({ ...prev, [todoId]: { startX: dragStartX.current, currentX: dragStartX.current } }))
+  }
+
+  const handleSwipeMove = (e, todoId) => {
+    if (!isDragging) return
+    e.preventDefault()
+    dragCurrentX.current = e.touches ? e.touches[0].clientX : e.clientX
+    const deltaX = dragCurrentX.current - dragStartX.current
+    
+    // Only allow left swipes (negative deltaX)
+    if (deltaX < 0) {
+      setSwipeStates(prev => ({ ...prev, [todoId]: { startX: dragStartX.current, currentX: dragCurrentX.current } }))
+    }
+  }
+
+  const handleSwipeEnd = (e, todoId) => {
+    if (!isDragging) return
+    setIsDragging(false)
+    
+    const deltaX = dragCurrentX.current - dragStartX.current
+    const threshold = -100 // Minimum swipe distance to trigger completion
+    
+    if (deltaX < threshold) {
+      // Trigger completion with particles
+      const rect = e.currentTarget.getBoundingClientRect()
+      const centerX = rect.left + rect.width / 2
+      const centerY = rect.top + rect.height / 2
+      const fakeEvent = { currentTarget: { getBoundingClientRect: () => ({ left: centerX - 50, width: 100, top: centerY - 25, height: 50 }) } }
+      const todo = todos.find(t => t.id === todoId)
+      if (todo && !todo.completed) {
+        createCompletionParticles(fakeEvent, todo)
+        onToggle(todoId)
+      }
+    }
+    
+    // Reset swipe state
+    setSwipeStates(prev => {
+      const newState = { ...prev }
+      delete newState[todoId]
+      return newState
+    })
+  }
+
   const createCompletionParticles = (event, todo) => {
     const rect = event.currentTarget.getBoundingClientRect()
     const centerX = rect.left + rect.width / 2
@@ -138,48 +190,59 @@ function TodoList({ todos, onToggle, onDelete }) {
   return (
     <div className="space-y-3">
       <AnimatePresence mode="popLayout">
-        {todos.map((todo) => (
-          <motion.div
-            key={todo.id}
-            layout
-            initial={{ opacity: 0, y: 20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.3 }}
-            className={`card p-4 transition-all duration-300 ${
-              todo.completed ? 'opacity-75' : ''
-            } ${isOverdue(todo.dueDate, todo.dueTime) && !todo.completed ? 'border-red-300 dark:border-red-600' : ''}`}
-          >
-            <div className="flex items-start gap-3">
-              {/* Heart Checkbox */}
-              <button
-                onClick={(e) => {
-                  onToggle(todo.id)
-                  if (!todo.completed) {
-                    createCompletionParticles(e, todo)
-                  }
-                }}
-                className={`flex-shrink-0 w-5 h-5 transition-all duration-300 hover:scale-110 ${
-                  todo.completed
-                    ? 'text-teal-500 cyberpunk-heart-completed [data-theme="cyberpunk"]:animate-[cyberpunkPulse_2s_ease-in-out_infinite]'
-                    : 'text-gray-300 dark:text-gray-600 hover:text-teal-400 dark:hover:text-teal-400 [data-theme="cyberpunk"]:hover:text-[#00ff00]'
-                }`}
-              >
-                <svg
-                  viewBox="0 0 24 24"
-                  fill={todo.completed ? "currentColor" : "none"}
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="w-full h-full transition-all duration-300"
+        {todos.map((todo) => {
+          const swipeState = swipeStates[todo.id]
+          const deltaX = swipeState ? swipeState.currentX - swipeState.startX : 0
+          const isSwipeActive = deltaX < -20
+          
+          return (
+            <motion.div
+              key={todo.id}
+              layout
+              initial={{ opacity: 0, y: 20, scale: 0.95 }}
+              animate={{ 
+                opacity: 1, 
+                y: 0, 
+                scale: 1,
+                x: Math.max(deltaX, -150) // Limit swipe distance
+              }}
+              exit={{ opacity: 0, y: -20, scale: 0.95 }}
+              transition={{ duration: 0.3 }}
+              className={`card p-4 transition-all duration-300 relative overflow-hidden ${
+                todo.completed ? 'opacity-75' : ''
+              } ${isOverdue(todo.dueDate, todo.dueTime) && !todo.completed ? 'border-red-300 dark:border-red-600' : ''} ${
+                isSwipeActive ? 'bg-teal-50 dark:bg-teal-900/20' : ''
+              }`}
+              onTouchStart={(e) => handleSwipeStart(e, todo.id)}
+              onTouchMove={(e) => handleSwipeMove(e, todo.id)}
+              onTouchEnd={(e) => handleSwipeEnd(e, todo.id)}
+              onMouseDown={(e) => handleSwipeStart(e, todo.id)}
+              onMouseMove={(e) => handleSwipeMove(e, todo.id)}
+              onMouseUp={(e) => handleSwipeEnd(e, todo.id)}
+              onMouseLeave={(e) => handleSwipeEnd(e, todo.id)}
+            >
+              {/* Swipe completion indicator */}
+              {isSwipeActive && (
+                <motion.div
+                  className="absolute inset-0 bg-gradient-to-r from-teal-500/20 to-transparent flex items-center justify-end pr-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
                 >
-                  <path
-                    d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"
-                  />
-                </svg>
-              </button>
-
-              {/* Task Content */}
-              <div className="flex-1 min-w-0">
+                  <motion.div
+                    className="flex items-center gap-2 text-teal-600 dark:text-teal-400"
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 0.5, repeat: Infinity }}
+                  >
+                    <CheckCircle className="w-6 h-6" />
+                    <span className="font-medium">Complete</span>
+                  </motion.div>
+                </motion.div>
+              )}
+              
+              <div className="flex items-start gap-3 relative z-10">
+                {/* Task Content */}
+                <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
                     <motion.h3
@@ -261,7 +324,8 @@ function TodoList({ todos, onToggle, onDelete }) {
               </div>
             </div>
           </motion.div>
-        ))}
+          )
+        })}
       </AnimatePresence>
     </div>
   )
