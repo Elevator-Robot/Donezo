@@ -5,7 +5,7 @@ import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
 import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
-import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat, X } from 'lucide-react'
+import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 
 function App() {
@@ -39,6 +39,11 @@ function App() {
   const [activeTab, setActiveTab] = useState('today') // 'today', 'lists', 'calendar'
   const [showListModal, setShowListModal] = useState(false)
   const [selectedList, setSelectedList] = useState(null)
+  const [showCreateListModal, setShowCreateListModal] = useState(false)
+  const [selectedDate, setSelectedDate] = useState(new Date())
+  const [calendarView, setCalendarView] = useState('month') // 'month' or 'week'
+  const [swipeStartX, setSwipeStartX] = useState(null)
+  const [swipeStartY, setSwipeStartY] = useState(null)
 
 
   // Save data to localStorage whenever it changes
@@ -158,14 +163,6 @@ function App() {
     setTodos(prev => prev.filter(todo => todo.id !== id))
   }
 
-  const addList = (list) => {
-    const newList = {
-      ...list,
-      id: Date.now().toString(),
-      type: 'task'
-    }
-    setLists(prev => [...prev, newList])
-  }
 
   const deleteList = (id) => {
     if (lists.length > 1) {
@@ -239,6 +236,55 @@ function App() {
   const handleListSelect = (list) => {
     setSelectedList(list)
     setShowListModal(true)
+  }
+
+  const addList = (newList) => {
+    const list = {
+      id: Date.now().toString(),
+      name: newList.name,
+      color: newList.color || 'teal',
+      icon: newList.icon || 'List',
+      type: 'task'
+    }
+    setLists([...lists, list])
+  }
+
+  // Calendar swipe handlers
+  const handleCalendarSwipeStart = (e) => {
+    const touch = e.touches[0]
+    setSwipeStartX(touch.clientX)
+    setSwipeStartY(touch.clientY)
+  }
+
+  const handleCalendarSwipeMove = (e) => {
+    e.preventDefault() // Prevent scrolling during swipe
+  }
+
+  const handleCalendarSwipeEnd = (e) => {
+    if (!swipeStartX || !swipeStartY) return
+
+    const touch = e.changedTouches[0]
+    const deltaX = touch.clientX - swipeStartX
+    const deltaY = touch.clientY - swipeStartY
+    const minSwipeDistance = 50
+
+    // Only handle horizontal swipes (month navigation)
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
+      if (deltaX > 0) {
+        // Swipe right - go to previous month
+        const newDate = new Date(selectedDate)
+        newDate.setMonth(newDate.getMonth() - 1)
+        setSelectedDate(newDate)
+      } else {
+        // Swipe left - go to next month
+        const newDate = new Date(selectedDate)
+        newDate.setMonth(newDate.getMonth() + 1)
+        setSelectedDate(newDate)
+      }
+    }
+
+    setSwipeStartX(null)
+    setSwipeStartY(null)
   }
 
   // Get today's tasks (tasks due today or overdue)
@@ -342,40 +388,40 @@ function App() {
         </AnimatePresence>
 
         {/* Header */}
-        <motion.header 
-          className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4 ${
-            theme === 'cyberpunk' ? 'cyberpunk-header' : ''
-          }`}
-          initial={{ y: -20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.5 }}
-        >
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <motion.header 
+            className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4 ${
+              theme === 'cyberpunk' ? 'cyberpunk-header' : ''
+            }`}
+            initial={{ y: -20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
               <div className="flex items-center gap-3">
                 <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-orange-500 rounded-lg flex items-center justify-center">
                   <CheckCircle className="w-5 h-5 text-white" />
                 </div>
                 <h1 className="text-xl font-bold text-gray-800 dark:text-white">Donezo</h1>
+                </div>
               </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <motion.button
-                whileHover={{ scale: 1.05, y: -2 }}
-                whileTap={{ scale: 0.95, y: 0 }}
-                onClick={toggleTheme}
-                className="p-2 rounded-xl border border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-300"
-                title={getThemeTitle()}
-              >
-                <motion.div
-                  initial={false}
-                  animate={{ rotate: theme === 'dark' ? 180 : theme === 'cyberpunk' ? 360 : 0 }}
-                  transition={{ duration: 0.3 }}
+              
+              <div className="flex items-center gap-4">
+                <motion.button
+                  whileHover={{ scale: 1.05, y: -2 }}
+                  whileTap={{ scale: 0.95, y: 0 }}
+                  onClick={toggleTheme}
+                  className="p-2 rounded-xl border border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-300"
+                  title={getThemeTitle()}
                 >
-                  {getThemeIcon()}
-                </motion.div>
-              </motion.button>
+                  <motion.div
+                    initial={false}
+                    animate={{ rotate: theme === 'dark' ? 180 : theme === 'cyberpunk' ? 360 : 0 }}
+                    transition={{ duration: 0.3 }}
+                  >
+                    {getThemeIcon()}
+                  </motion.div>
+                </motion.button>
             </div>
           </div>
         </motion.header>
@@ -416,9 +462,20 @@ function App() {
                 transition={{ duration: 0.3 }}
               >
                 <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Task Lists
-                  </h2>
+                  <div className="flex items-center justify-between mb-2">
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      Task Lists
+                    </h2>
+                    <motion.button
+                      onClick={() => setShowCreateListModal(true)}
+                      className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Plus size={16} />
+                      <span>New List</span>
+                    </motion.button>
+                  </div>
                   <p className="text-gray-600 dark:text-gray-400">
                     Organize your tasks into different lists
                   </p>
@@ -454,33 +511,180 @@ function App() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: 20 }}
                 transition={{ duration: 0.3 }}
+                className="space-y-4"
               >
-                <div className="flex flex-col items-center justify-center h-full text-center">
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5 }}
-                    className="max-w-md"
-                  >
-                    <div className="w-16 h-16 bg-teal-100 dark:bg-teal-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <Calendar className="w-8 h-8 text-teal-600 dark:text-teal-400" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                      Calendar View
+                {/* Calendar Header */}
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
+                      Calendar
                     </h2>
-                    <p className="text-gray-600 dark:text-gray-400 mb-6">
-                      Schedule and view your recurring tasks on a calendar.
+                    <p className="text-sm text-gray-500 dark:text-gray-400">
+                      Swipe left/right to navigate months
                     </p>
-                    <motion.button
-                      onClick={() => setShowRecurringTask(true)}
-                      className="btn-primary flex items-center gap-2 mx-auto"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Plus size={18} />
-                      <span>Add Recurring Task</span>
-                    </motion.button>
-                  </motion.div>
+                  </div>
+                  <motion.button
+                    onClick={() => setShowRecurringTask(true)}
+                    className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Plus size={16} />
+                    <span>Add Recurring</span>
+                  </motion.button>
+                </div>
+
+                {/* Month Grid */}
+                <motion.div
+                  key={selectedDate.getMonth() + selectedDate.getFullYear()} // Force re-render on month change
+                  className={`bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 ${
+                    calendarView === 'week' ? 'h-20 overflow-hidden' : 'h-auto'
+                  }`}
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ 
+                    height: calendarView === 'week' ? '80px' : 'auto',
+                    opacity: 1, 
+                    x: 0 
+                  }}
+                  exit={{ opacity: 0, x: -20 }}
+                  transition={{ duration: 0.3 }}
+                  onTouchStart={handleCalendarSwipeStart}
+                  onTouchMove={handleCalendarSwipeMove}
+                  onTouchEnd={handleCalendarSwipeEnd}
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </h3>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => {
+                          const newDate = new Date(selectedDate)
+                          newDate.setMonth(newDate.getMonth() - 1)
+                          setSelectedDate(newDate)
+                        }}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      >
+                        <ChevronLeft size={16} />
+                      </button>
+                      <button
+                        onClick={() => {
+                          const newDate = new Date(selectedDate)
+                          newDate.setMonth(newDate.getMonth() + 1)
+                          setSelectedDate(newDate)
+                        }}
+                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                      >
+                        <ChevronRight size={16} />
+                      </button>
+              </div>
+            </div>
+
+                  {/* Calendar Grid */}
+                  <div className="grid grid-cols-7 gap-1">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                      <div key={day} className="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">
+                        {day}
+                      </div>
+                    ))}
+                    {Array.from({ length: new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate() }, (_, i) => {
+                      const day = i + 1
+                      const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day)
+                      const isToday = date.toDateString() === new Date().toDateString()
+                      const isSelected = date.toDateString() === selectedDate.toDateString()
+                      const hasTasks = todos.some(todo => 
+                        todo.dueDate && new Date(todo.dueDate).toDateString() === date.toDateString()
+                      )
+
+                      return (
+                        <motion.button
+                          key={day}
+                          onClick={() => setSelectedDate(date)}
+                          className={`relative p-2 rounded-lg text-sm transition-colors ${
+                            isSelected
+                              ? 'bg-teal-500 text-white'
+                              : isToday
+                              ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'
+                              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                          }`}
+                          whileHover={{ scale: 1.1 }}
+                          whileTap={{ scale: 0.9 }}
+                        >
+                          {day}
+                          {hasTasks && (
+                            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 rounded-full"></div>
+                          )}
+                        </motion.button>
+                      )
+                    })}
+                  </div>
+                </motion.div>
+
+                {/* Selected Date Agenda */}
+                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
+                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                    {selectedDate.toLocaleDateString('en-US', { 
+                      weekday: 'long', 
+                      month: 'long', 
+                      day: 'numeric' 
+                    })}
+                  </h3>
+                  
+                  {(() => {
+                    const dayTasks = todos.filter(todo => 
+                      todo.dueDate && new Date(todo.dueDate).toDateString() === selectedDate.toDateString()
+                    )
+                    
+                    if (dayTasks.length === 0) {
+                      return (
+                        <div className="text-center py-8">
+                          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                          <p className="text-gray-500 dark:text-gray-400">No tasks scheduled for this day</p>
+                        </div>
+                      )
+                    }
+
+                    return (
+                      <div className="space-y-3">
+                        {dayTasks.map(todo => (
+                          <motion.div
+                            key={todo.id}
+                            className={`p-3 rounded-lg border-l-4 ${
+                              todo.completed
+                                ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                                : 'bg-white dark:bg-gray-800 border-teal-500'
+                            }`}
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.2 }}
+                          >
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-3">
+                                <button
+                                  onClick={() => toggleTodo(todo.id)}
+                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                    todo.completed
+                                      ? 'bg-teal-500 border-teal-500 text-white'
+                                      : 'border-gray-300 dark:border-gray-600 hover:border-teal-500'
+                                  }`}
+                                >
+                                  {todo.completed && <CheckCircle size={12} />}
+                                </button>
+                                <span className={`${todo.completed ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                                  {todo.title}
+                                </span>
+                              </div>
+                              {todo.dueTime && (
+                                <span className="text-sm text-gray-500 dark:text-gray-400">
+                                  {todo.dueTime}
+                                </span>
+                              )}
+                            </div>
+                          </motion.div>
+                        ))}
+                      </div>
+                    )
+                  })()}
                 </div>
               </motion.div>
             )}
@@ -634,6 +838,105 @@ function App() {
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                 />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Create List Modal */}
+        <AnimatePresence mode="wait">
+          {showCreateListModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]"
+              onClick={() => setShowCreateListModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="card w-full max-w-md relative z-[10000]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create New List</h2>
+                  <button
+                    onClick={() => setShowCreateListModal(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                  >
+                    <X size={20} className="text-gray-700 dark:text-gray-300" />
+                  </button>
+                </div>
+
+                <form onSubmit={(e) => {
+                  e.preventDefault()
+                  const formData = new FormData(e.target)
+                  const name = formData.get('name')
+                  const color = formData.get('color')
+                  if (name) {
+                    addList({ name, color })
+                    setShowCreateListModal(false)
+                  }
+                }} className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      List Name
+                    </label>
+                    <input
+                      type="text"
+                      name="name"
+                      placeholder="Enter list name"
+                      className="input-field"
+                      required
+                      autoFocus
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Color
+                    </label>
+                    <div className="flex gap-2">
+                      {[
+                        { value: 'teal', color: 'bg-teal-500' },
+                        { value: 'blue', color: 'bg-blue-500' },
+                        { value: 'green', color: 'bg-green-500' },
+                        { value: 'purple', color: 'bg-purple-500' },
+                        { value: 'pink', color: 'bg-pink-500' },
+                        { value: 'orange', color: 'bg-orange-500' }
+                      ].map((option) => (
+                        <label key={option.value} className="cursor-pointer">
+                          <input
+                            type="radio"
+                            name="color"
+                            value={option.value}
+                            defaultChecked={option.value === 'teal'}
+                            className="sr-only"
+                          />
+                          <div className={`w-8 h-8 ${option.color} rounded-full border-2 border-transparent hover:border-gray-300 dark:hover:border-gray-600 transition-colors`}></div>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="submit"
+                      className="btn-primary flex-1"
+                    >
+                      Create List
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCreateListModal(false)}
+                      className="btn-secondary"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </form>
               </motion.div>
             </motion.div>
           )}

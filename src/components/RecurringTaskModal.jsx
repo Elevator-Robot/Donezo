@@ -4,7 +4,6 @@ import { X, Calendar, Clock, Repeat, ChevronDown, ChevronUp } from 'lucide-react
 
 function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
   const [title, setTitle] = useState('')
-  const [listId, setListId] = useState(activeList)
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [dueTime, setDueTime] = useState('')
   const [recurrenceType, setRecurrenceType] = useState('daily')
@@ -38,12 +37,8 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
   const handleSubmit = (e) => {
     e.preventDefault()
     if (title.trim()) {
-      const currentList = lists.find(list => list.id === listId)
-      
       const recurringTask = {
         title: title.trim(),
-        listId,
-        listName: currentList?.name || 'Unknown',
         startDate,
         dueTime,
         recurrence: {
@@ -157,38 +152,19 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Basic Task Info */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Task Title *
-              </label>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="What needs to be done?"
-                className="input-field"
-                required
-                autoFocus
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                List
-              </label>
-              <select
-                value={listId}
-                onChange={(e) => setListId(e.target.value)}
-                className="input-field"
-              >
-                {lists.map((list) => (
-                  <option key={list.id} value={list.id}>
-                    {list.name}
-                  </option>
-                ))}
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              Task Title *
+            </label>
+            <input
+              type="text"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="What needs to be done?"
+              className="input-field"
+              required
+              autoFocus
+            />
           </div>
 
 
