@@ -5,7 +5,7 @@ import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
 import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
-import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat } from 'lucide-react'
+import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat, X } from 'lucide-react'
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 
 function App() {
@@ -19,12 +19,7 @@ function App() {
     return saved ? JSON.parse(saved) : [
       { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
       { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
-      { id: '3', name: 'Grocery', color: 'green', icon: 'ShoppingCart', type: 'grocery' },
-      { id: '4', name: 'Shopping', color: 'pink', icon: 'ShoppingBag', type: 'task' },
-      { id: '5', name: 'Health', color: 'emerald', icon: 'Activity', type: 'task' },
-      { id: '6', name: 'Learning', color: 'purple', icon: 'BookOpen', type: 'task' },
-      { id: '7', name: 'Home Projects', color: 'orange', icon: 'Home', type: 'task' },
-      { id: '8', name: 'Reading List', color: 'indigo', icon: 'Book', type: 'task' }
+      { id: '3', name: 'Shopping', color: 'green', icon: 'ShoppingCart', type: 'task' }
     ]
   })
   
@@ -42,6 +37,8 @@ function App() {
   })
   const [showThemeTransition, setShowThemeTransition] = useState(false)
   const [activeTab, setActiveTab] = useState('today') // 'today', 'lists', 'calendar'
+  const [showListModal, setShowListModal] = useState(false)
+  const [selectedList, setSelectedList] = useState(null)
 
 
   // Save data to localStorage whenever it changes
@@ -239,6 +236,11 @@ function App() {
     setShowAddTodo(true)
   }
 
+  const handleListSelect = (list) => {
+    setSelectedList(list)
+    setShowListModal(true)
+  }
+
   // Get today's tasks (tasks due today or overdue)
   const getTodaysTasks = () => {
     const today = new Date()
@@ -423,22 +425,18 @@ function App() {
                 </div>
                 
                 {/* Lists Grid */}
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                <div className="grid grid-cols-1 gap-4">
                   {lists.map((list) => (
                     <motion.div
                       key={list.id}
-                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                        activeList === list.id
-                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-600'
-                      }`}
-                      onClick={() => setActiveList(list.id)}
+                      className="p-6 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-600 cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800"
+                      onClick={() => handleListSelect(list)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className={`w-3 h-3 ${list.color === 'teal' ? 'bg-teal-500' : list.color === 'blue' ? 'bg-blue-500' : list.color === 'green' ? 'bg-green-500' : 'bg-gray-500'} rounded-full`}></div>
-                        <h3 className="font-semibold text-gray-900 dark:text-white">{list.name}</h3>
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className={`w-4 h-4 ${list.color === 'teal' ? 'bg-teal-500' : list.color === 'blue' ? 'bg-blue-500' : list.color === 'green' ? 'bg-green-500' : 'bg-gray-500'} rounded-full`}></div>
+                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{list.name}</h3>
                       </div>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
                         {todos.filter(todo => todo.listId === list.id && !todo.completed).length} tasks remaining
@@ -446,20 +444,6 @@ function App() {
                     </motion.div>
                   ))}
                 </div>
-
-                {/* Selected List Tasks */}
-                {activeList && (
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
-                      {currentList?.name} Tasks
-                    </h3>
-                    <TodoList
-                      todos={currentTodos}
-                      onToggle={toggleTodo}
-                      onDelete={deleteTodo}
-                    />
-                  </div>
-                )}
               </motion.div>
             )}
 
@@ -607,6 +591,53 @@ function App() {
           onSettingsChange={handleSettingsChange}
         />
 
+        {/* List Modal */}
+        <AnimatePresence mode="wait">
+          {showListModal && selectedList && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-[9999]"
+              onClick={() => setShowListModal(false)}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="card w-full max-w-2xl relative z-[10000] max-h-[90vh] overflow-y-auto"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-center justify-between mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-8 h-8 ${selectedList.color === 'teal' ? 'bg-teal-100 dark:bg-teal-900/30' : selectedList.color === 'blue' ? 'bg-blue-100 dark:bg-blue-900/30' : selectedList.color === 'green' ? 'bg-green-100 dark:bg-green-900/30' : 'bg-gray-100 dark:bg-gray-900/30'} rounded-lg flex items-center justify-center`}>
+                      <List className={`w-5 h-5 ${selectedList.color === 'teal' ? 'text-teal-600 dark:text-teal-400' : selectedList.color === 'blue' ? 'text-blue-600 dark:text-blue-400' : selectedList.color === 'green' ? 'text-green-600 dark:text-green-400' : 'text-gray-600 dark:text-gray-400'}`} />
+                    </div>
+                    <h2 className="text-xl font-bold text-gray-900 dark:text-white">{selectedList.name}</h2>
+                  </div>
+                  <button
+                    onClick={() => setShowListModal(false)}
+                    className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
+                  >
+                    <X size={20} className="text-gray-700 dark:text-gray-300" />
+                  </button>
+                </div>
+
+                <div className="mb-4">
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {todos.filter(todo => todo.listId === selectedList.id && !todo.completed).length} tasks remaining
+                  </p>
+                </div>
+
+                <TodoList
+                  todos={todos.filter(todo => todo.listId === selectedList.id)}
+                  onToggle={toggleTodo}
+                  onDelete={deleteTodo}
+                />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
       </div>
     </Router>
