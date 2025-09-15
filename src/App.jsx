@@ -488,16 +488,24 @@ function App() {
                   {lists.map((list) => (
                     <motion.div
                       key={list.id}
-                      className="p-6 rounded-lg border-2 border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-600 cursor-pointer transition-all duration-200 bg-white dark:bg-gray-800"
+                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        theme === 'cyberpunk'
+                          ? 'bg-black/80 border-cyan-500/30 hover:border-cyan-400 hover:bg-black/90 shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-600 bg-white dark:bg-gray-800'
+                      }`}
                       onClick={() => handleListSelect(list)}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
                     >
                       <div className="flex items-center gap-4 mb-3">
                         <div className={`w-4 h-4 ${list.color === 'teal' ? 'bg-teal-500' : list.color === 'blue' ? 'bg-blue-500' : list.color === 'green' ? 'bg-green-500' : 'bg-gray-500'} rounded-full`}></div>
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{list.name}</h3>
+                        <h3 className={`text-lg font-semibold ${
+                          theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-900 dark:text-white'
+                        }`}>{list.name}</h3>
                       </div>
-                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                      <p className={`text-sm ${
+                        theme === 'cyberpunk' ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'
+                      }`}>
                         {todos.filter(todo => todo.listId === list.id && !todo.completed).length} tasks remaining
                       </p>
                     </motion.div>
@@ -539,7 +547,11 @@ function App() {
                 {/* Month Grid */}
                 <motion.div
                   key={selectedDate.getMonth() + selectedDate.getFullYear()} // Force re-render on month change
-                  className={`bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700 ${
+                  className={`rounded-lg p-4 shadow-sm border ${
+                    theme === 'cyberpunk'
+                      ? 'bg-black/80 border-cyan-500/30 shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
+                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                  } ${
                     calendarView === 'week' ? 'h-20 overflow-hidden' : 'h-auto'
                   }`}
                   initial={{ opacity: 0, x: 20 }}
@@ -555,7 +567,9 @@ function App() {
                   onTouchEnd={handleCalendarSwipeEnd}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                    <h3 className={`text-lg font-semibold ${
+                      theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-900 dark:text-white'
+                    }`}>
                       {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                     </h3>
                     <div className="flex gap-2">
@@ -565,7 +579,11 @@ function App() {
                           newDate.setMonth(newDate.getMonth() - 1)
                           setSelectedDate(newDate)
                         }}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        className={`p-2 rounded-lg transition-colors ${
+                          theme === 'cyberpunk'
+                            ? 'hover:bg-cyan-500/20 text-cyan-300 hover:text-cyan-200'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
                       >
                         <ChevronLeft size={16} />
                       </button>
@@ -575,7 +593,11 @@ function App() {
                           newDate.setMonth(newDate.getMonth() + 1)
                           setSelectedDate(newDate)
                         }}
-                        className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                        className={`p-2 rounded-lg transition-colors ${
+                          theme === 'cyberpunk'
+                            ? 'hover:bg-cyan-500/20 text-cyan-300 hover:text-cyan-200'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                        }`}
                       >
                         <ChevronRight size={16} />
                       </button>
@@ -585,7 +607,9 @@ function App() {
                   {/* Calendar Grid */}
                   <div className="grid grid-cols-7 gap-1">
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                      <div key={day} className="text-center text-sm font-medium text-gray-500 dark:text-gray-400 py-2">
+                      <div key={day} className={`text-center text-sm font-medium py-2 ${
+                        theme === 'cyberpunk' ? 'text-cyan-400' : 'text-gray-500 dark:text-gray-400'
+                      }`}>
                         {day}
                       </div>
                     ))}
@@ -608,17 +632,25 @@ function App() {
                           onClick={() => setSelectedDate(date)}
                           className={`relative p-2 rounded-lg text-sm transition-colors ${
                             isSelected
-                              ? 'bg-teal-500 text-white'
+                              ? theme === 'cyberpunk'
+                                ? 'bg-cyan-500 text-black'
+                                : 'bg-teal-500 text-white'
                               : isToday
-                              ? 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'
-                              : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                              ? theme === 'cyberpunk'
+                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50'
+                                : 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'
+                              : theme === 'cyberpunk'
+                                ? 'hover:bg-cyan-500/10 text-cyan-200 hover:text-cyan-100'
+                                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
                           }`}
                           whileHover={{ scale: 1.1 }}
                           whileTap={{ scale: 0.9 }}
                         >
                           {day}
                           {hasTasks && (
-                            <div className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-teal-500 rounded-full"></div>
+                            <div className={`absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
+                              theme === 'cyberpunk' ? 'bg-cyan-400' : 'bg-teal-500'
+                            }`}></div>
                           )}
                         </motion.button>
                       )
@@ -627,8 +659,14 @@ function App() {
                 </motion.div>
 
                 {/* Selected Date Agenda */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-200 dark:border-gray-700">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                <div className={`rounded-lg p-4 shadow-sm border ${
+                  theme === 'cyberpunk'
+                    ? 'bg-black/80 border-cyan-500/30 shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
+                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
+                }`}>
+                  <h3 className={`text-lg font-semibold mb-4 ${
+                    theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-900 dark:text-white'
+                  }`}>
                     {selectedDate.toLocaleDateString('en-US', { 
                       weekday: 'long', 
                       month: 'long', 
@@ -648,8 +686,12 @@ function App() {
                     if (dayTasks.length === 0) {
                       return (
                         <div className="text-center py-8">
-                          <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                          <p className="text-gray-500 dark:text-gray-400">No tasks scheduled for this day</p>
+                          <Calendar className={`w-12 h-12 mx-auto mb-3 ${
+                            theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-400'
+                          }`} />
+                          <p className={`${
+                            theme === 'cyberpunk' ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'
+                          }`}>No tasks scheduled for this day</p>
                         </div>
                       )
                     }
@@ -661,8 +703,12 @@ function App() {
                             key={todo.id}
                             className={`p-3 rounded-lg border-l-4 ${
                               todo.completed
-                                ? 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
-                                : 'bg-white dark:bg-gray-800 border-teal-500'
+                                ? theme === 'cyberpunk'
+                                  ? 'bg-gray-800/50 border-gray-600'
+                                  : 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
+                                : theme === 'cyberpunk'
+                                  ? 'bg-black/50 border-cyan-500'
+                                  : 'bg-white dark:bg-gray-800 border-teal-500'
                             }`}
                             initial={{ opacity: 0, y: 10 }}
                             animate={{ opacity: 1, y: 0 }}
@@ -680,12 +726,20 @@ function App() {
                                 >
                                   {todo.completed && <CheckCircle size={12} />}
                                 </button>
-                                <span className={`${todo.completed ? 'line-through text-gray-500' : 'text-gray-900 dark:text-white'}`}>
+                                <span className={`${
+                                  todo.completed 
+                                    ? 'line-through text-gray-500' 
+                                    : theme === 'cyberpunk' 
+                                      ? 'text-cyan-200' 
+                                      : 'text-gray-900 dark:text-white'
+                                }`}>
                                   {todo.title}
                                 </span>
                               </div>
                               {todo.dueTime && (
-                                <span className="text-sm text-gray-500 dark:text-gray-400">
+                                <span className={`text-sm ${
+                                  theme === 'cyberpunk' ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'
+                                }`}>
                                   {todo.dueTime}
                                 </span>
                               )}
@@ -703,7 +757,11 @@ function App() {
 
         {/* Bottom Navigation */}
         <motion.nav 
-          className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50 z-50"
+          className={`fixed bottom-0 left-0 right-0 backdrop-blur-sm border-t z-50 ${
+            theme === 'cyberpunk' 
+              ? 'bg-black/95 border-cyan-500/50 shadow-[0_-4px_20px_rgba(6,182,212,0.3)]' 
+              : 'bg-white/90 dark:bg-gray-800/90 border-gray-200/50 dark:border-gray-700/50'
+          }`}
           initial={{ y: 100 }}
           animate={{ y: 0 }}
           transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
@@ -714,8 +772,12 @@ function App() {
               onClick={() => setActiveTab('today')}
               className={`flex flex-col items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'today'
-                  ? 'text-teal-600 dark:text-teal-400'
-                  : 'text-gray-600 dark:text-gray-400'
+                  ? theme === 'cyberpunk' 
+                    ? 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30' 
+                    : 'text-teal-600 dark:text-teal-400'
+                  : theme === 'cyberpunk'
+                    ? 'text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/5'
+                    : 'text-gray-600 dark:text-gray-400'
               }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -729,8 +791,12 @@ function App() {
               onClick={() => setActiveTab('lists')}
               className={`flex flex-col items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'lists'
-                  ? 'text-teal-600 dark:text-teal-400'
-                  : 'text-gray-600 dark:text-gray-400'
+                  ? theme === 'cyberpunk' 
+                    ? 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30' 
+                    : 'text-teal-600 dark:text-teal-400'
+                  : theme === 'cyberpunk'
+                    ? 'text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/5'
+                    : 'text-gray-600 dark:text-gray-400'
               }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -744,8 +810,12 @@ function App() {
               onClick={() => setActiveTab('calendar')}
               className={`flex flex-col items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'calendar'
-                  ? 'text-teal-600 dark:text-teal-400'
-                  : 'text-gray-600 dark:text-gray-400'
+                  ? theme === 'cyberpunk' 
+                    ? 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30' 
+                    : 'text-teal-600 dark:text-teal-400'
+                  : theme === 'cyberpunk'
+                    ? 'text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/5'
+                    : 'text-gray-600 dark:text-gray-400'
               }`}
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
@@ -759,7 +829,11 @@ function App() {
         {/* Floating Action Button */}
         <motion.button
           onClick={handleAddButtonClick}
-          className="fixed bottom-24 right-6 w-14 h-14 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-[60] flex items-center justify-center"
+          className={`fixed bottom-24 right-6 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-[60] flex items-center justify-center ${
+            theme === 'cyberpunk'
+              ? 'bg-cyan-500 hover:bg-cyan-400 shadow-[0_4px_20px_rgba(6,182,212,0.4)] hover:shadow-[0_6px_25px_rgba(6,182,212,0.6)]'
+              : 'bg-teal-500 hover:bg-teal-600'
+          }`}
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           initial={{ scale: 0 }}
