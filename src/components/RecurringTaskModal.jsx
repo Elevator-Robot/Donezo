@@ -1,12 +1,10 @@
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { X, Calendar, Clock, Repeat, ChevronDown, ChevronUp, Bell } from 'lucide-react'
+import { X, Calendar, Clock, Repeat, ChevronDown, ChevronUp } from 'lucide-react'
 
 function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
   const [title, setTitle] = useState('')
-  const [description, setDescription] = useState('')
   const [listId, setListId] = useState(activeList)
-  const [priority, setPriority] = useState('')
   const [startDate, setStartDate] = useState(new Date().toISOString().split('T')[0])
   const [dueTime, setDueTime] = useState('')
   const [recurrenceType, setRecurrenceType] = useState('daily')
@@ -14,9 +12,7 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
   const [recurrenceDays, setRecurrenceDays] = useState([1, 2, 3, 4, 5]) // Mon-Fri
   const [recurrenceEnd, setRecurrenceEnd] = useState('never') // never, after, until
   const [recurrenceEndValue, setRecurrenceEndValue] = useState('')
-  const [reminders, setReminders] = useState(['15min']) // Array of reminder times
   const [showRecurrenceOptions, setShowRecurrenceOptions] = useState(false)
-  const [showReminderOptions, setShowReminderOptions] = useState(false)
 
   const recurrenceTypes = [
     { value: 'daily', label: 'Daily', description: 'Every day' },
@@ -28,14 +24,6 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
     { value: 'custom', label: 'Custom', description: 'Custom schedule' }
   ]
 
-  const reminderOptions = [
-    { value: '5min', label: '5 minutes before' },
-    { value: '15min', label: '15 minutes before' },
-    { value: '30min', label: '30 minutes before' },
-    { value: '1hour', label: '1 hour before' },
-    { value: '1day', label: '1 day before' },
-    { value: '1week', label: '1 week before' }
-  ]
 
   const weekDays = [
     { value: 0, label: 'Sun', name: 'Sunday' },
@@ -54,10 +42,8 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
       
       const recurringTask = {
         title: title.trim(),
-        description: description.trim(),
         listId,
         listName: currentList?.name || 'Unknown',
-        priority: priority || null,
         startDate,
         dueTime,
         recurrence: {
@@ -67,7 +53,6 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
           end: recurrenceEnd,
           endValue: recurrenceEndValue
         },
-        reminders,
         isRecurring: true,
         nextDueDate: calculateNextDueDate()
       }
@@ -76,8 +61,6 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
       
       // Clear form
       setTitle('')
-      setDescription('')
-      setPriority('')
       setStartDate(new Date().toISOString().split('T')[0])
       setDueTime('')
       setRecurrenceType('daily')
@@ -85,7 +68,6 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
       setRecurrenceDays([1, 2, 3, 4, 5])
       setRecurrenceEnd('never')
       setRecurrenceEndValue('')
-      setReminders(['15min'])
     }
   }
 
@@ -120,13 +102,6 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
     }
   }
 
-  const toggleReminder = (reminder) => {
-    if (reminders.includes(reminder)) {
-      setReminders(reminders.filter(r => r !== reminder))
-    } else {
-      setReminders([...reminders, reminder].sort())
-    }
-  }
 
   const getRecurrenceDescription = () => {
     switch (recurrenceType) {
@@ -216,45 +191,7 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
             </div>
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Description
-            </label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Add more details..."
-              rows={3}
-              className="input-field resize-none"
-            />
-          </div>
 
-          {/* Priority */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-              Priority
-            </label>
-            <div className="flex gap-2">
-              {[
-                { value: 'low', label: 'Low', color: 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' },
-                { value: 'medium', label: 'Medium', color: 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-300' },
-                { value: 'high', label: 'High', color: 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' }
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setPriority(priority === option.value ? '' : option.value)}
-                  className={`px-3 py-2 rounded-lg border-2 transition-all duration-200 ${
-                    priority === option.value
-                      ? `${option.color} border-transparent`
-                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
 
           {/* Date and Time */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -411,51 +348,6 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
             )}
           </div>
 
-          {/* Reminders */}
-          <div className="border border-gray-200 dark:border-gray-600 rounded-lg p-4">
-            <button
-              type="button"
-              onClick={() => setShowReminderOptions(!showReminderOptions)}
-              className="w-full flex items-center justify-between text-left"
-            >
-              <div className="flex items-center gap-3">
-                <Bell className="w-5 h-5 text-gray-600 dark:text-gray-400" />
-                <div>
-                  <h3 className="font-medium text-gray-900 dark:text-white">Reminders</h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {reminders.length > 0 ? `${reminders.length} reminder(s) set` : 'No reminders'}
-                  </p>
-                </div>
-              </div>
-              {showReminderOptions ? <ChevronUp className="w-5 h-5" /> : <ChevronDown className="w-5 h-5" />}
-            </button>
-
-            {showReminderOptions && (
-              <motion.div
-                initial={{ opacity: 0, height: 0 }}
-                animate={{ opacity: 1, height: 'auto' }}
-                exit={{ opacity: 0, height: 0 }}
-                className="mt-4"
-              >
-                <div className="grid grid-cols-2 gap-2">
-                  {reminderOptions.map((reminder) => (
-                    <button
-                      key={reminder.value}
-                      type="button"
-                      onClick={() => toggleReminder(reminder.value)}
-                      className={`p-3 rounded-lg border-2 text-left transition-all duration-200 ${
-                        reminders.includes(reminder.value)
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300'
-                          : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
-                      }`}
-                    >
-                      {reminder.label}
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-          </div>
 
           <div className="flex gap-3 pt-4">
             <button

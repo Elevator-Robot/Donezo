@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import Sidebar from './components/Sidebar'
 import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
-
 import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
-import { CheckCircle, Clock, Plus, Moon, Sun, Menu, Zap, Bot, ShoppingCart, Repeat } from 'lucide-react'
+import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat } from 'lucide-react'
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 
 function App() {
@@ -37,14 +35,13 @@ function App() {
     const saved = localStorage.getItem('donezo-theme')
     return saved || 'light'
   })
-  const [sidebarOpen, setSidebarOpen] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [settings, setSettings] = useState(() => {
     const saved = localStorage.getItem('donezo-settings')
     return saved ? JSON.parse(saved) : { font: 'Rock Salt' }
   })
   const [showThemeTransition, setShowThemeTransition] = useState(false)
-  const [currentPage, setCurrentPage] = useState('tasks') // 'tasks' or 'recurring'
+  const [activeTab, setActiveTab] = useState('today') // 'today', 'lists', 'calendar'
 
 
   // Save data to localStorage whenever it changes
@@ -233,9 +230,6 @@ function App() {
     }
   }
 
-  const toggleSidebar = () => {
-    setSidebarOpen(!sidebarOpen)
-  }
 
   const handleSettingsChange = (newSettings) => {
     setSettings(newSettings)
@@ -245,13 +239,30 @@ function App() {
     setShowAddTodo(true)
   }
 
+  // Get today's tasks (tasks due today or overdue)
+  const getTodaysTasks = () => {
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    
+    return todos.filter(todo => {
+      if (todo.completed) return false
+      if (!todo.dueDate) return false
+      
+      const dueDate = new Date(todo.dueDate)
+      dueDate.setHours(0, 0, 0, 0)
+      
+      return dueDate <= today
+    })
+  }
+
   const currentTodos = todos.filter(todo => todo.listId === activeList)
   const currentList = lists.find(list => list.id === activeList)
+  const todaysTasks = getTodaysTasks()
 
 
   return (
     <Router>
-      <div className="flex h-screen relative">
+      <div className="flex flex-col h-screen relative">
         {/* Animated Background */}
         <motion.div 
           className={`animated-background ${theme === 'cyberpunk' ? 'cyberpunk-bg' : ''}`}
@@ -328,183 +339,237 @@ function App() {
           )}
         </AnimatePresence>
 
-        {/* Sidebar Overlay for Mobile */}
-        <AnimatePresence>
-          {sidebarOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
-              onClick={() => setSidebarOpen(false)}
-            />
-          )}
-        </AnimatePresence>
-
-        {/* Sidebar */}
-        <motion.div
-          className={`fixed md:relative z-50 h-full ${
-            sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
-          } transition-transform duration-300 ease-in-out`}
+        {/* Header */}
+        <motion.header 
+          className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4 ${
+            theme === 'cyberpunk' ? 'cyberpunk-header' : ''
+          }`}
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.5 }}
         >
-          <Sidebar 
-            lists={lists}
-            activeList={activeList}
-            setActiveList={(id) => {
-              setActiveList(id)
-              setSidebarOpen(false) // Close sidebar on mobile when list is selected
-            }}
-            addList={addList}
-            deleteList={deleteList}
-            onClose={() => setSidebarOpen(false)}
-            onOpenSettings={() => setShowSettings(true)}
-          />
-        </motion.div>
-        
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <motion.header 
-            className={`bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm shadow-sm border-b border-gray-200/50 dark:border-gray-700/50 px-6 py-4 ${
-              theme === 'cyberpunk' ? 'cyberpunk-header' : ''
-            }`}
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.5 }}
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                {/* Menu Button */}
-                <motion.button
-                  onClick={toggleSidebar}
-                  className="md:hidden p-2 rounded-xl hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-300"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Menu size={20} className="text-gray-700 dark:text-gray-300" />
-                </motion.button>
-                
-                <div>
-                  <motion.h1 
-                    className="text-2xl font-bold text-gray-900 dark:text-white"
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.2 }}
-                  >
-                    {currentList?.name || 'All Tasks'}
-                  </motion.h1>
-                  {/* Task Counter - moved under the title */}
-                  <motion.p 
-                    className="text-gray-600 dark:text-gray-400 text-sm font-medium mt-1"
-                    initial={{ x: -20, opacity: 0 }}
-                    animate={{ x: 0, opacity: 1 }}
-                    transition={{ delay: 0.3 }}
-                  >
-                    {currentTodos.filter(t => !t.completed).length} tasks remaining
-                  </motion.p>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-orange-500 rounded-lg flex items-center justify-center">
+                  <CheckCircle className="w-5 h-5 text-white" />
                 </div>
-              </div>
-              
-              <div className="flex items-center gap-4">
-                {/* Navigation Tabs */}
-                <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
-                  <motion.button
-                    onClick={() => setCurrentPage('tasks')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                      currentPage === 'tasks'
-                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Tasks
-                  </motion.button>
-                  <motion.button
-                    onClick={() => setCurrentPage('recurring')}
-                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
-                      currentPage === 'recurring'
-                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
-                    }`}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    <div className="flex items-center gap-2">
-                      <Repeat size={16} />
-                      <span>Recurring</span>
-                    </div>
-                  </motion.button>
-                </div>
-
-                <motion.button
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95, y: 0 }}
-                  onClick={toggleTheme}
-                  className="p-2 rounded-xl border border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-300"
-                  title={getThemeTitle()}
-                >
-                  <motion.div
-                    initial={false}
-                    animate={{ rotate: theme === 'dark' ? 180 : theme === 'cyberpunk' ? 360 : 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {getThemeIcon()}
-                  </motion.div>
-                </motion.button>
+                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Donezo</h1>
               </div>
             </div>
-          </motion.header>
-
-          <div className="flex-1 overflow-auto p-6 bg-gray-50/50 dark:bg-gray-900/50">
-            {currentPage === 'tasks' ? (
-              <TodoList
-                todos={currentTodos}
-                onToggle={toggleTodo}
-                onDelete={deleteTodo}
-              />
-            ) : (
-              <div className="flex flex-col items-center justify-center h-full text-center">
+            
+            <div className="flex items-center gap-4">
+              <motion.button
+                whileHover={{ scale: 1.05, y: -2 }}
+                whileTap={{ scale: 0.95, y: 0 }}
+                onClick={toggleTheme}
+                className="p-2 rounded-xl border border-gray-200/50 dark:border-gray-600/50 hover:bg-gray-50/50 dark:hover:bg-gray-700/50 transition-all duration-300"
+                title={getThemeTitle()}
+              >
                 <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5 }}
-                  className="max-w-md"
+                  initial={false}
+                  animate={{ rotate: theme === 'dark' ? 180 : theme === 'cyberpunk' ? 360 : 0 }}
+                  transition={{ duration: 0.3 }}
                 >
-                  <div className="w-16 h-16 bg-teal-100 dark:bg-teal-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Repeat className="w-8 h-8 text-teal-600 dark:text-teal-400" />
-                  </div>
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Recurring Tasks
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    Manage your recurring tasks and set up automatic task generation.
-                  </p>
-                  <motion.button
-                    onClick={() => setShowRecurringTask(true)}
-                    className="btn-primary flex items-center gap-2 mx-auto"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Plus size={18} />
-                    <span>Add Recurring Task</span>
-                  </motion.button>
+                  {getThemeIcon()}
                 </motion.div>
-              </div>
+              </motion.button>
+            </div>
+          </div>
+        </motion.header>
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-auto bg-gray-50/50 dark:bg-gray-900/50 pb-20">
+          <div className="p-6">
+            {activeTab === 'today' && (
+              <motion.div
+                key="today"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Today's Tasks
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    {todaysTasks.length} tasks due today
+                  </p>
+                </div>
+                <TodoList
+                  todos={todaysTasks}
+                  onToggle={toggleTodo}
+                  onDelete={deleteTodo}
+                />
+              </motion.div>
+            )}
+
+            {activeTab === 'lists' && (
+              <motion.div
+                key="lists"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="mb-6">
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Task Lists
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Organize your tasks into different lists
+                  </p>
+                </div>
+                
+                {/* Lists Grid */}
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                  {lists.map((list) => (
+                    <motion.div
+                      key={list.id}
+                      className={`p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                        activeList === list.id
+                          ? 'border-teal-500 bg-teal-50 dark:bg-teal-900/20'
+                          : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-600'
+                      }`}
+                      onClick={() => setActiveList(list.id)}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                    >
+                      <div className="flex items-center gap-3 mb-2">
+                        <div className={`w-3 h-3 ${list.color === 'teal' ? 'bg-teal-500' : list.color === 'blue' ? 'bg-blue-500' : list.color === 'green' ? 'bg-green-500' : 'bg-gray-500'} rounded-full`}></div>
+                        <h3 className="font-semibold text-gray-900 dark:text-white">{list.name}</h3>
+                      </div>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">
+                        {todos.filter(todo => todo.listId === list.id && !todo.completed).length} tasks remaining
+                      </p>
+                    </motion.div>
+                  ))}
+                </div>
+
+                {/* Selected List Tasks */}
+                {activeList && (
+                  <div>
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+                      {currentList?.name} Tasks
+                    </h3>
+                    <TodoList
+                      todos={currentTodos}
+                      onToggle={toggleTodo}
+                      onDelete={deleteTodo}
+                    />
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {activeTab === 'calendar' && (
+              <motion.div
+                key="calendar"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 20 }}
+                transition={{ duration: 0.3 }}
+              >
+                <div className="flex flex-col items-center justify-center h-full text-center">
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5 }}
+                    className="max-w-md"
+                  >
+                    <div className="w-16 h-16 bg-teal-100 dark:bg-teal-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <Calendar className="w-8 h-8 text-teal-600 dark:text-teal-400" />
+                    </div>
+                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                      Calendar View
+                    </h2>
+                    <p className="text-gray-600 dark:text-gray-400 mb-6">
+                      Schedule and view your recurring tasks on a calendar.
+                    </p>
+                    <motion.button
+                      onClick={() => setShowRecurringTask(true)}
+                      className="btn-primary flex items-center gap-2 mx-auto"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Plus size={18} />
+                      <span>Add Recurring Task</span>
+                    </motion.button>
+                  </motion.div>
+                </div>
+              </motion.div>
             )}
           </div>
-
-          {/* Floating Action Button */}
-          <motion.button
-            onClick={handleAddButtonClick}
-            className="fixed bottom-6 right-6 w-14 h-14 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40 flex items-center justify-center"
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            initial={{ scale: 0 }}
-            animate={{ scale: 1 }}
-            transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-          >
-            <Plus size={24} />
-          </motion.button>
         </main>
+
+        {/* Bottom Navigation */}
+        <motion.nav 
+          className="fixed bottom-0 left-0 right-0 bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm border-t border-gray-200/50 dark:border-gray-700/50 z-50"
+          initial={{ y: 100 }}
+          animate={{ y: 0 }}
+          transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
+        >
+          <div className="flex items-center justify-around py-2">
+            {/* Today Tab */}
+            <motion.button
+              onClick={() => setActiveTab('today')}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-200 ${
+                activeTab === 'today'
+                  ? 'text-teal-600 dark:text-teal-400'
+                  : 'text-gray-600 dark:text-gray-400'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Home size={20} />
+              <span className="text-xs font-medium">Today</span>
+            </motion.button>
+
+            {/* Lists Tab */}
+            <motion.button
+              onClick={() => setActiveTab('lists')}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-200 ${
+                activeTab === 'lists'
+                  ? 'text-teal-600 dark:text-teal-400'
+                  : 'text-gray-600 dark:text-gray-400'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <List size={20} />
+              <span className="text-xs font-medium">Lists</span>
+            </motion.button>
+
+            {/* Calendar Tab */}
+            <motion.button
+              onClick={() => setActiveTab('calendar')}
+              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-200 ${
+                activeTab === 'calendar'
+                  ? 'text-teal-600 dark:text-teal-400'
+                  : 'text-gray-600 dark:text-gray-400'
+              }`}
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+            >
+              <Calendar size={20} />
+              <span className="text-xs font-medium">Calendar</span>
+            </motion.button>
+          </div>
+        </motion.nav>
+
+        {/* Floating Action Button */}
+        <motion.button
+          onClick={handleAddButtonClick}
+          className="fixed bottom-20 right-6 w-14 h-14 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40 flex items-center justify-center"
+          whileHover={{ scale: 1.1 }}
+          whileTap={{ scale: 0.9 }}
+          initial={{ scale: 0 }}
+          animate={{ scale: 1 }}
+          transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+        >
+          <Plus size={24} />
+        </motion.button>
 
         {/* AddTodo Modal - moved outside main content */}
         <AnimatePresence mode="wait">
