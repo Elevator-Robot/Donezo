@@ -429,7 +429,7 @@ function App() {
         </motion.header>
 
         {/* Main Content Area */}
-        <main className="flex-1 overflow-auto bg-gray-50/50 dark:bg-gray-900/50 pb-20">
+        <main className="flex-1 overflow-auto bg-gray-50/50 dark:bg-gray-900/50 pb-24">
           <div className="p-6">
             {activeTab === 'today' && (
               <motion.div
@@ -708,11 +708,11 @@ function App() {
           animate={{ y: 0 }}
           transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
         >
-          <div className="flex items-center justify-around py-2">
+          <div className="flex items-center justify-around py-4">
             {/* Today Tab */}
             <motion.button
               onClick={() => setActiveTab('today')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex flex-col items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'today'
                   ? 'text-teal-600 dark:text-teal-400'
                   : 'text-gray-600 dark:text-gray-400'
@@ -720,14 +720,14 @@ function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Home size={20} />
-              <span className="text-xs font-medium">Today</span>
+              <Home size={24} />
+              <span className="text-sm font-medium">Today</span>
             </motion.button>
 
             {/* Lists Tab */}
             <motion.button
               onClick={() => setActiveTab('lists')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex flex-col items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'lists'
                   ? 'text-teal-600 dark:text-teal-400'
                   : 'text-gray-600 dark:text-gray-400'
@@ -735,14 +735,14 @@ function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <List size={20} />
-              <span className="text-xs font-medium">Lists</span>
+              <List size={24} />
+              <span className="text-sm font-medium">Lists</span>
             </motion.button>
 
             {/* Calendar Tab */}
             <motion.button
               onClick={() => setActiveTab('calendar')}
-              className={`flex flex-col items-center gap-1 px-4 py-2 rounded-lg transition-all duration-200 ${
+              className={`flex flex-col items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
                 activeTab === 'calendar'
                   ? 'text-teal-600 dark:text-teal-400'
                   : 'text-gray-600 dark:text-gray-400'
@@ -750,8 +750,8 @@ function App() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              <Calendar size={20} />
-              <span className="text-xs font-medium">Calendar</span>
+              <Calendar size={24} />
+              <span className="text-sm font-medium">Calendar</span>
             </motion.button>
           </div>
         </motion.nav>
@@ -759,7 +759,7 @@ function App() {
         {/* Floating Action Button */}
         <motion.button
           onClick={handleAddButtonClick}
-          className="fixed bottom-20 right-6 w-14 h-14 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40 flex items-center justify-center"
+          className="fixed bottom-24 right-6 w-14 h-14 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40 flex items-center justify-center"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           initial={{ scale: 0 }}
