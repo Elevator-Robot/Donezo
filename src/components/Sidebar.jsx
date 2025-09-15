@@ -176,9 +176,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
                 whileHover={{ scale: 1.02 }}
                 whileTap={{ scale: 0.98 }}
               >
-                <div className={`w-8 h-8 ${colorMap[list.color] || gradientMap[list.color]} rounded-lg flex items-center justify-center`}>
-                  <ListIcon className="w-4 h-4 text-white" />
-                </div>
+                <div className={`w-3 h-3 ${colorMap[list.color] || gradientMap[list.color]} rounded-full`}></div>
                 <span className={`font-medium ${
                   isActive ? 'text-teal-700 dark:text-teal-300' : 'text-gray-700 dark:text-gray-300'
                 }`}>
@@ -204,9 +202,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList, onClos
             whileHover={{ scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
           >
-            <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-lg flex items-center justify-center">
-              <Plus className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-            </div>
+            <div className="w-3 h-3 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
             <span className="font-medium text-gray-600 dark:text-gray-400">Add List</span>
           </motion.button>
         </div>
