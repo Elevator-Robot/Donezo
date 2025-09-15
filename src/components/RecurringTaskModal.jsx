@@ -67,26 +67,35 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
   }
 
   const calculateNextDueDate = () => {
-    const start = new Date(startDate)
+    // Parse the date string in local timezone to avoid timezone issues
+    const [year, month, day] = startDate.split('-').map(Number)
+    const start = new Date(year, month - 1, day) // month is 0-indexed
     const today = new Date()
     
     if (recurrenceType === 'daily') {
-      return start.toISOString().split('T')[0]
+      return formatDateForStorage(start)
     } else if (recurrenceType === 'weekdays') {
       let nextDate = new Date(start)
       while (nextDate.getDay() === 0 || nextDate.getDay() === 6) {
         nextDate.setDate(nextDate.getDate() + 1)
       }
-      return nextDate.toISOString().split('T')[0]
+      return formatDateForStorage(nextDate)
     } else if (recurrenceType === 'weekends') {
       let nextDate = new Date(start)
       while (nextDate.getDay() !== 0 && nextDate.getDay() !== 6) {
         nextDate.setDate(nextDate.getDate() + 1)
       }
-      return nextDate.toISOString().split('T')[0]
+      return formatDateForStorage(nextDate)
     }
     
-    return start.toISOString().split('T')[0]
+    return formatDateForStorage(start)
+  }
+
+  const formatDateForStorage = (date) => {
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   }
 
   const toggleDay = (dayValue) => {

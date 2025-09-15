@@ -296,7 +296,9 @@ function App() {
       if (todo.completed) return false
       if (!todo.dueDate) return false
       
-      const dueDate = new Date(todo.dueDate)
+      // Parse date string in local timezone to avoid timezone issues
+      const [year, month, day] = todo.dueDate.split('-').map(Number)
+      const dueDate = new Date(year, month - 1, day) // month is 0-indexed
       dueDate.setHours(0, 0, 0, 0)
       
       return dueDate <= today
@@ -592,9 +594,13 @@ function App() {
                       const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day)
                       const isToday = date.toDateString() === new Date().toDateString()
                       const isSelected = date.toDateString() === selectedDate.toDateString()
-                      const hasTasks = todos.some(todo => 
-                        todo.dueDate && new Date(todo.dueDate).toDateString() === date.toDateString()
-                      )
+                      const hasTasks = todos.some(todo => {
+                        if (!todo.dueDate) return false
+                        // Parse date string in local timezone to avoid timezone issues
+                        const [year, month, day] = todo.dueDate.split('-').map(Number)
+                        const todoDate = new Date(year, month - 1, day) // month is 0-indexed
+                        return todoDate.toDateString() === date.toDateString()
+                      })
 
                       return (
                         <motion.button
@@ -631,9 +637,13 @@ function App() {
                   </h3>
                   
                   {(() => {
-                    const dayTasks = todos.filter(todo => 
-                      todo.dueDate && new Date(todo.dueDate).toDateString() === selectedDate.toDateString()
-                    )
+                    const dayTasks = todos.filter(todo => {
+                      if (!todo.dueDate) return false
+                      // Parse date string in local timezone to avoid timezone issues
+                      const [year, month, day] = todo.dueDate.split('-').map(Number)
+                      const todoDate = new Date(year, month - 1, day) // month is 0-indexed
+                      return todoDate.toDateString() === selectedDate.toDateString()
+                    })
                     
                     if (dayTasks.length === 0) {
                       return (
