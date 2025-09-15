@@ -708,7 +708,7 @@ function App() {
           animate={{ y: 0 }}
           transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
         >
-          <div className="flex items-center justify-around py-4">
+          <div className="flex items-center justify-around py-2.5">
             {/* Today Tab */}
             <motion.button
               onClick={() => setActiveTab('today')}
@@ -759,7 +759,7 @@ function App() {
         {/* Floating Action Button */}
         <motion.button
           onClick={handleAddButtonClick}
-          className="fixed bottom-24 right-6 w-14 h-14 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40 flex items-center justify-center"
+          className="fixed bottom-24 right-6 w-14 h-14 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-[60] flex items-center justify-center"
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
           initial={{ scale: 0 }}
