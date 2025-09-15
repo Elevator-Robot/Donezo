@@ -44,6 +44,7 @@ function App() {
     return saved ? JSON.parse(saved) : { font: 'Rock Salt' }
   })
   const [showThemeTransition, setShowThemeTransition] = useState(false)
+  const [currentPage, setCurrentPage] = useState('tasks') // 'tasks' or 'recurring'
 
 
   // Save data to localStorage whenever it changes
@@ -403,6 +404,37 @@ function App() {
               </div>
               
               <div className="flex items-center gap-4">
+                {/* Navigation Tabs */}
+                <div className="flex items-center bg-gray-100 dark:bg-gray-700 rounded-lg p-1">
+                  <motion.button
+                    onClick={() => setCurrentPage('tasks')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      currentPage === 'tasks'
+                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Tasks
+                  </motion.button>
+                  <motion.button
+                    onClick={() => setCurrentPage('recurring')}
+                    className={`px-4 py-2 rounded-md text-sm font-medium transition-all duration-200 ${
+                      currentPage === 'recurring'
+                        ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
+                    }`}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    <div className="flex items-center gap-2">
+                      <Repeat size={16} />
+                      <span>Recurring</span>
+                    </div>
+                  </motion.button>
+                </div>
+
                 <motion.button
                   whileHover={{ scale: 1.05, y: -2 }}
                   whileTap={{ scale: 0.95, y: 0 }}
@@ -418,42 +450,60 @@ function App() {
                     {getThemeIcon()}
                   </motion.div>
                 </motion.button>
-
-                {/* Recurring Task Button - only show for task lists */}
-                {currentList?.type === 'task' && (
-                  <motion.button
-                    whileHover={{ scale: 1.05, y: -2 }}
-                    whileTap={{ scale: 0.95, y: 0 }}
-                    onClick={() => setShowRecurringTask(true)}
-                    className="btn-secondary flex items-center gap-2 px-4 py-2"
-                  >
-                    <Repeat size={18} />
-                    <span className="hidden sm:inline font-semibold">Recurring</span>
-                  </motion.button>
-                )}
-                
-                <motion.button
-                  whileHover={{ scale: 1.05, y: -2 }}
-                  whileTap={{ scale: 0.95, y: 0 }}
-                  onClick={handleAddButtonClick}
-                  className="btn-primary flex items-center gap-2 px-4 py-2"
-                >
-                  <Plus size={18} />
-                  <span className="hidden sm:inline font-semibold">
-                    Add Task
-                  </span>
-                </motion.button>
               </div>
             </div>
           </motion.header>
 
           <div className="flex-1 overflow-auto p-6 bg-gray-50/50 dark:bg-gray-900/50">
-            <TodoList
-              todos={currentTodos}
-              onToggle={toggleTodo}
-              onDelete={deleteTodo}
-            />
+            {currentPage === 'tasks' ? (
+              <TodoList
+                todos={currentTodos}
+                onToggle={toggleTodo}
+                onDelete={deleteTodo}
+              />
+            ) : (
+              <div className="flex flex-col items-center justify-center h-full text-center">
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5 }}
+                  className="max-w-md"
+                >
+                  <div className="w-16 h-16 bg-teal-100 dark:bg-teal-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Repeat className="w-8 h-8 text-teal-600 dark:text-teal-400" />
+                  </div>
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                    Recurring Tasks
+                  </h2>
+                  <p className="text-gray-600 dark:text-gray-400 mb-6">
+                    Manage your recurring tasks and set up automatic task generation.
+                  </p>
+                  <motion.button
+                    onClick={() => setShowRecurringTask(true)}
+                    className="btn-primary flex items-center gap-2 mx-auto"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Plus size={18} />
+                    <span>Add Recurring Task</span>
+                  </motion.button>
+                </motion.div>
+              </div>
+            )}
           </div>
+
+          {/* Floating Action Button */}
+          <motion.button
+            onClick={handleAddButtonClick}
+            className="fixed bottom-6 right-6 w-14 h-14 bg-teal-500 hover:bg-teal-600 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-40 flex items-center justify-center"
+            whileHover={{ scale: 1.1 }}
+            whileTap={{ scale: 0.9 }}
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
+          >
+            <Plus size={24} />
+          </motion.button>
         </main>
 
         {/* AddTodo Modal - moved outside main content */}
