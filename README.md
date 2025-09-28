@@ -1,23 +1,24 @@
-# Donezo - Beautiful Todo App
+# Donezo - Minimal Task Manager
 
-A modern, beautiful, and functional todo list application built with React, featuring a teal color scheme and complementary colors. Perfect for organizing tasks with reminders and multiple lists.
+A clean, relaxing, and modern todo list application built with React. Designed for simplicity and focus, perfect for organizing your tasks without distractions.
 
 ## ✨ Features
 
 - **Multiple Todo Lists**: Organize tasks into different categories (Personal, Work, Shopping, etc.)
 - **Smart Reminders**: Set reminders with notifications for your tasks
 - **Priority Levels**: Mark tasks as High, Medium, or Low priority
-- **Beautiful UI**: Modern design with teal color scheme and smooth animations
+- **Minimal Design**: Clean, relaxing interface with subtle colors and smooth animations
 - **Responsive Design**: Works perfectly on desktop and mobile devices
 - **Local Storage**: Your data is saved locally in your browser
 - **Quick Actions**: Easy task management with intuitive controls
 
 ## 🎨 Design
 
-- **Teal Color Scheme**: Primary teal colors with coral and lavender accents
+- **Minimal Color Palette**: Calming gray tones with subtle blue accents
+- **Clean Interface**: Reduced visual complexity for better focus
 - **Smooth Animations**: Powered by Framer Motion for delightful interactions
-- **Modern Typography**: Clean Inter font for excellent readability
-- **Card-based Layout**: Clean, organized interface with subtle shadows
+- **Modern Typography**: Clean Poppins font for excellent readability
+- **Card-based Layout**: Organized interface with subtle shadows
 
 ## 🚀 Getting Started
 
@@ -123,8 +124,8 @@ src/
 ## 🎨 Customization
 
 The app uses a custom Tailwind configuration with:
-- Teal primary colors
-- Coral and lavender accent colors
+- Minimal primary colors (calming grays)
+- Subtle accent colors (soft blue)
 - Custom animations and transitions
 - Responsive design utilities
 
