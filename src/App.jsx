@@ -15,9 +15,9 @@ function App() {
   const [lists, setLists] = useState(() => {
     const saved = localStorage.getItem('donezo-lists')
     return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'Personal', color: 'teal', icon: 'CheckCircle' },
-      { id: '2', name: 'Work', color: 'coral', icon: 'Clock' },
-      { id: '3', name: 'Shopping', color: 'lavender', icon: 'Bell' }
+      { id: '1', name: 'Personal', color: 'primary', icon: 'CheckCircle' },
+      { id: '2', name: 'Work', color: 'accent', icon: 'Clock' },
+      { id: '3', name: 'Shopping', color: 'primary', icon: 'Bell' }
     ]
   })
   
@@ -105,7 +105,7 @@ function App() {
 
   return (
     <Router>
-      <div className="flex h-screen bg-gradient-to-br from-teal-50 to-teal-100">
+      <div className="flex h-screen bg-gray-50">
         <Sidebar 
           lists={lists}
           activeList={activeList}
@@ -121,7 +121,7 @@ function App() {
                 <h1 className="text-2xl font-bold text-gray-900">
                   {currentList?.name || 'All Tasks'}
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-gray-500">
                   {currentTodos.filter(t => !t.completed).length} tasks remaining
                 </p>
               </div>

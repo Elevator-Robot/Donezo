@@ -8,25 +8,25 @@
   }
   
   body {
-    @apply bg-gradient-to-br from-teal-50 to-teal-100 min-h-screen font-sans;
+    @apply bg-gray-50 min-h-screen font-sans text-gray-900;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg;
+    @apply bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md;
   }
   
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-teal-600 font-medium py-2 px-4 rounded-lg border border-teal-200 transition-colors duration-200 shadow-sm hover:shadow-md;
+    @apply bg-white hover:bg-gray-50 text-primary-600 font-medium py-2 px-4 rounded-lg border border-gray-300 transition-colors duration-200 shadow-sm hover:shadow-md;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-lg border border-gray-100 p-6;
+    @apply bg-white rounded-xl shadow-sm border border-gray-100 p-6;
   }
   
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200;
+    @apply w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-400 focus:border-transparent transition-all duration-200;
   }
   
   .todo-item {
@@ -38,14 +38,14 @@
   }
   
   .reminder-urgent {
-    @apply bg-coral-100 text-coral-800;
+    @apply bg-red-100 text-red-700;
   }
   
   .reminder-soon {
-    @apply bg-lavender-100 text-lavender-800;
+    @apply bg-amber-100 text-amber-700;
   }
   
   .reminder-later {
-    @apply bg-teal-100 text-teal-800;
+    @apply bg-primary-100 text-primary-700;
   }
 }
