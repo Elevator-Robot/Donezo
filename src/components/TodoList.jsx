@@ -84,12 +84,12 @@ function TodoList({ todos, onToggle, onDelete }) {
                 onClick={() => onToggle(todo.id)}
                 className={`mt-1 p-1 rounded-full transition-colors duration-200 ${
                   todo.completed 
-                    ? 'text-primary-600 hover:text-primary-700' 
-                    : 'text-gray-400 hover:text-primary-500'
+                    ? 'text-teal-600 hover:text-teal-700' 
+                    : 'text-gray-400 hover:text-teal-500'
                 }`}
               >
                 {todo.completed ? (
-                  <CheckCircle size={20} className="text-primary-600" />
+                  <CheckCircle size={20} className="text-teal-600" />
                 ) : (
                   <Circle size={20} />
                 )}

@@ -197,12 +197,12 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
               )}
 
               {reminder && (
-                  <div className="flex items-center gap-1 mt-2">
-                    <Bell size={16} className="text-gray-400" />
-                    <span className="text-sm text-primary-600">
-                      Reminder set for {new Date(reminder).toLocaleString()}
-                    </span>
-                  </div>
+                <div className="flex items-center gap-2 text-sm text-teal-600">
+                  <Bell size={16} />
+                  <span>
+                    Reminder set for {new Date(reminder).toLocaleString()}
+                  </span>
+                </div>
               )}
             </div>
           </div>

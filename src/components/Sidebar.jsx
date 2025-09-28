@@ -22,14 +22,15 @@ const iconMap = {
 }
 
 const colorMap = {
-  primary: 'bg-primary-500',
-  accent: 'bg-accent-500'
+  teal: 'bg-teal-500',
+  coral: 'bg-coral-500',
+  lavender: 'bg-lavender-500'
 }
 
 function Sidebar({ lists, activeList, setActiveList, addList, deleteList }) {
   const [showAddList, setShowAddList] = useState(false)
   const [newListName, setNewListName] = useState('')
-  const [newListColor, setNewListColor] = useState('primary')
+  const [newListColor, setNewListColor] = useState('teal')
   const [newListIcon, setNewListIcon] = useState('CheckCircle')
 
   const handleAddList = (e) => {
@@ -41,7 +42,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList }) {
         icon: newListIcon
       })
       setNewListName('')
-      setNewListColor('primary')
+      setNewListColor('teal')
       setNewListIcon('CheckCircle')
       setShowAddList(false)
     }
@@ -57,7 +58,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList }) {
     <div className="w-80 bg-white shadow-lg border-r border-gray-200 flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary-500 to-primary-600 rounded-lg flex items-center justify-center">
+          <div className="w-10 h-10 bg-gradient-to-br from-teal-500 to-teal-600 rounded-lg flex items-center justify-center">
             <CheckCircle className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -79,7 +80,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList }) {
                 onClick={() => setActiveList(list.id)}
                 className={`w-full flex items-center justify-between p-3 rounded-lg transition-all duration-200 ${
                   activeList === list.id
-                    ? 'bg-primary-50 border border-primary-200 text-primary-700'
+                    ? 'bg-teal-50 border border-teal-200 text-teal-700'
                     : 'hover:bg-gray-50 text-gray-700'
                 }`}
               >
@@ -131,7 +132,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList }) {
                       type="button"
                       onClick={() => setNewListColor(color)}
                       className={`w-8 h-8 ${bgClass} rounded-lg ${
-                        newListColor === color ? 'ring-2 ring-offset-2 ring-primary-500' : ''
+                        newListColor === color ? 'ring-2 ring-offset-2 ring-teal-500' : ''
                       }`}
                     />
                   ))}
@@ -147,7 +148,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList }) {
                         onClick={() => setNewListIcon(icon)}
                         className={`w-8 h-8 rounded-lg border-2 flex items-center justify-center ${
                           newListIcon === icon
-                            ? 'border-primary-500 bg-primary-50 text-primary-600'
+                            ? 'border-teal-500 bg-teal-50 text-teal-600'
                             : 'border-gray-200 hover:border-gray-300'
                         }`}
                       >
@@ -181,7 +182,7 @@ function Sidebar({ lists, activeList, setActiveList, addList, deleteList }) {
           whileHover={{ scale: 1.02 }}
           whileTap={{ scale: 0.98 }}
           onClick={() => setShowAddList(true)}
-          className="w-full mt-4 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-primary-300 hover:text-primary-600 transition-colors duration-200 flex items-center justify-center gap-2"
+          className="w-full mt-4 p-3 border-2 border-dashed border-gray-300 rounded-lg text-gray-600 hover:border-teal-300 hover:text-teal-600 transition-colors duration-200 flex items-center justify-center gap-2"
         >
           <Plus size={20} />
           New List
