@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
+import { BrowserRouter as Router } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import Sidebar from './components/Sidebar'
-import TodoList from './components/TodoList'
-import AddTodo from './components/AddTodo'
-import { Bell, CheckCircle, Clock, Plus } from 'lucide-react'
+import TodayView from './components/TodayView'
+import ListsView from './components/ListsView'
+import CalendarView from './components/CalendarView'
+import DetailedListView from './components/DetailedListView'
+import BottomNavigation from './components/BottomNavigation'
 
 function App() {
   const [todos, setTodos] = useState(() => {
@@ -21,8 +22,8 @@ function App() {
     ]
   })
   
-  const [activeList, setActiveList] = useState('1')
-  const [showAddTodo, setShowAddTodo] = useState(false)
+  const [activeView, setActiveView] = useState('today')
+  const [selectedList, setSelectedList] = useState(null)
 
   // Save to localStorage whenever todos or lists change
   useEffect(() => {
@@ -69,7 +70,18 @@ function App() {
       reminderShown: false
     }
     setTodos(prev => [...prev, newTodo])
-    setShowAddTodo(false)
+  }
+
+  const addRecurringTodo = (todo) => {
+    const newTodo = {
+      ...todo,
+      id: Date.now().toString(),
+      completed: false,
+      createdAt: new Date().toISOString(),
+      reminderShown: false,
+      isRecurring: true
+    }
+    setTodos(prev => [...prev, newTodo])
   }
 
   const toggleTodo = (id) => {
@@ -94,70 +106,98 @@ function App() {
     if (lists.length > 1) {
       setLists(prev => prev.filter(list => list.id !== id))
       setTodos(prev => prev.filter(todo => todo.listId !== id))
-      if (activeList === id) {
-        setActiveList(lists[0].id)
+      if (selectedList?.id === id) {
+        setSelectedList(null)
       }
     }
   }
 
-  const currentTodos = todos.filter(todo => todo.listId === activeList)
-  const currentList = lists.find(list => list.id === activeList)
+  const navigateToList = (listId) => {
+    const list = lists.find(l => l.id === listId)
+    if (list) {
+      setSelectedList(list)
+    }
+  }
+
+  const navigateBackToLists = () => {
+    setSelectedList(null)
+  }
+
+  const renderCurrentView = () => {
+    // If we have a selected list, show the detailed view regardless of active tab
+    if (selectedList) {
+      return (
+        <DetailedListView
+          list={selectedList}
+          todos={todos}
+          lists={lists}
+          onBack={navigateBackToLists}
+          onToggleTodo={toggleTodo}
+          onDeleteTodo={deleteTodo}
+          onAddTodo={addTodo}
+        />
+      )
+    }
+
+    switch (activeView) {
+      case 'today':
+        return (
+          <TodayView
+            todos={todos}
+            lists={lists}
+            onToggleTodo={toggleTodo}
+            onDeleteTodo={deleteTodo}
+            onAddTodo={addTodo}
+          />
+        )
+      case 'lists':
+        return (
+          <ListsView
+            lists={lists}
+            todos={todos}
+            activeList={null}
+            setActiveList={() => {}}
+            addList={addList}
+            deleteList={deleteList}
+            onNavigateToList={navigateToList}
+          />
+        )
+      case 'calendar':
+        return (
+          <CalendarView
+            todos={todos}
+            lists={lists}
+            onAddRecurringTask={addRecurringTodo}
+            onDeleteTodo={deleteTodo}
+          />
+        )
+      default:
+        return null
+    }
+  }
 
   return (
     <Router>
-      <div className="flex h-screen bg-gradient-to-br from-teal-50 to-teal-100">
-        <Sidebar 
-          lists={lists}
-          activeList={activeList}
-          setActiveList={setActiveList}
-          addList={addList}
-          deleteList={deleteList}
-        />
+      <div className="flex flex-col h-screen bg-gradient-to-br from-teal-50 to-teal-100">
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={selectedList ? 'detail' : activeView}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -20 }}
+            transition={{ duration: 0.2 }}
+            className="flex-1 flex flex-col overflow-hidden"
+          >
+            {renderCurrentView()}
+          </motion.div>
+        </AnimatePresence>
         
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {currentList?.name || 'All Tasks'}
-                </h1>
-                <p className="text-gray-600">
-                  {currentTodos.filter(t => !t.completed).length} tasks remaining
-                </p>
-              </div>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAddTodo(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus size={20} />
-                Add Task
-              </motion.button>
-            </div>
-          </header>
-
-          <div className="flex-1 overflow-auto p-6">
-            <AnimatePresence mode="wait">
-              {showAddTodo && (
-                <AddTodo
-                  key="add-todo"
-                  onAdd={addTodo}
-                  onClose={() => setShowAddTodo(false)}
-                  lists={lists}
-                  activeList={activeList}
-                />
-              )}
-            </AnimatePresence>
-
-            <TodoList
-              todos={currentTodos}
-              onToggle={toggleTodo}
-              onDelete={deleteTodo}
-            />
-          </div>
-        </main>
+        {!selectedList && (
+          <BottomNavigation
+            activeView={activeView}
+            setActiveView={setActiveView}
+          />
+        )}
       </div>
     </Router>
   )
