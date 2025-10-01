@@ -56,13 +56,13 @@ function TodoList({ todos, onToggle, onDelete }) {
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        className="flex flex-col items-center justify-center h-64 text-gray-500"
+        className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400"
       >
-        <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle className="w-8 h-8 text-gray-400" />
+        <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
+          <CheckCircle className="w-8 h-8 text-gray-400 dark:text-gray-500" />
         </div>
-        <h3 className="text-lg font-medium mb-2">No tasks yet</h3>
-        <p className="text-sm text-gray-400">Add your first task to get started!</p>
+        <h3 className="text-lg font-medium mb-2 text-gray-600 dark:text-gray-300">No tasks yet</h3>
+        <p className="text-sm text-gray-400 dark:text-gray-500">Add your first task to get started!</p>
       </motion.div>
     )
   }
@@ -77,19 +77,19 @@ function TodoList({ todos, onToggle, onDelete }) {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, x: -100 }}
             transition={{ delay: index * 0.1 }}
-            className={`todo-item ${todo.completed ? 'opacity-75' : ''}`}
+            className={`todo-item group ${todo.completed ? 'opacity-75' : ''}`}
           >
             <div className="flex items-start gap-3">
               <button
                 onClick={() => onToggle(todo.id)}
                 className={`mt-1 p-1 rounded-full transition-colors duration-200 ${
                   todo.completed 
-                    ? 'text-teal-600 hover:text-teal-700' 
-                    : 'text-gray-400 hover:text-teal-500'
+                    ? 'text-teal-600 dark:text-teal-400 hover:text-teal-700 dark:hover:text-teal-300' 
+                    : 'text-gray-400 dark:text-gray-500 hover:text-teal-500 dark:hover:text-teal-400'
                 }`}
               >
                 {todo.completed ? (
-                  <CheckCircle size={20} className="text-teal-600" />
+                  <CheckCircle size={20} className="text-teal-600 dark:text-teal-400" />
                 ) : (
                   <Circle size={20} />
                 )}
@@ -98,15 +98,15 @@ function TodoList({ todos, onToggle, onDelete }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-start justify-between gap-2">
                   <div className="flex-1 min-w-0">
-                    <h3 className={`font-medium text-gray-900 ${
-                      todo.completed ? 'line-through text-gray-500' : ''
+                    <h3 className={`font-medium text-gray-900 dark:text-white ${
+                      todo.completed ? 'line-through text-gray-500 dark:text-gray-400' : ''
                     }`}>
                       {todo.title}
                     </h3>
                     
                     {todo.description && (
                       <p className={`text-sm mt-1 ${
-                        todo.completed ? 'text-gray-400' : 'text-gray-600'
+                        todo.completed ? 'text-gray-400 dark:text-gray-500' : 'text-gray-600 dark:text-gray-300'
                       }`}>
                         {todo.description}
                       </p>
@@ -114,7 +114,7 @@ function TodoList({ todos, onToggle, onDelete }) {
                     
                     {todo.reminder && (
                       <div className="flex items-center gap-1 mt-2">
-                        <Clock size={14} className="text-gray-400" />
+                        <Clock size={14} className="text-gray-400 dark:text-gray-500" />
                         <span className={`reminder-badge ${getReminderBadgeClass(todo.reminder)}`}>
                           {getReminderText(todo.reminder)}
                         </span>
@@ -124,24 +124,24 @@ function TodoList({ todos, onToggle, onDelete }) {
                   
                   <button
                     onClick={() => onDelete(todo.id)}
-                    className="opacity-0 group-hover:opacity-100 hover:text-red-500 transition-opacity p-1"
+                    className="opacity-0 group-hover:opacity-100 hover:text-red-500 dark:hover:text-red-400 transition-all duration-200 p-1 text-gray-400 dark:text-gray-500"
                   >
                     <Trash2 size={16} />
                   </button>
                 </div>
                 
                 <div className="flex items-center gap-2 mt-2">
-                  <span className="text-xs text-gray-400">
+                  <span className="text-xs text-gray-400 dark:text-gray-500">
                     {format(new Date(todo.createdAt), 'MMM d, yyyy')}
                   </span>
                   
                   {todo.priority && (
                     <span className={`text-xs px-2 py-1 rounded-full ${
                       todo.priority === 'high' 
-                        ? 'bg-red-100 text-red-700'
+                        ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300'
                         : todo.priority === 'medium'
-                        ? 'bg-yellow-100 text-yellow-700'
-                        : 'bg-green-100 text-green-700'
+                        ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300'
+                        : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300'
                     }`}>
                       {todo.priority}
                     </span>

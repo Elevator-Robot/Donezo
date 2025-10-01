@@ -4,33 +4,33 @@
 
 @layer base {
   * {
-    @apply border-border;
+    @apply border-gray-200;
   }
   
   body {
-    @apply bg-gradient-to-br from-teal-50 to-teal-100 min-h-screen font-sans;
+    @apply bg-gradient-to-br from-teal-50 to-teal-100 dark:from-gray-900 dark:to-gray-800 min-h-screen font-sans transition-all duration-500;
   }
 }
 
 @layer components {
   .btn-primary {
-    @apply bg-teal-500 hover:bg-teal-600 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg;
+    @apply bg-teal-500 hover:bg-teal-600 dark:bg-teal-600 dark:hover:bg-teal-700 text-white font-medium py-2 px-4 rounded-lg transition-colors duration-200 shadow-md hover:shadow-lg;
   }
   
   .btn-secondary {
-    @apply bg-white hover:bg-gray-50 text-teal-600 font-medium py-2 px-4 rounded-lg border border-teal-200 transition-colors duration-200 shadow-sm hover:shadow-md;
+    @apply bg-white hover:bg-gray-50 dark:bg-gray-700 dark:hover:bg-gray-600 text-teal-600 dark:text-teal-400 font-medium py-2 px-4 rounded-lg border border-teal-200 dark:border-gray-600 transition-colors duration-200 shadow-sm hover:shadow-md;
   }
   
   .card {
-    @apply bg-white rounded-xl shadow-lg border border-gray-100 p-6;
+    @apply bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 transition-all duration-500;
   }
   
   .input-field {
-    @apply w-full px-4 py-3 border border-gray-200 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent transition-all duration-200;
+    @apply w-full px-4 py-3 border border-gray-200 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 dark:focus:ring-teal-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-200;
   }
   
   .todo-item {
-    @apply bg-white rounded-lg p-4 shadow-sm border border-gray-100 hover:shadow-md transition-all duration-200;
+    @apply bg-white dark:bg-gray-800 rounded-lg p-4 shadow-sm border border-gray-100 dark:border-gray-700 hover:shadow-md transition-all duration-200;
   }
   
   .reminder-badge {
@@ -38,14 +38,14 @@
   }
   
   .reminder-urgent {
-    @apply bg-coral-100 text-coral-800;
+    @apply bg-coral-100 dark:bg-coral-900 text-coral-800 dark:text-coral-200;
   }
   
   .reminder-soon {
-    @apply bg-lavender-100 text-lavender-800;
+    @apply bg-lavender-100 dark:bg-lavender-900 text-lavender-800 dark:text-lavender-200;
   }
   
   .reminder-later {
-    @apply bg-teal-100 text-teal-800;
+    @apply bg-teal-100 dark:bg-teal-900 text-teal-800 dark:text-teal-200;
   }
 }
