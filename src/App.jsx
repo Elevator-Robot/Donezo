@@ -108,7 +108,7 @@ function App() {
   return (
     <ThemeProvider>
       <Router>
-        <div className="flex h-screen bg-gradient-to-br from-teal-50 to-teal-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
+        <div className="flex h-screen bg-gradient-to-br from-teal-50 to-teal-100 dark:from-gray-900 dark:to-gray-800 transition-all duration-500">
         <Sidebar 
           lists={lists}
           activeList={activeList}
