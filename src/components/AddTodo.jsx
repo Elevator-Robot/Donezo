@@ -2,17 +2,24 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X, Clock, Bell, AlertCircle } from 'lucide-react'
 
-function AddTodo({ onAdd, onClose, lists, activeList }) {
+function AddTodo({ onAdd, onClose, lists, activeList, defaultDue }) {
   const [title, setTitle] = useState('')
   const [description, setDescription] = useState('')
-  const [listId, setListId] = useState(activeList)
+  const [listId, setListId] = useState(activeList || (lists.length > 0 ? lists[0].id : ''))
   const [priority, setPriority] = useState('')
+  const [due, setDue] = useState(defaultDue || '')
   const [reminder, setReminder] = useState('')
+  const [recurrence, setRecurrence] = useState('')
   const [showReminderOptions, setShowReminderOptions] = useState(false)
+  const [showRecurrenceOptions, setShowRecurrenceOptions] = useState(false)
 
   useEffect(() => {
-    setListId(activeList)
+    if (activeList) setListId(activeList)
   }, [activeList])
+
+  useEffect(() => {
+    if (defaultDue) setDue(defaultDue)
+  }, [defaultDue])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -24,7 +31,9 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
         listId,
         listName: currentList?.name || 'Unknown',
         priority: priority || null,
-        reminder: reminder || null
+        due: due || null,
+        reminder: reminder || null,
+        recurrence: recurrence || null
       })
     }
   }
@@ -114,6 +123,18 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
 
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
+              Due Date
+            </label>
+            <input
+              type="date"
+              value={due}
+              onChange={(e) => setDue(e.target.value)}
+              className="input-field"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
               Priority
             </label>
             <div className="flex gap-2">
@@ -126,7 +147,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
                   key={option.value}
                   type="button"
                   onClick={() => setPriority(priority === option.value ? '' : option.value)}
-                  className={`px-3 py-2 rounded-lg border-2 transition-all duration-200 ${
+                  className={`px-3 py-2 rounded-lg border-2 transition-all duration-200 min-h-[44px] ${
                     priority === option.value
                       ? `${option.color} border-transparent`
                       : 'border-gray-200 hover:border-gray-300'
@@ -205,6 +226,22 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
                 </div>
               )}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Recurrence
+            </label>
+            <select
+              value={recurrence}
+              onChange={(e) => setRecurrence(e.target.value)}
+              className="input-field"
+            >
+              <option value="">No recurrence</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
           </div>
 
           <div className="flex gap-3 pt-4">

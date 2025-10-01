@@ -1,23 +1,43 @@
-# Donezo - Beautiful Todo App
+# Donezo - Mobile-First Task Manager
 
-A modern, beautiful, and functional todo list application built with React, featuring a teal color scheme and complementary colors. Perfect for organizing tasks with reminders and multiple lists.
+A modern, beautiful, and functional task manager built with React, featuring a mobile-first design with bottom tab navigation, dual themes (Sunset/Night Sky), and smooth 60fps animations. Perfect for organizing tasks with reminders, recurrence, and calendar views.
 
 ## ✨ Features
 
-- **Multiple Todo Lists**: Organize tasks into different categories (Personal, Work, Shopping, etc.)
-- **Smart Reminders**: Set reminders with notifications for your tasks
+- **Mobile-First Design**: Bottom tab navigation optimized for mobile devices (360px+)
+- **Three Main Screens**: 
+  - **Today**: View all tasks due today
+  - **Lists**: Create/edit task lists, tap to view tasks in each list
+  - **Calendar**: Monthly calendar view with task visualization
+- **Dual Theme System**: 
+  - **Sunset Theme**: Warm gradient backgrounds with subtle parallax animation
+  - **Night Sky Theme**: Deep gradients with animated starfield and constellation effects
+- **Task Recurrence**: Create repeating tasks (daily/weekly/monthly)
+- **Smart Reminders**: Set reminders with browser notifications
 - **Priority Levels**: Mark tasks as High, Medium, or Low priority
-- **Beautiful UI**: Modern design with teal color scheme and smooth animations
-- **Responsive Design**: Works perfectly on desktop and mobile devices
-- **Local Storage**: Your data is saved locally in your browser
-- **Quick Actions**: Easy task management with intuitive controls
+- **Smooth Animations**: 60fps transitions with reduced motion accessibility support
+- **Touch-Friendly**: 44px+ touch targets for optimal mobile experience
+- **Safe Area Support**: Proper handling of device safe areas (notches, etc.)
+- **Local Storage**: All data persisted locally in your browser
 
-## 🎨 Design
+## 🎨 Design & Themes
 
-- **Teal Color Scheme**: Primary teal colors with coral and lavender accents
-- **Smooth Animations**: Powered by Framer Motion for delightful interactions
-- **Modern Typography**: Clean Inter font for excellent readability
-- **Card-based Layout**: Clean, organized interface with subtle shadows
+### Sunset Theme (Light)
+- **Warm Gradients**: Subtle parallax animation on warm orange/yellow gradients
+- **Soft Shadows**: Card-based layout with gentle shadows and rounded corners
+- **Accessible Colors**: High contrast text on light backgrounds
+
+### Night Sky Theme (Dark)
+- **Deep Space Gradients**: Rich purple/blue gradients with subtle depth
+- **Starfield Animation**: Animated twinkling stars across the background
+- **Constellation Effects**: On task completion, nearby stars connect to form constellations
+- **Low CPU Impact**: Optimized animations that respect device performance
+
+### Mobile-First UX
+- **Bottom Tab Bar**: Fixed navigation with icons and labels
+- **Floating Action Buttons**: Easy-to-reach add buttons on each screen
+- **Swipe-Friendly**: Smooth transitions between screens
+- **Theme Toggle**: Instant theme switching available on all screens
 
 ## 🚀 Getting Started
 
