@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
+import { ThemeProvider } from './contexts/ThemeContext'
 import Sidebar from './components/Sidebar'
 import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
+import ThemeToggle from './components/ThemeToggle'
 import { Bell, CheckCircle, Clock, Plus } from 'lucide-react'
 
 function App() {
@@ -104,8 +106,9 @@ function App() {
   const currentList = lists.find(list => list.id === activeList)
 
   return (
-    <Router>
-      <div className="flex h-screen bg-gradient-to-br from-teal-50 to-teal-100">
+    <ThemeProvider>
+      <Router>
+        <div className="flex h-screen bg-gradient-to-br from-teal-50 to-teal-100 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
         <Sidebar 
           lists={lists}
           activeList={activeList}
@@ -115,26 +118,29 @@ function App() {
         />
         
         <main className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
+          <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700 px-6 py-4 transition-colors duration-300">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
                   {currentList?.name || 'All Tasks'}
                 </h1>
-                <p className="text-gray-600">
+                <p className="text-gray-600 dark:text-gray-300">
                   {currentTodos.filter(t => !t.completed).length} tasks remaining
                 </p>
               </div>
               
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAddTodo(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus size={20} />
-                Add Task
-              </motion.button>
+              <div className="flex items-center gap-3">
+                <ThemeToggle />
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowAddTodo(true)}
+                  className="btn-primary flex items-center gap-2"
+                >
+                  <Plus size={20} />
+                  Add Task
+                </motion.button>
+              </div>
             </div>
           </header>
 
@@ -158,8 +164,9 @@ function App() {
             />
           </div>
         </main>
-      </div>
-    </Router>
+        </div>
+      </Router>
+    </ThemeProvider>
   )
 }
 

@@ -57,10 +57,10 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900">Add New Task</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add New Task</h2>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors duration-200"
+            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200 text-gray-500 dark:text-gray-400"
           >
             <X size={20} />
           </button>
@@ -68,7 +68,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Task Title *
             </label>
             <input
@@ -83,7 +83,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Description
             </label>
             <textarea
@@ -96,7 +96,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               List
             </label>
             <select
@@ -113,14 +113,14 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Priority
             </label>
             <div className="flex gap-2">
               {[
-                { value: 'low', label: 'Low', color: 'bg-green-100 text-green-700' },
-                { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-700' },
-                { value: 'high', label: 'High', color: 'bg-red-100 text-red-700' }
+                { value: 'low', label: 'Low', color: 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300' },
+                { value: 'medium', label: 'Medium', color: 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-300' },
+                { value: 'high', label: 'High', color: 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-300' }
               ].map((option) => (
                 <button
                   key={option.value}
@@ -129,7 +129,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
                   className={`px-3 py-2 rounded-lg border-2 transition-all duration-200 ${
                     priority === option.value
                       ? `${option.color} border-transparent`
-                      : 'border-gray-200 hover:border-gray-300'
+                      : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 text-gray-700 dark:text-gray-300'
                   }`}
                 >
                   {option.label}
@@ -139,7 +139,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
               Reminder
             </label>
             <div className="space-y-2">
@@ -153,7 +153,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
                 <button
                   type="button"
                   onClick={() => setShowReminderOptions(!showReminderOptions)}
-                  className="p-3 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                  className="p-3 border border-gray-200 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors duration-200 text-gray-600 dark:text-gray-400"
                 >
                   <Clock size={20} />
                 </button>
@@ -163,9 +163,9 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="p-3 bg-gray-50 rounded-lg border border-gray-200"
+                  className="p-3 bg-gray-50 dark:bg-gray-700 rounded-lg border border-gray-200 dark:border-gray-600"
                 >
-                  <div className="text-sm font-medium text-gray-700 mb-2">Quick Reminders</div>
+                  <div className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Quick Reminders</div>
                   <div className="flex flex-wrap gap-2">
                     {[
                       { hours: 1, label: '1 hour' },
@@ -178,7 +178,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
                         key={option.hours}
                         type="button"
                         onClick={() => setQuickReminder(option.hours)}
-                        className="px-3 py-1 text-sm bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors duration-200"
+                        className="px-3 py-1 text-sm bg-white dark:bg-gray-600 border border-gray-200 dark:border-gray-500 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-500 transition-colors duration-200 text-gray-700 dark:text-gray-200"
                       >
                         {option.label}
                       </button>
@@ -188,7 +188,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
                     <button
                       type="button"
                       onClick={clearReminder}
-                      className="mt-2 text-sm text-red-600 hover:text-red-700"
+                      className="mt-2 text-sm text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300"
                     >
                       Clear reminder
                     </button>
@@ -197,7 +197,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
               )}
 
               {reminder && (
-                <div className="flex items-center gap-2 text-sm text-teal-600">
+                <div className="flex items-center gap-2 text-sm text-teal-600 dark:text-teal-400">
                   <Bell size={16} />
                   <span>
                     Reminder set for {new Date(reminder).toLocaleString()}
