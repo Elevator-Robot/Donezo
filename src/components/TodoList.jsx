@@ -1,9 +1,9 @@
 import React from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { format, isToday, isTomorrow, isYesterday } from 'date-fns'
-import { CheckCircle, Circle, Trash2, Clock, Bell } from 'lucide-react'
+import { CheckCircle, Circle, Trash2, Clock, Bell, Search } from 'lucide-react'
 
-function TodoList({ todos, onToggle, onDelete }) {
+function TodoList({ todos, onToggle, onDelete, searchQuery, hasFilters }) {
   const getReminderBadgeClass = (reminder) => {
     if (!reminder) return ''
     
@@ -52,6 +52,7 @@ function TodoList({ todos, onToggle, onDelete }) {
   })
 
   if (todos.length === 0) {
+    const isFiltered = searchQuery || hasFilters
     return (
       <motion.div
         initial={{ opacity: 0 }}
@@ -59,10 +60,21 @@ function TodoList({ todos, onToggle, onDelete }) {
         className="flex flex-col items-center justify-center h-64 text-gray-500 dark:text-gray-400"
       >
         <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mb-4">
-          <CheckCircle className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+          {isFiltered ? (
+            <Search className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+          ) : (
+            <CheckCircle className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+          )}
         </div>
-        <h3 className="text-lg font-medium mb-2 dark:text-gray-300">No tasks yet</h3>
-        <p className="text-sm text-gray-400 dark:text-gray-500">Add your first task to get started!</p>
+        <h3 className="text-lg font-medium mb-2 dark:text-gray-300">
+          {isFiltered ? 'No matching tasks' : 'No tasks yet'}
+        </h3>
+        <p className="text-sm text-gray-400 dark:text-gray-500">
+          {isFiltered 
+            ? 'Try adjusting your search or filters'
+            : 'Add your first task to get started!'
+          }
+        </p>
       </motion.div>
     )
   }
