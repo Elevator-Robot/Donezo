@@ -13,8 +13,8 @@
 
   /* Sunset Theme (Light) */
   [data-theme="sunset"] {
-    --bg-primary: linear-gradient(135deg, #fef7e7 0%, #fed7aa 100%);
-    --bg-secondary: rgba(255, 255, 255, 0.8);
+    --bg-primary: linear-gradient(135deg, #fef7e7 0%, #fed7aa 50%, #fb923c 100%);
+    --bg-secondary: rgba(255, 255, 255, 0.9);
     --text-primary: #1f2937;
     --text-secondary: #6b7280;
     --accent-color: #14b8a6;
@@ -22,8 +22,8 @@
 
   /* Night Sky Theme (Dark) */
   [data-theme="night"] {
-    --bg-primary: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
-    --bg-secondary: rgba(30, 41, 59, 0.8);
+    --bg-primary: linear-gradient(135deg, #0c0a1f 0%, #1e1b4b 50%, #312e81 100%);
+    --bg-secondary: rgba(30, 27, 75, 0.9);
     --text-primary: #f1f5f9;
     --text-secondary: #cbd5e1;
     --accent-color: #06b6d4;
@@ -31,12 +31,20 @@
 
   [data-theme="sunset"] body {
     background: var(--bg-primary);
+    background-attachment: fixed;
     color: var(--text-primary);
+    animation: subtle-parallax 20s ease-in-out infinite;
   }
 
   [data-theme="night"] body {
     background: var(--bg-primary);
+    background-attachment: fixed;
     color: var(--text-primary);
+  }
+
+  @keyframes subtle-parallax {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
   }
 
   /* Safe area support */
@@ -96,6 +104,22 @@
 
   [data-theme="night"] .btn-secondary {
     @apply bg-slate-800/80 text-slate-100 border-slate-600 hover:bg-slate-700/80;
+  }
+
+  [data-theme="night"] h1,
+  [data-theme="night"] h2,
+  [data-theme="night"] h3 {
+    @apply text-slate-100;
+  }
+
+  [data-theme="night"] p,
+  [data-theme="night"] span,
+  [data-theme="night"] .text-gray-600 {
+    @apply text-slate-300;
+  }
+
+  [data-theme="night"] .text-gray-900 {
+    @apply text-slate-100;
   }
   
   .reminder-badge {

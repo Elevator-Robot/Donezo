@@ -9,7 +9,9 @@ function AddTodo({ onAdd, onClose, lists, activeList, defaultDue }) {
   const [priority, setPriority] = useState('')
   const [due, setDue] = useState(defaultDue || '')
   const [reminder, setReminder] = useState('')
+  const [recurrence, setRecurrence] = useState('')
   const [showReminderOptions, setShowReminderOptions] = useState(false)
+  const [showRecurrenceOptions, setShowRecurrenceOptions] = useState(false)
 
   useEffect(() => {
     if (activeList) setListId(activeList)
@@ -30,7 +32,8 @@ function AddTodo({ onAdd, onClose, lists, activeList, defaultDue }) {
         listName: currentList?.name || 'Unknown',
         priority: priority || null,
         due: due || null,
-        reminder: reminder || null
+        reminder: reminder || null,
+        recurrence: recurrence || null
       })
     }
   }
@@ -223,6 +226,22 @@ function AddTodo({ onAdd, onClose, lists, activeList, defaultDue }) {
                 </div>
               )}
             </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Recurrence
+            </label>
+            <select
+              value={recurrence}
+              onChange={(e) => setRecurrence(e.target.value)}
+              className="input-field"
+            >
+              <option value="">No recurrence</option>
+              <option value="daily">Daily</option>
+              <option value="weekly">Weekly</option>
+              <option value="monthly">Monthly</option>
+            </select>
           </div>
 
           <div className="flex gap-3 pt-4">
