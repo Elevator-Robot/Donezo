@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
-import Sidebar from './components/Sidebar'
-import TodoList from './components/TodoList'
-import AddTodo from './components/AddTodo'
-import { Bell, CheckCircle, Clock, Plus } from 'lucide-react'
+import { ThemeProvider } from './contexts/ThemeContext'
+import TabBar from './components/TabBar'
+import TodayView from './components/TodayView'
+import ListsView from './components/ListsView'
+import CalendarView from './components/CalendarView'
+import StarfieldCanvas from './components/StarfieldCanvas'
 
 function App() {
   const [todos, setTodos] = useState(() => {
@@ -21,8 +22,8 @@ function App() {
     ]
   })
   
-  const [activeList, setActiveList] = useState('1')
-  const [showAddTodo, setShowAddTodo] = useState(false)
+  const [activeTab, setActiveTab] = useState('today')
+  const [activeList, setActiveList] = useState(null) // For ListsView navigation
 
   // Save to localStorage whenever todos or lists change
   useEffect(() => {
@@ -39,7 +40,7 @@ function App() {
       const now = new Date()
       todos.forEach(todo => {
         if (todo.reminder && !todo.reminderShown && new Date(todo.reminder) <= now) {
-          showNotification(todo.title, todo.listName)
+          showNotification(todo.title, getListName(todo.listId))
           setTodos(prev => prev.map(t => 
             t.id === todo.id ? { ...t, reminderShown: true } : t
           ))
@@ -51,6 +52,13 @@ function App() {
     return () => clearInterval(interval)
   }, [todos])
 
+  // Request notification permission on app load
+  useEffect(() => {
+    if ('Notification' in window && Notification.permission === 'default') {
+      Notification.requestPermission()
+    }
+  }, [])
+
   const showNotification = (title, listName) => {
     if ('Notification' in window && Notification.permission === 'granted') {
       new Notification(`Reminder: ${title}`, {
@@ -58,6 +66,11 @@ function App() {
         icon: '/vite.svg'
       })
     }
+  }
+
+  const getListName = (listId) => {
+    const list = lists.find(l => l.id === listId)
+    return list?.name || 'Unknown List'
   }
 
   const addTodo = (todo) => {
@@ -69,13 +82,23 @@ function App() {
       reminderShown: false
     }
     setTodos(prev => [...prev, newTodo])
-    setShowAddTodo(false)
+    
+    // Trigger star animation for night theme
+    window.dispatchEvent(new CustomEvent('taskAdded'))
   }
 
   const toggleTodo = (id) => {
+    const todo = todos.find(t => t.id === id)
+    const wasCompleted = todo?.completed
+    
     setTodos(prev => prev.map(todo => 
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     ))
+    
+    // Trigger constellation animation for night theme when completing a task
+    if (!wasCompleted) {
+      window.dispatchEvent(new CustomEvent('taskCompleted'))
+    }
   }
 
   const deleteTodo = (id) => {
@@ -95,71 +118,78 @@ function App() {
       setLists(prev => prev.filter(list => list.id !== id))
       setTodos(prev => prev.filter(todo => todo.listId !== id))
       if (activeList === id) {
-        setActiveList(lists[0].id)
+        setActiveList(null)
       }
     }
   }
 
-  const currentTodos = todos.filter(todo => todo.listId === activeList)
-  const currentList = lists.find(list => list.id === activeList)
+  const renderActiveView = () => {
+    switch (activeTab) {
+      case 'today':
+        return (
+          <TodayView
+            todos={todos}
+            lists={lists}
+            onToggle={toggleTodo}
+            onDelete={deleteTodo}
+            onAdd={addTodo}
+          />
+        )
+      case 'lists':
+        return (
+          <ListsView
+            lists={lists}
+            todos={todos}
+            activeList={activeList}
+            setActiveList={setActiveList}
+            onAddList={addList}
+            onDeleteList={deleteList}
+            onToggle={toggleTodo}
+            onDelete={deleteTodo}
+            onAdd={addTodo}
+          />
+        )
+      case 'calendar':
+        return (
+          <CalendarView
+            todos={todos}
+            lists={lists}
+            onAdd={addTodo}
+            onToggle={toggleTodo}
+            onDelete={deleteTodo}
+          />
+        )
+      default:
+        return null
+    }
+  }
 
   return (
-    <Router>
-      <div className="flex h-screen bg-gradient-to-br from-teal-50 to-teal-100">
-        <Sidebar 
-          lists={lists}
-          activeList={activeList}
-          setActiveList={setActiveList}
-          addList={addList}
-          deleteList={deleteList}
-        />
+    <ThemeProvider>
+      <div className="flex flex-col h-screen overflow-hidden relative">
+        {/* Starfield Canvas (only visible in night theme) */}
+        <StarfieldCanvas />
         
-        <main className="flex-1 flex flex-col overflow-hidden">
-          <header className="bg-white shadow-sm border-b border-gray-200 px-6 py-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-2xl font-bold text-gray-900">
-                  {currentList?.name || 'All Tasks'}
-                </h1>
-                <p className="text-gray-600">
-                  {currentTodos.filter(t => !t.completed).length} tasks remaining
-                </p>
-              </div>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => setShowAddTodo(true)}
-                className="btn-primary flex items-center gap-2"
-              >
-                <Plus size={20} />
-                Add Task
-              </motion.button>
-            </div>
-          </header>
+        {/* Main Content */}
+        <div className="flex-1 overflow-hidden relative z-10">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={activeTab}
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -20 }}
+              transition={{ duration: 0.3, ease: [0.4, 0, 0.2, 1] }}
+              className="h-full"
+            >
+              {renderActiveView()}
+            </motion.div>
+          </AnimatePresence>
+        </div>
 
-          <div className="flex-1 overflow-auto p-6">
-            <AnimatePresence mode="wait">
-              {showAddTodo && (
-                <AddTodo
-                  key="add-todo"
-                  onAdd={addTodo}
-                  onClose={() => setShowAddTodo(false)}
-                  lists={lists}
-                  activeList={activeList}
-                />
-              )}
-            </AnimatePresence>
-
-            <TodoList
-              todos={currentTodos}
-              onToggle={toggleTodo}
-              onDelete={deleteTodo}
-            />
-          </div>
-        </main>
+        {/* Bottom Tab Bar */}
+        <TabBar activeTab={activeTab} setActiveTab={setActiveTab} />
       </div>
-    </Router>
+    </ThemeProvider>
   )
 }
 
