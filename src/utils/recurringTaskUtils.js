@@ -43,12 +43,15 @@ export const calculateNextDueDate = (recurrence, lastDueDate = null) => {
         return startDate.toISOString().split('T')[0]
       }
       
+      // Find the next occurrence of any selected weekday
+      // recurrence.days array contains weekday numbers where Sunday=0, Monday=1, ..., Saturday=6
       let nextCustom = new Date(startDate)
       let attempts = 0
       const maxAttempts = 14 // Prevent infinite loops
       
       while (attempts < maxAttempts) {
         nextCustom.setDate(nextCustom.getDate() + 1)
+        // Check if the current day of week matches any of the selected recurring days
         if (recurrence.days.includes(nextCustom.getDay())) {
           return nextCustom.toISOString().split('T')[0]
         }
@@ -83,7 +86,31 @@ export const shouldCreateNextInstance = (recurrence, lastDueDate, endValue) => {
 
 export const generateRecurringInstances = (recurringTask, count = 10) => {
   const instances = []
+  
+  // Calculate the first valid due date based on the recurrence pattern
+  // For custom recurring tasks (specific weekdays), we need to find the first occurrence
+  // of the selected weekday(s) starting from the start date
   let currentDate = recurringTask.startDate
+  
+  // For custom recurrence, find the first valid date that matches the selected days
+  if (recurringTask.recurrence.type === 'custom' && recurringTask.recurrence.days && recurringTask.recurrence.days.length > 0) {
+    const startDate = new Date(recurringTask.startDate)
+    const targetDays = recurringTask.recurrence.days // Array of weekday numbers (Sunday=0, Monday=1, etc.)
+    
+    // If the start date doesn't match any of the selected weekdays, find the next valid date
+    if (!targetDays.includes(startDate.getDay())) {
+      let nextValidDate = new Date(startDate)
+      let attempts = 0
+      const maxAttempts = 14 // Prevent infinite loops
+      
+      while (!targetDays.includes(nextValidDate.getDay()) && attempts < maxAttempts) {
+        nextValidDate.setDate(nextValidDate.getDate() + 1)
+        attempts++
+      }
+      
+      currentDate = nextValidDate.toISOString().split('T')[0]
+    }
+  }
   
   for (let i = 0; i < count; i++) {
     if (!shouldCreateNextInstance(recurringTask.recurrence, currentDate, recurringTask.recurrence.endValue)) {
