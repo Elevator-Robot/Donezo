@@ -39,8 +39,16 @@ const Auth = ({ onAuthSuccess }) => {
         setError('Username is required')
         return false
       }
+      if (formData.username.length < 3) {
+        setError('Username must be at least 3 characters')
+        return false
+      }
       if (authMode === 'signup' && !formData.email.trim()) {
         setError('Email is required')
+        return false
+      }
+      if (authMode === 'signup' && !formData.email.includes('@')) {
+        setError('Please enter a valid email address')
         return false
       }
       if (!formData.password) {
