@@ -5,10 +5,11 @@ import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
 import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
+import UserProfile from './components/UserProfile'
 import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 
-function App() {
+function App({ currentUser, onLogout }) {
   const [todos, setTodos] = useState(() => {
     const saved = localStorage.getItem('donezo-todos')
     return saved ? JSON.parse(saved) : []
@@ -424,6 +425,13 @@ function App() {
                     {getThemeIcon()}
                   </motion.div>
                 </motion.button>
+                
+                {/* User Profile */}
+                <UserProfile 
+                  currentUser={currentUser}
+                  onLogout={onLogout}
+                  onOpenSettings={() => setShowSettings(true)}
+                />
             </div>
           </div>
         </motion.header>
