@@ -13,6 +13,7 @@ const Auth = ({ onAuthSuccess }) => {
     newPassword: '',
     confirmNewPassword: ''
   })
+  const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
@@ -147,7 +148,7 @@ const Auth = ({ onAuthSuccess }) => {
         localStorage.setItem('donezo-current-user', JSON.stringify(newUser))
 
         console.log('User data stored successfully')
-        onAuthSuccess(newUser, userData)
+        onAuthSuccess(newUser, userData, false) // New users don't need remember me
       } else if (authMode === 'signin') {
         // Sign in
         const existingUsers = JSON.parse(localStorage.getItem('donezo-users') || '[]')
@@ -176,7 +177,7 @@ const Auth = ({ onAuthSuccess }) => {
         console.log('Loaded user data:', userData)
         localStorage.setItem('donezo-current-user', JSON.stringify(user))
 
-        onAuthSuccess(user, userData)
+        onAuthSuccess(user, userData, rememberMe)
       } else if (authMode === 'forgot-password') {
         // Check if email exists
         const existingUsers = JSON.parse(localStorage.getItem('donezo-users') || '[]')
@@ -262,6 +263,7 @@ const Auth = ({ onAuthSuccess }) => {
       newPassword: '',
       confirmNewPassword: ''
     })
+    setRememberMe(false)
     setError('')
     setSuccess('')
     setResetEmail('')
@@ -363,13 +365,27 @@ const Auth = ({ onAuthSuccess }) => {
               </motion.div>
             </motion.div>
 
-            {/* Forgot Password Link */}
-            <motion.div 
-              className="text-right"
+            {/* Remember Me and Forgot Password */}
+            <motion.div
+              className="flex items-center justify-between"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
+              <motion.label 
+                className="flex items-center cursor-pointer"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
+                />
+                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Remember me</span>
+              </motion.label>
+
               <motion.button
                 type="button"
                 onClick={() => setAuthMode('forgot-password')}
@@ -653,6 +669,7 @@ const Auth = ({ onAuthSuccess }) => {
       newPassword: '',
       confirmNewPassword: ''
     })
+    setRememberMe(false)
     setError('')
     setSuccess('')
   }
