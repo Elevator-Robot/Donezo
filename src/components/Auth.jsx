@@ -127,10 +127,12 @@ const Auth = ({ onAuthSuccess }) => {
         existingUsers.push(newUser)
         localStorage.setItem('doink-users', JSON.stringify(existingUsers))
 
-        // Initialize user data
+        // Initialize user data for new users
+        // Each new user starts with empty todos and exactly 3 preset lists
         const userData = {
-          todos: [],
+          todos: [], // Start with no tasks
           // Only 3 preset lists for new users: Personal (teal), Work (blue), Shopping (green)
+          // Each list has: id (unique identifier), name (display name), color (for UI), icon (lucide-react icon), type (task/grocery)
           lists: [
             { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
             { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },

@@ -44,24 +44,27 @@ const ListsView = ({ lists, todos, activeList, setActiveList, onAddList, onDelet
   }
 
   // Handle delete confirmation - shows confirm dialog
+  // This is called when user clicks the trash icon next to a list
   const handleDeleteClick = (list) => {
-    setListToDelete(list)
-    setShowDeleteConfirm(true)
+    setListToDelete(list) // Store which list we want to delete
+    setShowDeleteConfirm(true) // Show the confirmation dialog
   }
 
   // Confirm deletion - actually deletes the list and all its tasks
+  // This is called when user clicks "Delete List" in the confirmation dialog
   const confirmDelete = () => {
     if (listToDelete) {
-      onDeleteList(listToDelete.id)
-      setShowDeleteConfirm(false)
-      setListToDelete(null)
+      onDeleteList(listToDelete.id) // Call the parent component's delete function
+      setShowDeleteConfirm(false) // Hide the confirmation dialog
+      setListToDelete(null) // Clear the stored list
     }
   }
 
-  // Cancel deletion
+  // Cancel deletion - closes the dialog without deleting anything
+  // This is called when user clicks "Cancel" or clicks outside the dialog
   const cancelDelete = () => {
-    setShowDeleteConfirm(false)
-    setListToDelete(null)
+    setShowDeleteConfirm(false) // Hide the confirmation dialog
+    setListToDelete(null) // Clear the stored list
   }
 
   const currentList = lists.find(list => list.id === activeList)

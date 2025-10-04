@@ -272,10 +272,15 @@ function App() {
   }
 
 
+  // Delete a list and all its tasks
+  // This function ensures users always have at least one list
   const deleteList = (id) => {
-    if (lists.length > 1) {
+    if (lists.length > 1) { // Safety check: only delete if more than 1 list exists
+      // Remove the list from the lists array
       setLists(prev => prev.filter(list => list.id !== id))
+      // Remove all tasks that belong to this list
       setTodos(prev => prev.filter(todo => todo.listId !== id))
+      // If the deleted list was the active one, switch to the first remaining list
       if (activeList === id) {
         setActiveList(lists[0].id)
       }
