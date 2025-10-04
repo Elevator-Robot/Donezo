@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build outputs
+dist/
+build/
+
+# Configuration files
+*.config.js
+*.config.cjs
+*.config.mjs
+
+# Logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+
+# Testing
+coverage/
+
+# Other
+.DS_Store
