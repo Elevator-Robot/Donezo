@@ -12,12 +12,12 @@ export const useTheme = () => {
 
 export const ThemeProvider = ({ children }) => {
   const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('donezo-theme')
+    const saved = localStorage.getItem('doink-theme')
     return saved || 'sunset'
   })
 
   useEffect(() => {
-    localStorage.setItem('donezo-theme', theme)
+    localStorage.setItem('doink-theme', theme)
     document.documentElement.setAttribute('data-theme', theme)
   }, [theme])
 

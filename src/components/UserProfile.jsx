@@ -7,7 +7,7 @@ const UserProfile = ({ currentUser, onLogout, onOpenSettings }) => {
 
   const handleLogout = () => {
     // Clear current user from localStorage
-    localStorage.removeItem('donezo-current-user')
+    localStorage.removeItem('doink-current-user')
     onLogout()
   }
 

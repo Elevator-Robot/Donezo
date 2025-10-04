@@ -1,4 +1,4 @@
-# Donezo - Mobile-First Task Manager
+# Doink - Mobile-First Task Manager
 
 A modern, beautiful, and functional task manager built with React, featuring a mobile-first design with bottom tab navigation, dual themes (Sunset/Night Sky), and smooth 60fps animations. Perfect for organizing tasks with reminders, recurrence, and calendar views.
 
@@ -51,7 +51,7 @@ A modern, beautiful, and functional task manager built with React, featuring a m
 1. Clone or download this project
 2. Navigate to the project directory:
    ```bash
-   cd Donezo
+   cd Doink
    ```
 
 3. Install dependencies:
@@ -158,4 +158,4 @@ Feel free to submit issues and enhancement requests!
 
 ---
 
-**Donezo** - Get things done beautifully! ✨
+**Doink** - Get things done beautifully! ✨
