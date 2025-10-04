@@ -75,16 +75,38 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
     if (recurrenceType === 'daily') {
       return formatDateForStorage(start)
     } else if (recurrenceType === 'weekdays') {
+      // If the current date is a weekend (Saturday or Sunday), find the next weekday (Monday to Friday); otherwise, use the current date
       let nextDate = new Date(start)
       while (nextDate.getDay() === 0 || nextDate.getDay() === 6) {
         nextDate.setDate(nextDate.getDate() + 1)
       }
       return formatDateForStorage(nextDate)
     } else if (recurrenceType === 'weekends') {
+      // Find the next weekend day (Saturday=6 or Sunday=0) if the current date is a weekday; use the current date if it is already a weekend.
       let nextDate = new Date(start)
       while (nextDate.getDay() !== 0 && nextDate.getDay() !== 6) {
         nextDate.setDate(nextDate.getDate() + 1)
       }
+      return formatDateForStorage(nextDate)
+    } else if (recurrenceType === 'custom' && recurrenceDays.length > 0) {
+      // Find next occurrence of any selected weekday
+      // recurrenceDays contains weekday numbers (Sunday=0, Monday=1, ..., Saturday=6)
+      let nextDate = new Date(start)
+      
+      // If start date already matches one of the selected days, use it
+      if (recurrenceDays.includes(nextDate.getDay())) {
+        return formatDateForStorage(nextDate)
+      }
+      
+      // Otherwise, find the next matching day
+      let attempts = 0
+      const maxAttempts = 14 // Prevent infinite loops
+      
+      while (!recurrenceDays.includes(nextDate.getDay()) && attempts < maxAttempts) {
+        nextDate.setDate(nextDate.getDate() + 1)
+        attempts++
+      }
+      
       return formatDateForStorage(nextDate)
     }
     

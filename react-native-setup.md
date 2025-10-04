@@ -1,4 +1,4 @@
-# Converting Donezo to React Native for iOS App Store
+# Converting Doink to React Native for iOS App Store
 
 ## Prerequisites
 - Mac computer (required for iOS development)
@@ -13,10 +13,10 @@
 npm install -g @react-native-community/cli
 
 # Create new React Native project
-npx react-native init DonezoApp --template react-native-template-typescript
+npx react-native init DoinkApp --template react-native-template-typescript
 
 # Navigate to project
-cd DonezoApp
+cd DoinkApp
 ```
 
 ## Step 2: Install Required Dependencies
@@ -47,7 +47,7 @@ npm install react-native-svg-transformer
 ## Step 3: Project Structure
 
 ```
-DonezoApp/
+DoinkApp/
 ├── src/
 │   ├── components/
 │   │   ├── TaskItem.tsx
@@ -69,7 +69,7 @@ DonezoApp/
 │   └── types/
 │       └── index.ts
 ├── ios/
-│   └── DonezoApp/
+│   └── DoinkApp/
 │       ├── Info.plist
 │       ├── AppDelegate.m
 │       └── LaunchScreen.storyboard
@@ -109,7 +109,7 @@ DonezoApp/
 Add to Info.plist:
 ```xml
 <key>NSUserNotificationUsageDescription</key>
-<string>Donezo needs notifications to remind you of your tasks</string>
+<string>Doink needs notifications to remind you of your tasks</string>
 ```
 
 ## Step 6: Build and Test

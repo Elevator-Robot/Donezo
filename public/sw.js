@@ -1,4 +1,4 @@
-const CACHE_NAME = 'donezo-v1';
+const CACHE_NAME = 'doink-v1';
 const urlsToCache = [
   '/',
   '/index.html',
