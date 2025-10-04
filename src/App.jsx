@@ -5,36 +5,34 @@ import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
 import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
+import Auth from './components/Auth'
+import UserProfile from './components/UserProfile'
 import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat, X, ChevronLeft, ChevronRight } from 'lucide-react'
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 
 function App() {
-  const [todos, setTodos] = useState(() => {
-    const saved = localStorage.getItem('donezo-todos')
-    return saved ? JSON.parse(saved) : []
+  // Authentication state
+  const [currentUser, setCurrentUser] = useState(() => {
+    const saved = localStorage.getItem('donezo-current-user')
+    return saved ? JSON.parse(saved) : null
   })
-  
-  const [lists, setLists] = useState(() => {
-    const saved = localStorage.getItem('donezo-lists')
-    return saved ? JSON.parse(saved) : [
-      { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
-      { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
-      { id: '3', name: 'Shopping', color: 'green', icon: 'ShoppingCart', type: 'task' }
-    ]
+  const [isAuthenticated, setIsAuthenticated] = useState(() => {
+    return !!localStorage.getItem('donezo-current-user')
   })
+  const [rememberMe, setRememberMe] = useState(() => {
+    return localStorage.getItem('donezo-remember-me') === 'true'
+  })
+
+  // User-specific data states
+  const [todos, setTodos] = useState([])
+  const [lists, setLists] = useState([])
+  const [settings, setSettings] = useState({ font: 'Rock Salt' })
+  const [theme, setTheme] = useState('light')
   
   const [activeList, setActiveList] = useState('1')
   const [showAddTodo, setShowAddTodo] = useState(false)
   const [showRecurringTask, setShowRecurringTask] = useState(false)
-  const [theme, setTheme] = useState(() => {
-    const saved = localStorage.getItem('donezo-theme')
-    return saved || 'light'
-  })
   const [showSettings, setShowSettings] = useState(false)
-  const [settings, setSettings] = useState(() => {
-    const saved = localStorage.getItem('donezo-settings')
-    return saved ? JSON.parse(saved) : { font: 'Rock Salt' }
-  })
   const [showThemeTransition, setShowThemeTransition] = useState(false)
   const [activeTab, setActiveTab] = useState('today') // 'today', 'lists', 'calendar'
   const [showListModal, setShowListModal] = useState(false)
@@ -45,19 +43,98 @@ function App() {
   const [swipeStartX, setSwipeStartX] = useState(null)
   const [swipeStartY, setSwipeStartY] = useState(null)
 
-
-  // Save data to localStorage whenever it changes
+  // Load user data when authenticated user changes
   useEffect(() => {
-    localStorage.setItem('donezo-todos', JSON.stringify(todos))
-  }, [todos])
+    if (currentUser) {
+      console.log('Loading data for user:', currentUser.id)
+      const userData = {
+        todos: JSON.parse(localStorage.getItem(`donezo-user-${currentUser.id}-todos`) || '[]'),
+        lists: JSON.parse(localStorage.getItem(`donezo-user-${currentUser.id}-lists`) || '[]'),
+        settings: JSON.parse(localStorage.getItem(`donezo-user-${currentUser.id}-settings`) || '{"font": "Rock Salt"}'),
+        theme: localStorage.getItem(`donezo-user-${currentUser.id}-theme`) || 'light'
+      }
+      
+      // If lists are empty, initialize with default lists
+      if (userData.lists.length === 0) {
+        userData.lists = [
+          { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
+          { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
+          { id: '3', name: 'Shopping', color: 'green', icon: 'ShoppingCart', type: 'task' }
+        ]
+        localStorage.setItem(`donezo-user-${currentUser.id}-lists`, JSON.stringify(userData.lists))
+      }
+      
+      setTodos(userData.todos)
+      setLists(userData.lists)
+      setSettings(userData.settings)
+      setTheme(userData.theme)
+      setActiveList(userData.lists[0]?.id || '1')
+    } else {
+      // Clear data when logged out
+      setTodos([])
+      setLists([])
+      setSettings({ font: 'Rock Salt' })
+      setTheme('light')
+    }
+  }, [currentUser])
+
+  // Session timeout check
+  useEffect(() => {
+    if (currentUser && !rememberMe) {
+      const sessionTimeout = 30 * 60 * 1000 // 30 minutes
+      const lastActivity = localStorage.getItem('donezo-last-activity')
+      
+      if (lastActivity && Date.now() - parseInt(lastActivity) > sessionTimeout) {
+        handleLogout()
+        return
+      }
+      
+      const interval = setInterval(() => {
+        const lastActivity = localStorage.getItem('donezo-last-activity')
+        if (lastActivity && Date.now() - parseInt(lastActivity) > sessionTimeout) {
+          handleLogout()
+        }
+      }, 60000) // Check every minute
+      
+      return () => clearInterval(interval)
+    }
+  }, [currentUser, rememberMe])
+
+  // Update last activity on user interaction
+  useEffect(() => {
+    if (currentUser && !rememberMe) {
+      const updateActivity = () => {
+        localStorage.setItem('donezo-last-activity', Date.now().toString())
+      }
+      
+      document.addEventListener('mousedown', updateActivity)
+      document.addEventListener('keydown', updateActivity)
+      
+      return () => {
+        document.removeEventListener('mousedown', updateActivity)
+        document.removeEventListener('keydown', updateActivity)
+      }
+    }
+  }, [currentUser, rememberMe])
+
+  // Save data to user-specific localStorage whenever it changes
+  useEffect(() => {
+    if (currentUser) {
+      localStorage.setItem(`donezo-user-${currentUser.id}-todos`, JSON.stringify(todos))
+    }
+  }, [todos, currentUser])
 
   useEffect(() => {
-    localStorage.setItem('donezo-lists', JSON.stringify(lists))
-  }, [lists])
+    if (currentUser) {
+      localStorage.setItem(`donezo-user-${currentUser.id}-lists`, JSON.stringify(lists))
+    }
+  }, [lists, currentUser])
 
   useEffect(() => {
     console.log('Theme changed to:', theme)
-    localStorage.setItem('donezo-theme', theme)
+    if (currentUser) {
+      localStorage.setItem(`donezo-user-${currentUser.id}-theme`, theme)
+    }
     document.documentElement.setAttribute('data-theme', theme)
     console.log('Applied data-theme attribute:', document.documentElement.getAttribute('data-theme'))
     // Also set the class for Tailwind dark mode
@@ -66,18 +143,49 @@ function App() {
     } else {
       document.documentElement.classList.remove('dark')
     }
-  }, [theme])
+  }, [theme, currentUser])
 
   // Save settings to localStorage
   useEffect(() => {
-    localStorage.setItem('donezo-settings', JSON.stringify(settings))
-  }, [settings])
+    if (currentUser) {
+      localStorage.setItem(`donezo-user-${currentUser.id}-settings`, JSON.stringify(settings))
+    }
+  }, [settings, currentUser])
 
   // Apply font settings
   useEffect(() => {
     // Apply font
     document.documentElement.style.setProperty('--app-font', `'${settings.font}'`)
   }, [settings])
+
+  // Authentication handlers
+  const handleAuthSuccess = (user, userData, remember = false) => {
+    console.log('Authentication successful:', user)
+    setCurrentUser(user)
+    setIsAuthenticated(true)
+    setRememberMe(remember)
+    
+    if (remember) {
+      localStorage.setItem('donezo-remember-me', 'true')
+    } else {
+      localStorage.setItem('donezo-remember-me', 'false')
+      localStorage.setItem('donezo-last-activity', Date.now().toString())
+    }
+    
+    // Data will be loaded by the useEffect hook
+  }
+
+  const handleLogout = () => {
+    console.log('Logging out user:', currentUser?.username)
+    setCurrentUser(null)
+    setIsAuthenticated(false)
+    setRememberMe(false)
+    
+    // Clear session data
+    localStorage.removeItem('donezo-current-user')
+    localStorage.removeItem('donezo-remember-me')
+    localStorage.removeItem('donezo-last-activity')
+  }
 
 
   const addTodo = (todo) => {
@@ -310,6 +418,11 @@ function App() {
   const todaysTasks = getTodaysTasks()
 
 
+  // Show authentication screen if not authenticated
+  if (!isAuthenticated) {
+    return <Auth onAuthSuccess={handleAuthSuccess} />
+  }
+
   return (
     <Router>
       <div className="flex flex-col h-screen relative">
@@ -424,6 +537,12 @@ function App() {
                     {getThemeIcon()}
                   </motion.div>
                 </motion.button>
+                
+                <UserProfile 
+                  currentUser={currentUser}
+                  onLogout={handleLogout}
+                  onOpenSettings={() => setShowSettings(true)}
+                />
             </div>
           </div>
         </motion.header>
