@@ -13,14 +13,14 @@ import { generateRecurringInstances, calculateNextDueDate } from './utils/recurr
 function App() {
   // Authentication state
   const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('donezo-current-user')
+    const saved = localStorage.getItem('doink-current-user')
     return saved ? JSON.parse(saved) : null
   })
   const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('donezo-current-user')
+    return !!localStorage.getItem('doink-current-user')
   })
   const [rememberMe, setRememberMe] = useState(() => {
-    return localStorage.getItem('donezo-remember-me') === 'true'
+    return localStorage.getItem('doink-remember-me') === 'true'
   })
 
   // User-specific data states
@@ -48,10 +48,10 @@ function App() {
     if (currentUser) {
       console.log('Loading data for user:', currentUser.id)
       const userData = {
-        todos: JSON.parse(localStorage.getItem(`donezo-user-${currentUser.id}-todos`) || '[]'),
-        lists: JSON.parse(localStorage.getItem(`donezo-user-${currentUser.id}-lists`) || '[]'),
-        settings: JSON.parse(localStorage.getItem(`donezo-user-${currentUser.id}-settings`) || '{"font": "Rock Salt"}'),
-        theme: localStorage.getItem(`donezo-user-${currentUser.id}-theme`) || 'light'
+        todos: JSON.parse(localStorage.getItem(`doink-user-${currentUser.id}-todos`) || '[]'),
+        lists: JSON.parse(localStorage.getItem(`doink-user-${currentUser.id}-lists`) || '[]'),
+        settings: JSON.parse(localStorage.getItem(`doink-user-${currentUser.id}-settings`) || '{"font": "Rock Salt"}'),
+        theme: localStorage.getItem(`doink-user-${currentUser.id}-theme`) || 'light'
       }
       
       // If lists are empty, initialize with default lists
@@ -61,7 +61,7 @@ function App() {
           { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
           { id: '3', name: 'Shopping', color: 'green', icon: 'ShoppingCart', type: 'task' }
         ]
-        localStorage.setItem(`donezo-user-${currentUser.id}-lists`, JSON.stringify(userData.lists))
+        localStorage.setItem(`doink-user-${currentUser.id}-lists`, JSON.stringify(userData.lists))
       }
       
       setTodos(userData.todos)
@@ -82,7 +82,7 @@ function App() {
   useEffect(() => {
     if (currentUser && !rememberMe) {
       const sessionTimeout = 30 * 60 * 1000 // 30 minutes
-      const lastActivity = localStorage.getItem('donezo-last-activity')
+      const lastActivity = localStorage.getItem('doink-last-activity')
       
       if (lastActivity && Date.now() - parseInt(lastActivity) > sessionTimeout) {
         handleLogout()
@@ -90,7 +90,7 @@ function App() {
       }
       
       const interval = setInterval(() => {
-        const lastActivity = localStorage.getItem('donezo-last-activity')
+        const lastActivity = localStorage.getItem('doink-last-activity')
         if (lastActivity && Date.now() - parseInt(lastActivity) > sessionTimeout) {
           handleLogout()
         }
@@ -104,7 +104,7 @@ function App() {
   useEffect(() => {
     if (currentUser && !rememberMe) {
       const updateActivity = () => {
-        localStorage.setItem('donezo-last-activity', Date.now().toString())
+        localStorage.setItem('doink-last-activity', Date.now().toString())
       }
       
       document.addEventListener('mousedown', updateActivity)
@@ -120,20 +120,20 @@ function App() {
   // Save data to user-specific localStorage whenever it changes
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem(`donezo-user-${currentUser.id}-todos`, JSON.stringify(todos))
+      localStorage.setItem(`doink-user-${currentUser.id}-todos`, JSON.stringify(todos))
     }
   }, [todos, currentUser])
 
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem(`donezo-user-${currentUser.id}-lists`, JSON.stringify(lists))
+      localStorage.setItem(`doink-user-${currentUser.id}-lists`, JSON.stringify(lists))
     }
   }, [lists, currentUser])
 
   useEffect(() => {
     console.log('Theme changed to:', theme)
     if (currentUser) {
-      localStorage.setItem(`donezo-user-${currentUser.id}-theme`, theme)
+      localStorage.setItem(`doink-user-${currentUser.id}-theme`, theme)
     }
     document.documentElement.setAttribute('data-theme', theme)
     console.log('Applied data-theme attribute:', document.documentElement.getAttribute('data-theme'))
@@ -148,7 +148,7 @@ function App() {
   // Save settings to localStorage
   useEffect(() => {
     if (currentUser) {
-      localStorage.setItem(`donezo-user-${currentUser.id}-settings`, JSON.stringify(settings))
+      localStorage.setItem(`doink-user-${currentUser.id}-settings`, JSON.stringify(settings))
     }
   }, [settings, currentUser])
 
@@ -166,10 +166,10 @@ function App() {
     setRememberMe(remember)
     
     if (remember) {
-      localStorage.setItem('donezo-remember-me', 'true')
+      localStorage.setItem('doink-remember-me', 'true')
     } else {
-      localStorage.setItem('donezo-remember-me', 'false')
-      localStorage.setItem('donezo-last-activity', Date.now().toString())
+      localStorage.setItem('doink-remember-me', 'false')
+      localStorage.setItem('doink-last-activity', Date.now().toString())
     }
     
     // Data will be loaded by the useEffect hook
@@ -182,9 +182,9 @@ function App() {
     setRememberMe(false)
     
     // Clear session data
-    localStorage.removeItem('donezo-current-user')
-    localStorage.removeItem('donezo-remember-me')
-    localStorage.removeItem('donezo-last-activity')
+    localStorage.removeItem('doink-current-user')
+    localStorage.removeItem('doink-remember-me')
+    localStorage.removeItem('doink-last-activity')
   }
 
 

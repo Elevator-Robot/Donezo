@@ -26,6 +26,9 @@ const ListsView = ({ lists, todos, activeList, setActiveList, onAddList, onDelet
   const [newListName, setNewListName] = useState('')
   const [newListIcon, setNewListIcon] = useState('CheckCircle')
   const [newListColor, setNewListColor] = useState('teal')
+  // Confirmation dialog state for list deletion
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [listToDelete, setListToDelete] = useState(null)
 
   const handleAddList = (e) => {
     e.preventDefault()
@@ -38,6 +41,27 @@ const ListsView = ({ lists, todos, activeList, setActiveList, onAddList, onDelet
       setNewListName('')
       setShowAddList(false)
     }
+  }
+
+  // Handle delete confirmation - shows confirm dialog
+  const handleDeleteClick = (list) => {
+    setListToDelete(list)
+    setShowDeleteConfirm(true)
+  }
+
+  // Confirm deletion - actually deletes the list and all its tasks
+  const confirmDelete = () => {
+    if (listToDelete) {
+      onDeleteList(listToDelete.id)
+      setShowDeleteConfirm(false)
+      setListToDelete(null)
+    }
+  }
+
+  // Cancel deletion
+  const cancelDelete = () => {
+    setShowDeleteConfirm(false)
+    setListToDelete(null)
   }
 
   const currentList = lists.find(list => list.id === activeList)
@@ -152,9 +176,10 @@ const ListsView = ({ lists, todos, activeList, setActiveList, onAddList, onDelet
                       whileTap={{ scale: 0.9 }}
                       onClick={(e) => {
                         e.stopPropagation()
-                        onDeleteList(list.id)
+                        handleDeleteClick(list)
                       }}
                       className="p-2 hover:text-red-500 transition-all"
+                      title="Delete list"
                     >
                       <Trash2 size={16} />
                     </motion.button>
@@ -217,6 +242,48 @@ const ListsView = ({ lists, todos, activeList, setActiveList, onAddList, onDelet
       >
         <Plus size={24} />
       </motion.button>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {showDeleteConfirm && listToDelete && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={cancelDelete}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-lg shadow-xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Delete "{listToDelete.name}" List?
+              </h3>
+              <p className="text-gray-600 mb-6">
+                This will permanently delete the list and all {todos.filter(t => t.listId === listToDelete.id).length} tasks in it. This action cannot be undone.
+              </p>
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={cancelDelete}
+                  className="px-4 py-2 bg-gray-200 hover:bg-gray-300 text-gray-800 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-lg transition-colors"
+                >
+                  Delete List
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

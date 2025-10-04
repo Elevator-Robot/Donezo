@@ -103,7 +103,7 @@ const Auth = ({ onAuthSuccess }) => {
 
       if (authMode === 'signup') {
         // Check if user already exists
-        const existingUsers = JSON.parse(localStorage.getItem('donezo-users') || '[]')
+        const existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
         const userExists = existingUsers.find(user => 
           user.username === formData.username || user.email === formData.email
         )
@@ -125,20 +125,16 @@ const Auth = ({ onAuthSuccess }) => {
         console.log('Creating new user:', newUser)
 
         existingUsers.push(newUser)
-        localStorage.setItem('donezo-users', JSON.stringify(existingUsers))
+        localStorage.setItem('doink-users', JSON.stringify(existingUsers))
 
         // Initialize user data
         const userData = {
           todos: [],
+          // Only 3 preset lists for new users: Personal (teal), Work (blue), Shopping (green)
           lists: [
             { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
             { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
-            { id: '3', name: 'Grocery', color: 'green', icon: 'ShoppingCart', type: 'grocery' },
-            { id: '4', name: 'Shopping', color: 'pink', icon: 'ShoppingBag', type: 'task' },
-            { id: '5', name: 'Health', color: 'emerald', icon: 'Activity', type: 'task' },
-            { id: '6', name: 'Learning', color: 'purple', icon: 'BookOpen', type: 'task' },
-            { id: '7', name: 'Home Projects', color: 'orange', icon: 'Home', type: 'task' },
-            { id: '8', name: 'Reading List', color: 'indigo', icon: 'Book', type: 'task' }
+            { id: '3', name: 'Shopping', color: 'green', icon: 'ShoppingCart', type: 'task' }
           ],
           settings: {
             font: 'Rock Salt'
@@ -149,17 +145,17 @@ const Auth = ({ onAuthSuccess }) => {
         console.log('Initializing user data:', userData)
 
         // Store user data with the correct key format
-        localStorage.setItem(`donezo-user-${newUser.id}-todos`, JSON.stringify(userData.todos))
-        localStorage.setItem(`donezo-user-${newUser.id}-lists`, JSON.stringify(userData.lists))
-        localStorage.setItem(`donezo-user-${newUser.id}-settings`, JSON.stringify(userData.settings))
-        localStorage.setItem(`donezo-user-${newUser.id}-theme`, userData.theme)
-        localStorage.setItem('donezo-current-user', JSON.stringify(newUser))
+        localStorage.setItem(`doink-user-${newUser.id}-todos`, JSON.stringify(userData.todos))
+        localStorage.setItem(`doink-user-${newUser.id}-lists`, JSON.stringify(userData.lists))
+        localStorage.setItem(`doink-user-${newUser.id}-settings`, JSON.stringify(userData.settings))
+        localStorage.setItem(`doink-user-${newUser.id}-theme`, userData.theme)
+        localStorage.setItem('doink-current-user', JSON.stringify(newUser))
 
         console.log('User data stored successfully')
         onAuthSuccess(newUser, userData, false) // New users don't need remember me
       } else if (authMode === 'signin') {
         // Sign in
-        const existingUsers = JSON.parse(localStorage.getItem('donezo-users') || '[]')
+        const existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
         console.log('Attempting signin for username:', formData.username)
         console.log('Existing users:', existingUsers)
         
@@ -176,19 +172,19 @@ const Auth = ({ onAuthSuccess }) => {
 
         // Load user data from the correct localStorage keys
         const userData = {
-          todos: JSON.parse(localStorage.getItem(`donezo-user-${user.id}-todos`) || '[]'),
-          lists: JSON.parse(localStorage.getItem(`donezo-user-${user.id}-lists`) || '[]'),
-          settings: JSON.parse(localStorage.getItem(`donezo-user-${user.id}-settings`) || '{"font": "Rock Salt"}'),
-          theme: localStorage.getItem(`donezo-user-${user.id}-theme`) || 'light'
+          todos: JSON.parse(localStorage.getItem(`doink-user-${user.id}-todos`) || '[]'),
+          lists: JSON.parse(localStorage.getItem(`doink-user-${user.id}-lists`) || '[]'),
+          settings: JSON.parse(localStorage.getItem(`doink-user-${user.id}-settings`) || '{"font": "Rock Salt"}'),
+          theme: localStorage.getItem(`doink-user-${user.id}-theme`) || 'light'
         }
         
         console.log('Loaded user data:', userData)
-        localStorage.setItem('donezo-current-user', JSON.stringify(user))
+        localStorage.setItem('doink-current-user', JSON.stringify(user))
 
         onAuthSuccess(user, userData, rememberMe)
       } else if (authMode === 'forgot-password') {
         // Check if email exists
-        const existingUsers = JSON.parse(localStorage.getItem('donezo-users') || '[]')
+        const existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
         const user = existingUsers.find(user => user.email === formData.email)
 
         if (!user) {
@@ -200,8 +196,8 @@ const Auth = ({ onAuthSuccess }) => {
         const resetCode = Math.random().toString(36).substring(2, 8).toUpperCase()
         
         // Store reset code temporarily (in a real app, this would be in a database)
-        localStorage.setItem('donezo-reset-codes', JSON.stringify({
-          ...JSON.parse(localStorage.getItem('donezo-reset-codes') || '{}'),
+        localStorage.setItem('doink-reset-codes', JSON.stringify({
+          ...JSON.parse(localStorage.getItem('doink-reset-codes') || '{}'),
           [formData.email]: {
             code: resetCode,
             userId: user.id,
@@ -214,7 +210,7 @@ const Auth = ({ onAuthSuccess }) => {
         setAuthMode('reset-password')
       } else if (authMode === 'reset-password') {
         // Verify reset code and update password
-        const resetCodes = JSON.parse(localStorage.getItem('donezo-reset-codes') || '{}')
+        const resetCodes = JSON.parse(localStorage.getItem('doink-reset-codes') || '{}')
         const resetData = resetCodes[resetEmail]
 
         if (!resetData || resetData.code !== formData.resetCode.toUpperCase()) {
@@ -228,18 +224,18 @@ const Auth = ({ onAuthSuccess }) => {
         }
 
         // Update user password
-        const existingUsers = JSON.parse(localStorage.getItem('donezo-users') || '[]')
+        const existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
         const updatedUsers = existingUsers.map(user => 
           user.id === resetData.userId 
             ? { ...user, password: formData.newPassword }
             : user
         )
 
-        localStorage.setItem('donezo-users', JSON.stringify(updatedUsers))
+        localStorage.setItem('doink-users', JSON.stringify(updatedUsers))
         
         // Clean up reset code
         delete resetCodes[resetEmail]
-        localStorage.setItem('donezo-reset-codes', JSON.stringify(resetCodes))
+        localStorage.setItem('doink-reset-codes', JSON.stringify(resetCodes))
 
         setSuccess('Password updated successfully! You can now sign in.')
         setAuthMode('signin')
