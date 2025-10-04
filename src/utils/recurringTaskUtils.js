@@ -43,8 +43,7 @@ export const calculateNextDueDate = (recurrence, lastDueDate = null) => {
         return startDate.toISOString().split('T')[0]
       }
       
-      // Find the next occurrence of any selected weekday
-      // recurrence.days array contains weekday numbers where Sunday=0, Monday=1, ..., Saturday=6
+      // Find next occurrence of selected weekdays (Sunday=0, Monday=1, ..., Saturday=6)
       let nextCustom = new Date(startDate)
       let attempts = 0
       const maxAttempts = 14 // Prevent infinite loops
