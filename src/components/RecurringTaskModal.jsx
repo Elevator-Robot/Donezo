@@ -82,7 +82,7 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
       }
       return formatDateForStorage(nextDate)
     } else if (recurrenceType === 'weekends') {
-      // Find next weekend (Saturday=6 or Sunday=0)
+      // Find the next weekend day (Saturday=6 or Sunday=0) if the current date is a weekday; use the current date if it is already a weekend.
       let nextDate = new Date(start)
       while (nextDate.getDay() !== 0 && nextDate.getDay() !== 6) {
         nextDate.setDate(nextDate.getDate() + 1)
