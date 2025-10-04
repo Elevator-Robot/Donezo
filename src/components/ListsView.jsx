@@ -154,7 +154,7 @@ const ListsView = ({ lists, todos, activeList, setActiveList, onAddList, onDelet
                         e.stopPropagation()
                         onDeleteList(list.id)
                       }}
-                      className="opacity-0 group-hover:opacity-100 p-2 hover:text-red-500 transition-all"
+                      className="p-2 hover:text-red-500 transition-all"
                     >
                       <Trash2 size={16} />
                     </motion.button>

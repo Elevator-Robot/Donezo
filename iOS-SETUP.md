@@ -1,14 +1,14 @@
-# 📱 iOS Setup Guide for Donezo
+# 📱 iOS Setup Guide for Doink
 
-## 🚀 How to Use Donezo on iOS
+## 🚀 How to Use Doink on iOS
 
 ### **Option 1: Use in Safari (Recommended)**
 1. Open Safari on your iPhone or iPad
-2. Navigate to the Donezo app URL
+2. Navigate to the Doink app URL (https://mydoink.com)
 3. The app will work perfectly in Safari with all features
 
 ### **Option 2: Add to Home Screen (PWA)**
-1. Open Safari and navigate to the Donezo app
+1. Open Safari and navigate to the Doink app (https://mydoink.com)
 2. Tap the **Share** button (square with arrow pointing up)
 3. Scroll down and tap **"Add to Home Screen"**
 4. Tap **"Add"** to confirm
@@ -94,4 +94,4 @@ If you encounter any issues:
 
 ---
 
-**Donezo** - Get things done beautifully on iOS! ✨📱
+**Doink** - Get things done beautifully on iOS! ✨📱

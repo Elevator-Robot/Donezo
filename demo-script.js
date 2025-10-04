@@ -1,7 +1,7 @@
-// Demo script for Donezo Mobile-First Task Manager
+// Demo script for Doink Mobile-First Task Manager
 // This script demonstrates the key features implemented
 
-console.log('🌅 Donezo Mobile-First Task Manager Demo');
+console.log('🌅 Doink Mobile-First Task Manager Demo');
 console.log('==========================================');
 
 // Simulate localStorage data that would be created by the app

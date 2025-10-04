@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <meta name="apple-mobile-web-app-title" content="Donezo">
+    <meta name="apple-mobile-web-app-title" content="Doink">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#14b8a6">
     <meta name="msapplication-TileColor" content="#14b8a6">
     <link rel="manifest" href="./manifest.json">
-    <title>Donezo - Beautiful Todo App</title>
+    <title>Doink - Beautiful Todo App</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -1291,7 +1291,7 @@
             <div class="p-6 border-b border-gray-200/30">
                 <div class="flex items-center gap-3">
                     <div class="w-12 h-12 bg-gradient-to-br from-teal-500 via-orange-400 to-teal-600 rounded-xl flex items-center justify-center shadow-lg relative overflow-hidden">
-                        <!-- Custom Donezo Icon -->
+                        <!-- Custom Doink Icon -->
                         <svg class="w-7 h-7 text-white relative z-10" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
                             <!-- Zen circle background -->
                             <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5" fill="none" opacity="0.8"/>
@@ -1307,7 +1307,7 @@
                         <div class="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent rounded-xl"></div>
                     </div>
                     <div>
-                        <h1 class="text-xl font-bold text-gray-900">Donezo</h1>
+                        <h1 class="text-xl font-bold text-gray-900">Doink</h1>
                         <p class="text-sm text-gray-600">Get things done</p>
                     </div>
                 </div>
@@ -1498,8 +1498,8 @@
         lucide.createIcons();
 
         // App state
-        let todos = JSON.parse(localStorage.getItem('donezo-todos')) || [];
-        let lists = JSON.parse(localStorage.getItem('donezo-lists')) || [
+    let todos = JSON.parse(localStorage.getItem('doink-todos')) || [];
+    let lists = JSON.parse(localStorage.getItem('doink-lists')) || [
             { id: '1', name: 'Personal', color: 'teal', icon: 'check-circle' },
             { id: '2', name: 'Work', color: 'coral', icon: 'clock' },
             { id: '3', name: 'Shopping', color: 'lavender', icon: 'bell' }
@@ -1508,7 +1508,7 @@
         let selectedPriority = '';
         let selectedListColor = 'teal';
         let selectedListIcon = 'home';
-        let currentTheme = localStorage.getItem('donezo-theme') || 'default';
+    let currentTheme = localStorage.getItem('doink-theme') || 'default';
         let isDragging = false;
         let draggedElement = null;
         let touchStartX = 0;
@@ -1920,11 +1920,11 @@
 
         // Save data
         function saveTodos() {
-            localStorage.setItem('donezo-todos', JSON.stringify(todos));
+            localStorage.setItem('doink-todos', JSON.stringify(todos));
         }
 
         function saveLists() {
-            localStorage.setItem('donezo-lists', JSON.stringify(lists));
+            localStorage.setItem('doink-lists', JSON.stringify(lists));
         }
 
         // Event listeners
@@ -2294,7 +2294,7 @@
 
         // Theme management
         function initTheme() {
-            const saved = localStorage.getItem('donezo-theme');
+            const saved = localStorage.getItem('doink-theme');
             const prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
             const theme = saved || (prefersDark ? 'dark' : 'light');
             applyTheme(theme);
@@ -2309,12 +2309,12 @@
         function applyTheme(theme) {
             if (theme === 'dark') {
                 document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('donezo-theme', 'dark');
+                localStorage.setItem('doink-theme', 'dark');
                 setToggleIcons('dark');
                 enableStarfield();
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('donezo-theme', 'light');
+                localStorage.setItem('doink-theme', 'light');
                 setToggleIcons('light');
                 disableStarfield();
             }
@@ -2376,7 +2376,7 @@
 
         function applyCustomTheme(theme) {
             currentTheme = theme;
-            localStorage.setItem('donezo-theme', theme);
+            localStorage.setItem('doink-theme', theme);
             
             // Remove all theme attributes
             document.documentElement.removeAttribute('data-theme');
