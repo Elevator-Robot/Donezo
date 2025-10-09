@@ -64,7 +64,7 @@ const UserProfile = ({ currentUser, onLogout, onOpenSettings }) => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute left-0 top-full mt-2 w-56 sm:w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 z-50"
+            className="absolute right-0 top-full mt-2 w-48 sm:w-56 md:w-64 bg-white dark:bg-gray-800 rounded-xl shadow-lg border border-gray-200/50 dark:border-gray-700/50 z-50"
           >
             <div className="p-4">
               {/* User Info */}

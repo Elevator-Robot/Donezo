@@ -88,7 +88,7 @@ const CalendarView = ({ todos, lists, onAdd, onToggle, onDelete }) => {
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setSelectedDate(isSelected ? null : day)}
                 className={`
-                  aspect-square p-1 rounded-lg text-sm relative
+                  aspect-square p-1 rounded-lg text-sm relative flex items-center justify-center
                   ${isCurrentMonth ? 'text-gray-900' : 'text-gray-400'}
                   ${isDayToday ? 'bg-teal-500 text-white font-bold' : 'hover:bg-gray-100'}
                   ${isSelected ? 'bg-teal-100 border-2 border-teal-500' : ''}
