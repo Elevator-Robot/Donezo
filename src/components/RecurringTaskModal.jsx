@@ -17,6 +17,9 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
     { value: 'daily', label: 'Daily', description: 'Every day' },
     { value: 'weekly', label: 'Weekly', description: 'Every week' },
     { value: 'monthly', label: 'Monthly', description: 'Every month' },
+    { value: 'bimonthly', label: 'Every 2 Months', description: 'Every 2 months' },
+    { value: 'quarterly', label: 'Every 3 Months', description: 'Every 3 months' },
+    { value: 'semiannually', label: 'Every 6 Months', description: 'Every 6 months' },
     { value: 'yearly', label: 'Yearly', description: 'Every year' },
     { value: 'weekdays', label: 'Weekdays', description: 'Monday to Friday' },
     { value: 'weekends', label: 'Weekends', description: 'Saturday and Sunday' },
@@ -137,15 +140,22 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
         return `Every ${recurrenceInterval > 1 ? `${recurrenceInterval} weeks` : 'week'}`
       case 'monthly':
         return `Every ${recurrenceInterval > 1 ? `${recurrenceInterval} months` : 'month'}`
+      case 'bimonthly':
+        return 'Every 2 months'
+      case 'quarterly':
+        return 'Every 3 months'
+      case 'semiannually':
+        return 'Every 6 months'
       case 'yearly':
         return `Every ${recurrenceInterval > 1 ? `${recurrenceInterval} years` : 'year'}`
       case 'weekdays':
         return 'Every weekday (Monday to Friday)'
       case 'weekends':
         return 'Every weekend (Saturday and Sunday)'
-      case 'custom':
+      case 'custom': {
         const selectedDays = weekDays.filter(day => recurrenceDays.includes(day.value))
         return `Every ${selectedDays.map(day => day.label).join(', ')}`
+      }
       default:
         return 'No recurrence'
     }
@@ -275,7 +285,7 @@ function RecurringTaskModal({ onAdd, onClose, lists, activeList }) {
                   </div>
                 </div>
 
-                {recurrenceType !== 'weekdays' && recurrenceType !== 'weekends' && (
+                {recurrenceType !== 'weekdays' && recurrenceType !== 'weekends' && recurrenceType !== 'bimonthly' && recurrenceType !== 'quarterly' && recurrenceType !== 'semiannually' && (
                   <div>
                     <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Interval
