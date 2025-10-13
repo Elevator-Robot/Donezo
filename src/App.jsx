@@ -566,7 +566,7 @@ function App() {
               >
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Today's Tasks
+                    Today&apos;s Tasks
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400">
                     {todaysTasks.length} tasks due today
