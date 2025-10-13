@@ -7,7 +7,8 @@ import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
 import Auth from './components/Auth'
 import UserProfile from './components/UserProfile'
-import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat, X, ChevronLeft, ChevronRight } from 'lucide-react'
+import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns'
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 
 function App() {
@@ -565,7 +566,7 @@ function App() {
               >
                 <div className="mb-6">
                   <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Today's Tasks
+                    Today&apos;s Tasks
                   </h2>
                   <p className="text-gray-600 dark:text-gray-400">
                     {todaysTasks.length} tasks due today
@@ -691,11 +692,35 @@ function App() {
                   onTouchEnd={handleCalendarSwipeEnd}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <h3 className={`text-lg font-semibold ${
-                      theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-900 dark:text-white'
-                    }`}>
-                      {selectedDate.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
-                    </h3>
+                    <div className="flex items-center gap-3">
+                      <h3 className={`text-lg font-semibold ${
+                        theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-900 dark:text-white'
+                      }`}>
+                        {format(selectedDate, 'MMMM')}
+                      </h3>
+                      <div className="relative">
+                        <select
+                          value={selectedDate.getFullYear()}
+                          onChange={(e) => {
+                            const newDate = new Date(selectedDate)
+                            newDate.setFullYear(parseInt(e.target.value))
+                            setSelectedDate(newDate)
+                          }}
+                          className={`appearance-none bg-transparent border rounded-md px-2 py-1 text-sm font-medium cursor-pointer ${
+                            theme === 'cyberpunk'
+                              ? 'border-cyan-500/30 text-cyan-300 hover:border-cyan-400'
+                              : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400'
+                          }`}
+                        >
+                          {[2025, 2026, 2027, 2028].map(year => (
+                            <option key={year} value={year}>{year}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-3 h-3 pointer-events-none ${
+                          theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500'
+                        }`} />
+                      </div>
+                    </div>
                     <div className="flex gap-2">
                       <button
                         onClick={() => {
@@ -725,8 +750,8 @@ function App() {
                       >
                         <ChevronRight size={16} />
                       </button>
-              </div>
-            </div>
+                    </div>
+                  </div>
 
                   {/* Calendar Grid */}
                   <div className="grid grid-cols-7 gap-1">
@@ -737,48 +762,60 @@ function App() {
                         {day}
                       </div>
                     ))}
-                    {Array.from({ length: new Date(selectedDate.getFullYear(), selectedDate.getMonth() + 1, 0).getDate() }, (_, i) => {
-                      const day = i + 1
-                      const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day)
-                      const isToday = date.toDateString() === new Date().toDateString()
-                      const isSelected = date.toDateString() === selectedDate.toDateString()
-                      const hasTasks = todos.some(todo => {
-                        if (!todo.dueDate) return false
-                        // Parse date string in local timezone to avoid timezone issues
-                        const [year, month, day] = todo.dueDate.split('-').map(Number)
-                        const todoDate = new Date(year, month - 1, day) // month is 0-indexed
-                        return todoDate.toDateString() === date.toDateString()
-                      })
+                    {(() => {
+                      // Generate full calendar grid with padding days
+                      const monthStart = startOfMonth(selectedDate)
+                      const monthEnd = endOfMonth(selectedDate)
+                      const calendarStart = startOfWeek(monthStart)
+                      const calendarEnd = endOfWeek(monthEnd)
+                      const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
 
-                      return (
-                        <motion.button
-                          key={day}
-                          onClick={() => setSelectedDate(date)}
-                          className={`relative p-2 rounded-lg text-sm transition-colors ${
-                            isSelected
-                              ? theme === 'cyberpunk'
-                                ? 'bg-cyan-500 text-black'
-                                : 'bg-teal-500 text-white'
-                              : isToday
-                              ? theme === 'cyberpunk'
-                                ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50'
-                                : 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'
-                              : theme === 'cyberpunk'
-                                ? 'hover:bg-cyan-500/10 text-cyan-200 hover:text-cyan-100'
-                                : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
-                          }`}
-                          whileHover={{ scale: 1.1 }}
-                          whileTap={{ scale: 0.9 }}
-                        >
-                          {day}
-                          {hasTasks && (
-                            <div className={`absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
-                              theme === 'cyberpunk' ? 'bg-cyan-400' : 'bg-teal-500'
-                            }`}></div>
-                          )}
-                        </motion.button>
-                      )
-                    })}
+                      return days.map(date => {
+                        const isCurrentMonth = isSameMonth(date, selectedDate)
+                        const isDayToday = isToday(date)
+                        const isSelected = isSameDay(date, selectedDate)
+                        const hasTasks = todos.some(todo => {
+                          if (!todo.dueDate) return false
+                          // Parse date string in local timezone to avoid timezone issues
+                          const [year, month, day] = todo.dueDate.split('-').map(Number)
+                          const todoDate = new Date(year, month - 1, day) // month is 0-indexed
+                          return todoDate.toDateString() === date.toDateString()
+                        })
+
+                        return (
+                          <motion.button
+                            key={format(date, 'yyyy-MM-dd')}
+                            onClick={() => setSelectedDate(date)}
+                            className={`relative p-2 rounded-lg text-sm transition-colors aspect-square flex items-center justify-center ${
+                              isSelected
+                                ? theme === 'cyberpunk'
+                                  ? 'bg-cyan-500 text-black'
+                                  : 'bg-teal-500 text-white'
+                                : isDayToday
+                                ? theme === 'cyberpunk'
+                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50'
+                                  : 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'
+                                : isCurrentMonth
+                                ? theme === 'cyberpunk'
+                                  ? 'hover:bg-cyan-500/10 text-cyan-200 hover:text-cyan-100'
+                                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
+                                : theme === 'cyberpunk'
+                                  ? 'text-cyan-200/50 hover:bg-cyan-500/5'
+                                  : 'text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
+                            }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                          >
+                            {format(date, 'd')}
+                            {hasTasks && (
+                              <div className={`absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
+                                theme === 'cyberpunk' ? 'bg-cyan-400' : 'bg-teal-500'
+                              }`}></div>
+                            )}
+                          </motion.button>
+                        )
+                      })
+                    })()}
                   </div>
                 </motion.div>
 
