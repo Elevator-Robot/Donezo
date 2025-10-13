@@ -53,7 +53,7 @@ const Auth = ({ onAuthSuccess }) => {
         setError('Username is required')
         return false
       }
-      if (formData.username.length < 3) {
+      if (formData.username.trim().length < 3) {
         setError('Username must be at least 3 characters')
         return false
       }
@@ -147,7 +147,8 @@ const Auth = ({ onAuthSuccess }) => {
           return
         }
         const userExists = existingUsers.find(user => 
-          user.username === formData.username || user.email === formData.email
+          user.username.toLowerCase() === normalizedUsername || 
+          user.email.toLowerCase() === normalizedEmail
         )
 
         if (userExists) {
@@ -158,8 +159,8 @@ const Auth = ({ onAuthSuccess }) => {
         // Create new user
         const newUser = {
           id: Date.now().toString(),
-          username: formData.username,
-          email: formData.email,
+          username: formData.username.trim(),
+          email: formData.email.trim().toLowerCase(),
           password: formData.password, // In a real app, this would be hashed
           createdAt: new Date().toISOString()
         }
@@ -167,7 +168,15 @@ const Auth = ({ onAuthSuccess }) => {
         console.log('Creating new user:', newUser)
 
         existingUsers.push(newUser)
-        localStorage.setItem('doink-users', JSON.stringify(existingUsers))
+        
+        // Save users data with error handling
+        try {
+          localStorage.setItem('doink-users', JSON.stringify(existingUsers))
+        } catch (error) {
+          console.error('Failed to save user data:', error)
+          setError('Failed to create account. Please try again.')
+          return
+        }
 
         // Initialize user data for new users
         // Each new user starts with empty todos and exactly 3 preset lists
@@ -189,11 +198,17 @@ const Auth = ({ onAuthSuccess }) => {
         console.log('Initializing user data:', userData)
 
         // Store user data with the correct key format
-        localStorage.setItem(`doink-user-${newUser.id}-todos`, JSON.stringify(userData.todos))
-        localStorage.setItem(`doink-user-${newUser.id}-lists`, JSON.stringify(userData.lists))
-        localStorage.setItem(`doink-user-${newUser.id}-settings`, JSON.stringify(userData.settings))
-        localStorage.setItem(`doink-user-${newUser.id}-theme`, userData.theme)
-        localStorage.setItem('doink-current-user', JSON.stringify(newUser))
+        try {
+          localStorage.setItem(`doink-user-${newUser.id}-todos`, JSON.stringify(userData.todos))
+          localStorage.setItem(`doink-user-${newUser.id}-lists`, JSON.stringify(userData.lists))
+          localStorage.setItem(`doink-user-${newUser.id}-settings`, JSON.stringify(userData.settings))
+          localStorage.setItem(`doink-user-${newUser.id}-theme`, userData.theme)
+          localStorage.setItem('doink-current-user', JSON.stringify(newUser))
+        } catch (error) {
+          console.error('Failed to initialize user data:', error)
+          setError('Failed to initialize account data. Please try again.')
+          return
+        }
 
         console.log('User data stored successfully')
         onAuthSuccess(newUser, userData, false) // New users don't need remember me
@@ -210,8 +225,9 @@ const Auth = ({ onAuthSuccess }) => {
         console.log('Attempting signin for username:', formData.username)
         console.log('Existing users:', existingUsers)
         
+        const normalizedUsername = formData.username.trim().toLowerCase()
         const user = existingUsers.find(user => 
-          user.username === formData.username && user.password === formData.password
+          user.username.toLowerCase() === normalizedUsername && user.password === formData.password
         )
 
         if (!user) {
@@ -222,15 +238,39 @@ const Auth = ({ onAuthSuccess }) => {
         console.log('User found:', user)
 
         // Load user data from the correct localStorage keys
-        const userData = {
-          todos: JSON.parse(localStorage.getItem(`doink-user-${user.id}-todos`) || '[]'),
-          lists: JSON.parse(localStorage.getItem(`doink-user-${user.id}-lists`) || '[]'),
-          settings: JSON.parse(localStorage.getItem(`doink-user-${user.id}-settings`) || '{"font": "Rock Salt"}'),
-          theme: localStorage.getItem(`doink-user-${user.id}-theme`) || 'light'
+        let userData
+        try {
+          userData = {
+            todos: JSON.parse(localStorage.getItem(`doink-user-${user.id}-todos`) || '[]'),
+            lists: JSON.parse(localStorage.getItem(`doink-user-${user.id}-lists`) || '[]'),
+            settings: JSON.parse(localStorage.getItem(`doink-user-${user.id}-settings`) || '{"font": "Rock Salt"}'),
+            theme: localStorage.getItem(`doink-user-${user.id}-theme`) || 'light'
+          }
+          
+          // If lists are empty, initialize with default lists
+          if (userData.lists.length === 0) {
+            userData.lists = [
+              { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
+              { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
+              { id: '3', name: 'Shopping', color: 'green', icon: 'ShoppingCart', type: 'task' }
+            ]
+            localStorage.setItem(`doink-user-${user.id}-lists`, JSON.stringify(userData.lists))
+          }
+        } catch (error) {
+          console.error('Failed to load user data:', error)
+          setError('Failed to load account data. Please try again.')
+          return
         }
         
         console.log('Loaded user data:', userData)
-        localStorage.setItem('doink-current-user', JSON.stringify(user))
+        
+        try {
+          localStorage.setItem('doink-current-user', JSON.stringify(user))
+        } catch (error) {
+          console.error('Failed to set current user:', error)
+          setError('Failed to complete login. Please try again.')
+          return
+        }
 
         onAuthSuccess(user, userData, rememberMe)
       } else if (authMode === 'forgot-password') {
@@ -254,14 +294,21 @@ const Auth = ({ onAuthSuccess }) => {
         const resetCode = Math.random().toString(36).substring(2, 8).toUpperCase()
         
         // Store reset code temporarily (in a real app, this would be in a database)
-        localStorage.setItem('doink-reset-codes', JSON.stringify({
-          ...JSON.parse(localStorage.getItem('doink-reset-codes') || '{}'),
-          [formData.email]: {
-            code: resetCode,
-            userId: user.id,
-            expires: Date.now() + (10 * 60 * 1000) // 10 minutes
-          }
-        }))
+        try {
+          const existingResetCodes = JSON.parse(localStorage.getItem('doink-reset-codes') || '{}')
+          localStorage.setItem('doink-reset-codes', JSON.stringify({
+            ...existingResetCodes,
+            [normalizedEmail]: {
+              code: resetCode,
+              userId: user.id,
+              expires: Date.now() + (10 * 60 * 1000) // 10 minutes
+            }
+          }))
+        } catch (error) {
+          console.error('Failed to store reset code:', error)
+          setError('Failed to generate reset code. Please try again.')
+          return
+        }
 
         setResetEmail(formData.email)
         setSuccess(`A 6-digit reset code has been sent to ${formData.email}. Please check your email and enter the code below. The code will expire in 10 minutes.`)
@@ -320,18 +367,24 @@ const Auth = ({ onAuthSuccess }) => {
         }
 
         // Update user password
-        const existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
-        const updatedUsers = existingUsers.map(user => 
-          user.id === resetData.userId 
-            ? { ...user, password: formData.newPassword }
-            : user
-        )
+        try {
+          const existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
+          const updatedUsers = existingUsers.map(user => 
+            user.id === resetData.userId 
+              ? { ...user, password: formData.newPassword }
+              : user
+          )
 
-        localStorage.setItem('doink-users', JSON.stringify(updatedUsers))
-        
-        // Clean up reset code
-        delete resetCodes[resetEmail]
-        localStorage.setItem('doink-reset-codes', JSON.stringify(resetCodes))
+          localStorage.setItem('doink-users', JSON.stringify(updatedUsers))
+          
+          // Clean up reset code
+          delete resetCodes[resetEmail]
+          localStorage.setItem('doink-reset-codes', JSON.stringify(resetCodes))
+        } catch (error) {
+          console.error('Failed to update password:', error)
+          setError('Failed to update password. Please try again.')
+          return
+        }
 
         setSuccess('Password updated successfully! You can now sign in.')
         setAuthMode('signin')
