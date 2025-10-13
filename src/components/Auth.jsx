@@ -3,7 +3,7 @@ import { motion } from 'framer-motion'
 import { User, Lock, Mail, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, Key } from 'lucide-react'
 
 const Auth = ({ onAuthSuccess }) => {
-  const [authMode, setAuthMode] = useState('signin') // 'signin', 'signup', 'forgot-password', 'reset-password'
+  const [authMode, setAuthMode] = useState('signin') // 'signin', 'signup', 'forgot-password', 'forgot-username', 'reset-password'
   const [formData, setFormData] = useState({
     username: '',
     email: '',
@@ -22,6 +22,20 @@ const Auth = ({ onAuthSuccess }) => {
   const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [resetEmail, setResetEmail] = useState('')
+
+  // Email validation function
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    return emailRegex.test(email.trim())
+  }
+
+  // Password strength validation function
+  const isStrongPassword = (password) => {
+    const hasUpperCase = /[A-Z]/.test(password)
+    const hasLowerCase = /[a-z]/.test(password)
+    const hasNumbers = /\d/.test(password)
+    return hasUpperCase && hasLowerCase && hasNumbers
+  }
 
   const handleInputChange = (e) => {
     const { name, value } = e.target
@@ -47,7 +61,7 @@ const Auth = ({ onAuthSuccess }) => {
         setError('Email is required')
         return false
       }
-      if (authMode === 'signup' && !formData.email.trim().includes('@')) {
+      if (authMode === 'signup' && !isValidEmail(formData.email)) {
         setError('Please enter a valid email address')
         return false
       }
@@ -59,6 +73,10 @@ const Auth = ({ onAuthSuccess }) => {
         setError('Password must be at least 6 characters')
         return false
       }
+      if (authMode === 'signup' && !isStrongPassword(formData.password)) {
+        setError('Password must contain at least one uppercase letter, one lowercase letter, and one number')
+        return false
+      }
       if (authMode === 'signup' && formData.password !== formData.confirmPassword) {
         setError('Passwords do not match')
         return false
@@ -66,6 +84,19 @@ const Auth = ({ onAuthSuccess }) => {
     } else if (authMode === 'forgot-password') {
       if (!formData.email.trim()) {
         setError('Email is required')
+        return false
+      }
+      if (!isValidEmail(formData.email)) {
+        setError('Please enter a valid email address')
+        return false
+      }
+    } else if (authMode === 'forgot-username') {
+      if (!formData.email.trim()) {
+        setError('Email is required')
+        return false
+      }
+      if (!isValidEmail(formData.email)) {
+        setError('Please enter a valid email address')
         return false
       }
     } else if (authMode === 'reset-password') {
@@ -79,6 +110,10 @@ const Auth = ({ onAuthSuccess }) => {
       }
       if (formData.newPassword.length < 6) {
         setError('Password must be at least 6 characters')
+        return false
+      }
+      if (!isStrongPassword(formData.newPassword)) {
+        setError('New password must contain at least one uppercase letter, one lowercase letter, and one number')
         return false
       }
       if (formData.newPassword !== formData.confirmNewPassword) {
@@ -103,19 +138,14 @@ const Auth = ({ onAuthSuccess }) => {
 
       if (authMode === 'signup') {
         // Check if user already exists
-        let existingUsers
+        let existingUsers = []
         try {
           existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
-          if (!Array.isArray(existingUsers)) {
-            existingUsers = []
-          }
         } catch (error) {
-          console.error('Failed to parse existing users, resetting:', error)
-          existingUsers = []
+          console.error('Error reading user data:', error)
+          setError('Unable to access account data. Please try again.')
+          return
         }
-        const normalizedUsername = formData.username.trim().toLowerCase()
-        const normalizedEmail = formData.email.trim().toLowerCase()
-        
         const userExists = existingUsers.find(user => 
           user.username.toLowerCase() === normalizedUsername || 
           user.email.toLowerCase() === normalizedEmail
@@ -184,15 +214,12 @@ const Auth = ({ onAuthSuccess }) => {
         onAuthSuccess(newUser, userData, false) // New users don't need remember me
       } else if (authMode === 'signin') {
         // Sign in
-        let existingUsers
+        let existingUsers = []
         try {
           existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
-          if (!Array.isArray(existingUsers)) {
-            existingUsers = []
-          }
         } catch (error) {
-          console.error('Failed to parse existing users:', error)
-          setError('Unable to access user database. Please refresh and try again.')
+          console.error('Error reading user data:', error)
+          setError('Unable to access account data. Please try again.')
           return
         }
         console.log('Attempting signin for username:', formData.username)
@@ -248,19 +275,15 @@ const Auth = ({ onAuthSuccess }) => {
         onAuthSuccess(user, userData, rememberMe)
       } else if (authMode === 'forgot-password') {
         // Check if email exists
-        let existingUsers
+        let existingUsers = []
         try {
           existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
-          if (!Array.isArray(existingUsers)) {
-            existingUsers = []
-          }
         } catch (error) {
-          console.error('Failed to parse existing users:', error)
-          setError('Unable to access user database. Please refresh and try again.')
+          console.error('Error reading user data:', error)
+          setError('Unable to access account data. Please try again.')
           return
         }
-        const normalizedEmail = formData.email.trim().toLowerCase()
-        const user = existingUsers.find(user => user.email.toLowerCase() === normalizedEmail)
+        const user = existingUsers.find(user => user.email === formData.email)
 
         if (!user) {
           setError('No account found with this email address')
@@ -287,28 +310,59 @@ const Auth = ({ onAuthSuccess }) => {
           return
         }
 
-        setResetEmail(normalizedEmail)
-        setSuccess(`Reset code sent to ${normalizedEmail}: ${resetCode}`)
+        setResetEmail(formData.email)
+        setSuccess(`A 6-digit reset code has been sent to ${formData.email}. Please check your email and enter the code below. The code will expire in 10 minutes.`)
+        
+        // In a demo app, we'll show the code in console for testing
+        console.log(`Demo: Reset code for ${formData.email} is: ${resetCode}`)
+        
         setAuthMode('reset-password')
+      } else if (authMode === 'forgot-username') {
+        // Check if email exists and show username
+        let existingUsers = []
+        try {
+          existingUsers = JSON.parse(localStorage.getItem('doink-users') || '[]')
+        } catch (error) {
+          console.error('Error reading user data:', error)
+          setError('Unable to access account data. Please try again.')
+          return
+        }
+        const user = existingUsers.find(user => user.email === formData.email)
+
+        if (!user) {
+          setError('No account found with this email address')
+          return
+        }
+
+        setSuccess(`Your username is: ${user.username}`)
       } else if (authMode === 'reset-password') {
         // Verify reset code and update password
-        let resetCodes, resetData
+        let resetCodes = {}
+        let resetData = null
         try {
           resetCodes = JSON.parse(localStorage.getItem('doink-reset-codes') || '{}')
           resetData = resetCodes[resetEmail]
         } catch (error) {
-          console.error('Failed to parse reset codes:', error)
-          setError('Failed to verify reset code. Please try again.')
+          console.error('Error reading reset codes:', error)
+          setError('Unable to access reset data. Please request a new reset code.')
           return
         }
 
-        if (!resetData || resetData.code !== formData.resetCode.toUpperCase()) {
-          setError('Invalid reset code')
+        if (!resetData) {
+          setError('No reset code found. Please request a new reset code.')
           return
         }
 
         if (Date.now() > resetData.expires) {
-          setError('Reset code has expired')
+          setError('Reset code has expired. Please request a new reset code.')
+          // Clean up expired code
+          delete resetCodes[resetEmail]
+          localStorage.setItem('doink-reset-codes', JSON.stringify(resetCodes))
+          return
+        }
+
+        if (resetData.code !== formData.resetCode.toUpperCase()) {
+          setError('Invalid reset code. Please check your email and try again.')
           return
         }
 
@@ -351,6 +405,44 @@ const Auth = ({ onAuthSuccess }) => {
     }
   }
 
+  const requestNewResetCode = async () => {
+    if (!resetEmail) return
+    
+    setIsLoading(true)
+    setError('')
+    setSuccess('')
+
+    try {
+      // Simulate API delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+
+      // Generate new reset code
+      const newResetCode = Math.random().toString(36).substring(2, 8).toUpperCase()
+      
+      // Store new reset code
+      const resetCodes = JSON.parse(localStorage.getItem('doink-reset-codes') || '{}')
+      resetCodes[resetEmail] = {
+        code: newResetCode,
+        userId: resetCodes[resetEmail]?.userId || '', // Keep existing userId if available
+        expires: Date.now() + (10 * 60 * 1000) // 10 minutes
+      }
+      localStorage.setItem('doink-reset-codes', JSON.stringify(resetCodes))
+
+      setSuccess(`A new reset code has been sent to ${resetEmail}`)
+      console.log(`Demo: New reset code for ${resetEmail} is: ${newResetCode}`)
+      
+      // Clear the reset code input
+      setFormData(prev => ({
+        ...prev,
+        resetCode: ''
+      }))
+    } catch (err) {
+      setError('Failed to send new reset code. Please try again.')
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   const goBack = () => {
     setAuthMode('signin')
     setFormData({
@@ -376,6 +468,8 @@ const Auth = ({ onAuthSuccess }) => {
         return 'Welcome Back'
       case 'forgot-password':
         return 'Forgot Password'
+      case 'forgot-username':
+        return 'Forgot Username'
       case 'reset-password':
         return 'Reset Password'
       default:
@@ -386,11 +480,13 @@ const Auth = ({ onAuthSuccess }) => {
   const getSubtitle = () => {
     switch (authMode) {
       case 'signup':
-        return 'Sign up to get started with Donezo'
+        return 'Sign up to get started with Doink'
       case 'signin':
         return 'Sign in to your account'
       case 'forgot-password':
         return 'Enter your email to receive a reset code'
+      case 'forgot-username':
+        return 'Enter your email to recover your username'
       case 'reset-password':
         return 'Enter the reset code and your new password'
       default:
@@ -485,15 +581,26 @@ const Auth = ({ onAuthSuccess }) => {
                 <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Remember me</span>
               </motion.label>
 
-              <motion.button
-                type="button"
-                onClick={() => setAuthMode('forgot-password')}
-                className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors duration-200"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Forgot your password?
-              </motion.button>
+              <div className="flex flex-col items-end space-y-1">
+                <motion.button
+                  type="button"
+                  onClick={() => setAuthMode('forgot-password')}
+                  className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors duration-200"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Forgot your password?
+                </motion.button>
+                <motion.button
+                  type="button"
+                  onClick={() => setAuthMode('forgot-username')}
+                  className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors duration-200"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Forgot your username?
+                </motion.button>
+              </div>
             </motion.div>
           </>
         )
@@ -656,6 +763,37 @@ const Auth = ({ onAuthSuccess }) => {
           </>
         )
 
+      case 'forgot-username':
+        return (
+          <>
+            {/* Email */}
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.4 }}
+            >
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Email Address
+              </label>
+              <motion.div 
+                className="relative"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.2 }}
+              >
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
+                <input
+                  type="email"
+                  name="email"
+                  value={formData.email}
+                  onChange={handleInputChange}
+                  className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm sm:text-base transition-all duration-200 hover:bg-white dark:hover:bg-gray-700"
+                  placeholder="Enter your email address"
+                />
+              </motion.div>
+            </motion.div>
+          </>
+        )
+
       case 'reset-password':
         return (
           <>
@@ -772,6 +910,8 @@ const Auth = ({ onAuthSuccess }) => {
           return 'Signing In...'
         case 'forgot-password':
           return 'Sending Code...'
+        case 'forgot-username':
+          return 'Looking up...'
         case 'reset-password':
           return 'Updating Password...'
         default:
@@ -786,6 +926,8 @@ const Auth = ({ onAuthSuccess }) => {
         return 'Sign In'
       case 'forgot-password':
         return 'Send Reset Code'
+      case 'forgot-username':
+        return 'Find Username'
       case 'reset-password':
         return 'Update Password'
       default:
@@ -806,6 +948,8 @@ const Auth = ({ onAuthSuccess }) => {
       case 'forgot-password':
       case 'reset-password':
         return <Key className="w-4 h-4 mr-2" />
+      case 'forgot-username':
+        return <User className="w-4 h-4 mr-2" />
       default:
         return <LogIn className="w-4 h-4 mr-2" />
     }
@@ -1073,7 +1217,7 @@ const Auth = ({ onAuthSuccess }) => {
         >
           {/* Header */}
           <div className="text-center mb-6 sm:mb-8">
-            {(authMode === 'forgot-password' || authMode === 'reset-password') && (
+            {(authMode === 'forgot-password' || authMode === 'forgot-username' || authMode === 'reset-password') && (
               <motion.button
                 onClick={goBack}
                 className="absolute top-6 left-6 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
@@ -1177,6 +1321,36 @@ const Auth = ({ onAuthSuccess }) => {
                 <span className="text-sm sm:text-base">{getSubmitButtonText()}</span>
               </div>
             </motion.button>
+
+            {/* Request New Code Button - Only show in reset-password mode */}
+            {authMode === 'reset-password' && (
+              <motion.button
+                type="button"
+                onClick={requestNewResetCode}
+                disabled={isLoading}
+                className="w-full mt-3 bg-transparent border-2 border-teal-500 text-teal-500 py-2.5 px-4 rounded-lg font-medium hover:bg-teal-50 dark:hover:bg-teal-900/20 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm sm:text-base"
+                whileHover={{
+                  scale: 1.02,
+                  y: -1,
+                  transition: { duration: 0.2 }
+                }}
+                whileTap={{ 
+                  scale: 0.98,
+                  y: 0,
+                  transition: { duration: 0.1 }
+                }}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.8 }}
+              >
+                <div className="flex items-center justify-center">
+                  <Mail className="w-4 h-4 mr-2" />
+                  <span className="text-sm sm:text-base">
+                    {isLoading ? 'Sending...' : 'Didn\'t receive the code? Request new one'}
+                  </span>
+                </div>
+              </motion.button>
+            )}
           </form>
 
           {/* Toggle Mode */}

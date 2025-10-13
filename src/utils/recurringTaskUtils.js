@@ -4,47 +4,71 @@ export const calculateNextDueDate = (recurrence, lastDueDate = null) => {
   const startDate = lastDueDate ? new Date(lastDueDate) : new Date()
   
   switch (recurrence.type) {
-    case 'daily':
+    case 'daily': {
       const nextDay = new Date(startDate)
       nextDay.setDate(nextDay.getDate() + recurrence.interval)
       return nextDay.toISOString().split('T')[0]
+    }
       
-    case 'weekly':
+    case 'weekly': {
       const nextWeek = new Date(startDate)
       nextWeek.setDate(nextWeek.getDate() + (7 * recurrence.interval))
       return nextWeek.toISOString().split('T')[0]
+    }
       
-    case 'monthly':
+    case 'monthly': {
       const nextMonth = new Date(startDate)
       nextMonth.setMonth(nextMonth.getMonth() + recurrence.interval)
       return nextMonth.toISOString().split('T')[0]
+    }
       
-    case 'yearly':
+    case 'bimonthly': {
+      const nextBimonth = new Date(startDate)
+      nextBimonth.setMonth(nextBimonth.getMonth() + 2)
+      return nextBimonth.toISOString().split('T')[0]
+    }
+      
+    case 'quarterly': {
+      const nextQuarter = new Date(startDate)
+      nextQuarter.setMonth(nextQuarter.getMonth() + 3)
+      return nextQuarter.toISOString().split('T')[0]
+    }
+      
+    case 'semiannually': {
+      const nextSemiannual = new Date(startDate)
+      nextSemiannual.setMonth(nextSemiannual.getMonth() + 6)
+      return nextSemiannual.toISOString().split('T')[0]
+    }
+      
+    case 'yearly': {
       const nextYear = new Date(startDate)
       nextYear.setFullYear(nextYear.getFullYear() + recurrence.interval)
       return nextYear.toISOString().split('T')[0]
+    }
       
-    case 'weekdays':
-      let nextWeekday = new Date(startDate)
+    case 'weekdays': {
+      const nextWeekday = new Date(startDate)
       do {
         nextWeekday.setDate(nextWeekday.getDate() + 1)
       } while (nextWeekday.getDay() === 0 || nextWeekday.getDay() === 6)
       return nextWeekday.toISOString().split('T')[0]
+    }
       
-    case 'weekends':
-      let nextWeekend = new Date(startDate)
+    case 'weekends': {
+      const nextWeekend = new Date(startDate)
       do {
         nextWeekend.setDate(nextWeekend.getDate() + 1)
       } while (nextWeekend.getDay() !== 0 && nextWeekend.getDay() !== 6)
       return nextWeekend.toISOString().split('T')[0]
+    }
       
-    case 'custom':
+    case 'custom': {
       if (!recurrence.days || recurrence.days.length === 0) {
         return startDate.toISOString().split('T')[0]
       }
       
       // Find next occurrence of selected weekdays (Sunday=0, Monday=1, ..., Saturday=6)
-      let nextCustom = new Date(startDate)
+      const nextCustom = new Date(startDate)
       let attempts = 0
       const maxAttempts = 14 // Prevent infinite loops
       
@@ -57,6 +81,7 @@ export const calculateNextDueDate = (recurrence, lastDueDate = null) => {
         attempts++
       }
       return startDate.toISOString().split('T')[0]
+    }
       
     default:
       return startDate.toISOString().split('T')[0]
@@ -141,16 +166,23 @@ export const getRecurrenceDescription = (recurrence) => {
       return `Every ${recurrence.interval > 1 ? `${recurrence.interval} weeks` : 'week'}`
     case 'monthly':
       return `Every ${recurrence.interval > 1 ? `${recurrence.interval} months` : 'month'}`
+    case 'bimonthly':
+      return 'Every 2 months'
+    case 'quarterly':
+      return 'Every 3 months'
+    case 'semiannually':
+      return 'Every 6 months'
     case 'yearly':
       return `Every ${recurrence.interval > 1 ? `${recurrence.interval} years` : 'year'}`
     case 'weekdays':
       return 'Every weekday (Monday to Friday)'
     case 'weekends':
       return 'Every weekend (Saturday and Sunday)'
-    case 'custom':
+    case 'custom': {
       const weekDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
       const selectedDays = recurrence.days?.map(day => weekDays[day]).join(', ') || ''
       return `Every ${selectedDays}`
+    }
     default:
       return 'No recurrence'
   }
