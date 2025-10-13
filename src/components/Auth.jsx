@@ -427,7 +427,7 @@ const Auth = ({ onAuthSuccess }) => {
   const getSubtitle = () => {
     switch (authMode) {
       case 'signup':
-        return 'Sign up to get started with Donezo'
+        return 'Sign up to get started with Doink'
       case 'signin':
         return 'Sign in to your account'
       case 'forgot-password':
