@@ -522,7 +522,7 @@ function App() {
                 <div className="w-8 h-8 bg-gradient-to-r from-teal-500 to-orange-500 rounded-lg flex items-center justify-center">
                   <CheckCircle className="w-5 h-5 text-white" />
                 </div>
-                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Donezo</h1>
+                <h1 className="text-xl font-bold text-gray-800 dark:text-white">Doink</h1>
                 </div>
               </div>
               

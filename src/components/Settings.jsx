@@ -96,7 +96,7 @@ function Settings({ isOpen, onClose, settings, onSettingsChange }) {
                   <div className="w-16 h-16 bg-gradient-to-br from-teal-500 to-orange-400 rounded-2xl mx-auto flex items-center justify-center mb-4">
                     <Heart className="w-8 h-8 text-white" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Donezo</h3>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Doink</h3>
                   <p className="text-gray-600 dark:text-gray-400 mb-2">Get things done with style</p>
                   <p className="text-sm text-gray-500 dark:text-gray-500">
                     Version 1.0.0 • Made with ❤️
