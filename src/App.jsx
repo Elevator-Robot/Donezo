@@ -10,20 +10,15 @@ import UserProfile from './components/UserProfile'
 import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns'
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
+import { authService } from './services/authService'
+import { dataService } from './services/dataService'
 
 function App() {
   // Authentication state
-  const [currentUser, setCurrentUser] = useState(() => {
-    const saved = localStorage.getItem('doink-current-user')
-    return saved ? JSON.parse(saved) : null
-  })
-  const [isAuthenticated, setIsAuthenticated] = useState(() => {
-    return !!localStorage.getItem('doink-current-user')
-  })
-  const [rememberMe, setRememberMe] = useState(() => {
-    return localStorage.getItem('doink-remember-me') === 'true'
-  })
-
+  const [currentUser, setCurrentUser] = useState(null)
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [authLoading, setAuthLoading] = useState(true)
+  
   // User-specific data states
   const [todos, setTodos] = useState([])
   const [lists, setLists] = useState([])
@@ -44,272 +39,351 @@ function App() {
   const [swipeStartX, setSwipeStartX] = useState(null)
   const [swipeStartY, setSwipeStartY] = useState(null)
 
+  // Initialize auth state on app start
+  useEffect(() => {
+    let mounted = true
+
+    async function initializeAuth() {
+      try {
+        const { session, error } = await authService.getSession()
+        
+        if (error) {
+          console.error('Session error:', error)
+          setAuthLoading(false)
+          return
+        }
+
+        if (session?.user && mounted) {
+          // Get user profile
+          const { profile } = await authService.getUserProfile(session.user.id)
+          
+          if (profile && mounted) {
+            const userObj = {
+              id: session.user.id,
+              username: profile.username,
+              email: session.user.email,
+              createdAt: profile.created_at
+            }
+            setCurrentUser(userObj)
+            setIsAuthenticated(true)
+          }
+        }
+      } catch (error) {
+        console.error('Auth initialization error:', error)
+      } finally {
+        if (mounted) setAuthLoading(false)
+      }
+    }
+
+    initializeAuth()
+
+    // Listen for auth state changes
+    const { data: { subscription } } = authService.onAuthStateChange(async (event, session) => {
+      if (!mounted) return
+
+      if (event === 'SIGNED_IN' && session?.user) {
+        const { profile } = await authService.getUserProfile(session.user.id)
+        if (profile && mounted) {
+          const userObj = {
+            id: session.user.id,
+            username: profile.username,
+            email: session.user.email,
+            createdAt: profile.created_at
+          }
+          setCurrentUser(userObj)
+          setIsAuthenticated(true)
+        }
+      } else if (event === 'SIGNED_OUT') {
+        if (mounted) {
+          setCurrentUser(null)
+          setIsAuthenticated(false)
+          setTodos([])
+          setLists([])
+          setSettings({ font: 'Rock Salt' })
+          setTheme('light')
+        }
+      }
+    })
+
+    return () => {
+      mounted = false
+      subscription?.unsubscribe()
+    }
+  }, [])
+
   // Load user data when authenticated user changes
   useEffect(() => {
-    if (currentUser) {
+    if (currentUser && isAuthenticated) {
       console.log('Loading data for user:', currentUser.id)
-      const userData = {
-        todos: JSON.parse(localStorage.getItem(`doink-user-${currentUser.id}-todos`) || '[]'),
-        lists: JSON.parse(localStorage.getItem(`doink-user-${currentUser.id}-lists`) || '[]'),
-        settings: JSON.parse(localStorage.getItem(`doink-user-${currentUser.id}-settings`) || '{"font": "Rock Salt"}'),
-        theme: localStorage.getItem(`doink-user-${currentUser.id}-theme`) || 'light'
-      }
-      
-      // If lists are empty, initialize with default lists
-      if (userData.lists.length === 0) {
-        userData.lists = [
-          { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
-          { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
-          { id: '3', name: 'Shopping', color: 'green', icon: 'ShoppingCart', type: 'task' }
-        ]
-        localStorage.setItem(`doink-user-${currentUser.id}-lists`, JSON.stringify(userData.lists))
-      }
-      
-      setTodos(userData.todos)
-      setLists(userData.lists)
-      setSettings(userData.settings)
-      setTheme(userData.theme)
-      setActiveList(userData.lists[0]?.id || '1')
-    } else {
-      // Clear data when logged out
-      setTodos([])
-      setLists([])
-      setSettings({ font: 'Rock Salt' })
-      setTheme('light')
+      loadUserData(currentUser.id)
     }
-  }, [currentUser])
+  }, [currentUser, isAuthenticated])
 
-  // Session timeout check
-  useEffect(() => {
-    if (currentUser && !rememberMe) {
-      const sessionTimeout = 30 * 60 * 1000 // 30 minutes
-      const lastActivity = localStorage.getItem('doink-last-activity')
-      
-      if (lastActivity && Date.now() - parseInt(lastActivity) > sessionTimeout) {
-        handleLogout()
-        return
-      }
-      
-      const interval = setInterval(() => {
-        const lastActivity = localStorage.getItem('doink-last-activity')
-        if (lastActivity && Date.now() - parseInt(lastActivity) > sessionTimeout) {
-          handleLogout()
+  async function loadUserData(userId) {
+    try {
+      const [
+        { lists, error: listsError },
+        { todos, error: todosError },
+        { settings, error: settingsError }
+      ] = await Promise.all([
+        dataService.getUserLists(userId),
+        dataService.getUserTodos(userId),
+        dataService.getUserSettings(userId)
+      ])
+
+      if (listsError) {
+        console.error('Error loading lists:', listsError)
+      } else {
+        // If no lists found, initialize with defaults
+        if (lists.length === 0) {
+          const { lists: newLists } = await dataService.initializeUserData(userId)
+          setLists(newLists || [])
+        } else {
+          setLists(lists)
         }
-      }, 60000) // Check every minute
-      
-      return () => clearInterval(interval)
-    }
-  }, [currentUser, rememberMe])
-
-  // Update last activity on user interaction
-  useEffect(() => {
-    if (currentUser && !rememberMe) {
-      const updateActivity = () => {
-        localStorage.setItem('doink-last-activity', Date.now().toString())
       }
-      
-      document.addEventListener('mousedown', updateActivity)
-      document.addEventListener('keydown', updateActivity)
-      
-      return () => {
-        document.removeEventListener('mousedown', updateActivity)
-        document.removeEventListener('keydown', updateActivity)
+
+      if (todosError) {
+        console.error('Error loading todos:', todosError)
+      } else {
+        setTodos(todos || [])
       }
-    }
-  }, [currentUser, rememberMe])
 
-  // Save data to user-specific localStorage whenever it changes
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(`doink-user-${currentUser.id}-todos`, JSON.stringify(todos))
-    }
-  }, [todos, currentUser])
+      if (settingsError) {
+        console.error('Error loading settings:', settingsError)
+      } else {
+        setSettings(settings || { font: 'Rock Salt' })
+        setTheme(settings?.theme || 'light')
+      }
 
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(`doink-user-${currentUser.id}-lists`, JSON.stringify(lists))
+      // Set active list to first available list
+      if (lists && lists.length > 0) {
+        setActiveList(lists[0].id)
+      }
+    } catch (error) {
+      console.error('Error loading user data:', error)
     }
-  }, [lists, currentUser])
+  }
 
+  // Authentication handlers
+  const handleAuthSuccess = (user) => {
+    console.log('Authentication successful:', user)
+    setCurrentUser(user)
+    setIsAuthenticated(true)
+    
+    // Data will be loaded by the useEffect hook
+  }
+
+  const handleLogout = async () => {
+    console.log('Logging out user:', currentUser?.username)
+    
+    const { error } = await authService.signOut()
+    if (error) {
+      console.error('Logout error:', error)
+    }
+    
+    // State will be updated by the auth state change listener
+  }
+
+  // Sync data to database when changed
   useEffect(() => {
+    // Apply theme
     console.log('Theme changed to:', theme)
-    if (currentUser) {
-      localStorage.setItem(`doink-user-${currentUser.id}-theme`, theme)
-    }
     document.documentElement.setAttribute('data-theme', theme)
-    console.log('Applied data-theme attribute:', document.documentElement.getAttribute('data-theme'))
-    // Also set the class for Tailwind dark mode
     if (theme === 'dark') {
       document.documentElement.classList.add('dark')
     } else {
       document.documentElement.classList.remove('dark')
     }
-  }, [theme, currentUser])
 
-  // Save settings to localStorage
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(`doink-user-${currentUser.id}-settings`, JSON.stringify(settings))
+    // Save theme to database
+    if (currentUser && isAuthenticated) {
+      dataService.updateUserSettings(currentUser.id, { ...settings, theme })
     }
-  }, [settings, currentUser])
+  }, [theme, currentUser, isAuthenticated, settings])
 
   // Apply font settings
   useEffect(() => {
-    // Apply font
     document.documentElement.style.setProperty('--app-font', `'${settings.font}'`)
-  }, [settings])
-
-  // Authentication handlers
-  const handleAuthSuccess = (user, userData, remember = false) => {
-    console.log('Authentication successful:', user)
-    setCurrentUser(user)
-    setIsAuthenticated(true)
-    setRememberMe(remember)
     
-    if (remember) {
-      localStorage.setItem('doink-remember-me', 'true')
-    } else {
-      localStorage.setItem('doink-remember-me', 'false')
-      localStorage.setItem('doink-last-activity', Date.now().toString())
+    // Save settings to database
+    if (currentUser && isAuthenticated) {
+      dataService.updateUserSettings(currentUser.id, { ...settings, theme })
     }
-    
-    // Data will be loaded by the useEffect hook
-  }
+  }, [settings, currentUser, isAuthenticated, theme])
 
-  const handleLogout = () => {
-    console.log('Logging out user:', currentUser?.username)
-    setCurrentUser(null)
-    setIsAuthenticated(false)
-    setRememberMe(false)
-    
-    // Clear session data
-    localStorage.removeItem('doink-current-user')
-    localStorage.removeItem('doink-remember-me')
-    localStorage.removeItem('doink-last-activity')
-  }
+  const addTodo = async (todo) => {
+    if (!currentUser) return
 
-
-  const addTodo = (todo) => {
-    // Debug logging
     console.log('App.jsx addTodo called with:', todo)
     
-    const newTodo = {
-      ...todo,
-      id: Date.now().toString(),
-      completed: false,
-      createdAt: new Date().toISOString()
+    const newTodoData = {
+      listId: todo.listId,
+      title: todo.title,
+      description: todo.description || '',
+      priority: todo.priority || 'medium',
+      dueDate: todo.dueDate || null,
+      dueTime: todo.dueTime || null,
+      isRecurringInstance: todo.isRecurringInstance || false,
+      parentRecurringTaskId: todo.parentRecurringTaskId || null,
+      recurrence: todo.recurrence || null
     }
     
-    console.log('New todo created:', newTodo)
+    const { todo: newTodo, error } = await dataService.createTodo(currentUser.id, newTodoData)
     
-    setTodos(prev => {
-      const updatedTodos = [...prev, newTodo]
-      console.log('Updated todos:', updatedTodos)
-      return updatedTodos
-    })
+    if (error) {
+      console.error('Error creating todo:', error)
+      return
+    }
+    
+    if (newTodo) {
+      setTodos(prev => [newTodo, ...prev])
+    }
+    
     setShowAddTodo(false)
   }
 
-  const addRecurringTask = (recurringTask) => {
+  const addRecurringTask = async (recurringTask) => {
+    if (!currentUser) return
+
     console.log('App.jsx addRecurringTask called with:', recurringTask)
     
-    const newRecurringTask = {
-      ...recurringTask,
-      id: Date.now().toString(),
-      completed: false,
-      createdAt: new Date().toISOString()
+    const newRecurringTaskData = {
+      listId: recurringTask.listId,
+      title: recurringTask.title,
+      description: recurringTask.description || '',
+      priority: recurringTask.priority || 'medium',
+      dueDate: recurringTask.dueDate || null,
+      dueTime: recurringTask.dueTime || null,
+      recurrence: recurringTask.recurrence
     }
     
-    // Generate the first few instances of the recurring task
-    const instances = generateRecurringInstances(newRecurringTask, 5)
+    // Create the recurring task template
+    const { todo: newRecurringTask, error } = await dataService.createTodo(currentUser.id, newRecurringTaskData)
     
-    setTodos(prev => {
-      const updatedTodos = [...prev, ...instances]
-      console.log('Updated todos with recurring instances:', updatedTodos)
-      return updatedTodos
-    })
+    if (error) {
+      console.error('Error creating recurring task:', error)
+      return
+    }
+    
+    if (newRecurringTask) {
+      // Generate the first few instances
+      const instances = generateRecurringInstances(newRecurringTask, 5)
+      
+      // Create instances in database
+      const createdInstances = []
+      for (const instance of instances) {
+        const instanceData = {
+          ...instance,
+          isRecurringInstance: true,
+          parentRecurringTaskId: newRecurringTask.id
+        }
+        delete instanceData.id // Let database generate new IDs
+        
+        const { todo: createdInstance, error: instanceError } = await dataService.createTodo(currentUser.id, instanceData)
+        if (!instanceError && createdInstance) {
+          createdInstances.push(createdInstance)
+        }
+      }
+      
+      setTodos(prev => [newRecurringTask, ...createdInstances, ...prev])
+    }
+    
     setShowRecurringTask(false)
   }
 
-  const toggleTodo = (id) => {
-    setTodos(prev => {
-      const updatedTodos = prev.map(todo => {
-        if (todo.id === id) {
-          const updatedTodo = {
-            ...todo,
-            completed: !todo.completed,
-            completedAt: !todo.completed ? new Date().toISOString() : null
-          }
-          
-          // If this is a recurring task instance and it's being completed,
-          // create the next instance
-          if (updatedTodo.completed && todo.isRecurringInstance && todo.parentRecurringTaskId) {
-            const parentTask = prev.find(t => t.id === todo.parentRecurringTaskId)
-            if (parentTask && parentTask.recurrence) {
-              const nextDueDate = calculateNextDueDate(parentTask.recurrence, todo.dueDate)
-              const nextInstance = {
-                ...parentTask,
-                id: `${parentTask.id}-${Date.now()}`,
-                dueDate: nextDueDate,
-                completed: false,
-                createdAt: new Date().toISOString()
-              }
-              return [updatedTodo, nextInstance]
-            }
-          }
-          
-          return updatedTodo
-        }
-        return todo
-      })
+  const toggleTodo = async (id) => {
+    if (!currentUser) return
+
+    const todo = todos.find(t => t.id === id)
+    if (!todo) return
+
+    const { todo: updatedTodo, error } = await dataService.toggleTodo(id, !todo.completed)
+    
+    if (error) {
+      console.error('Error toggling todo:', error)
+      return
+    }
+
+    if (updatedTodo) {
+      setTodos(prev => prev.map(t => t.id === id ? updatedTodo : t))
       
-      // Flatten the array in case we added new instances
-      return updatedTodos.flat()
-    })
+      // If this is a recurring task instance and it's being completed,
+      // create the next instance
+      if (updatedTodo.completed && todo.is_recurring_instance && todo.parent_recurring_task_id) {
+        const parentTask = todos.find(t => t.id === todo.parent_recurring_task_id)
+        if (parentTask && parentTask.recurrence) {
+          const nextDueDate = calculateNextDueDate(parentTask.recurrence, todo.due_date)
+          const nextInstanceData = {
+            listId: parentTask.list_id,
+            title: parentTask.title,
+            description: parentTask.description,
+            priority: parentTask.priority,
+            dueDate: nextDueDate,
+            dueTime: parentTask.due_time,
+            isRecurringInstance: true,
+            parentRecurringTaskId: parentTask.id,
+            recurrence: parentTask.recurrence
+          }
+          
+          const { todo: nextInstance } = await dataService.createTodo(currentUser.id, nextInstanceData)
+          if (nextInstance) {
+            setTodos(prev => [nextInstance, ...prev])
+          }
+        }
+      }
+    }
   }
 
-  const deleteTodo = (id) => {
+  const deleteTodo = async (id) => {
+    if (!currentUser) return
+
+    const { error } = await dataService.deleteTodo(id)
+    
+    if (error) {
+      console.error('Error deleting todo:', error)
+      return
+    }
+    
     setTodos(prev => prev.filter(todo => todo.id !== id))
   }
 
+  const addList = async (newList) => {
+    if (!currentUser) return
 
-  // Delete a list and all its tasks
-  // This function ensures users always have at least one list
-  const deleteList = (id) => {
-    if (lists.length > 1) { // Safety check: only delete if more than 1 list exists
-      // Remove the list from the lists array
-      setLists(prev => prev.filter(list => list.id !== id))
-      // Remove all tasks that belong to this list
-      setTodos(prev => prev.filter(todo => todo.listId !== id))
-      // If the deleted list was the active one, switch to the first remaining list
-      if (activeList === id) {
-        setActiveList(lists[0].id)
-      }
+    const { list, error } = await dataService.createList(currentUser.id, newList)
+    
+    if (error) {
+      console.error('Error creating list:', error)
+      return
+    }
+    
+    if (list) {
+      setLists(prev => [...prev, list])
     }
   }
 
   const toggleTheme = () => {
     console.log('=== THEME TOGGLE DEBUG ===')
     console.log('Current theme before toggle:', theme)
-    console.log('Current theme type:', typeof theme)
     
     setTheme(prev => {
       let newTheme
-      console.log('Previous theme in setter:', prev)
       if (prev === 'light') {
         newTheme = 'dark'
-        console.log('Switching from light to dark')
       } else if (prev === 'dark') {
         newTheme = 'cyberpunk'
-        console.log('Switching from dark to cyberpunk')
       } else {
         newTheme = 'light'
-        console.log('Switching from cyberpunk to light')
       }
       
       console.log('New theme will be:', newTheme)
       return newTheme
     })
+  }
+
+  const handleSettingsChange = (newSettings) => {
+    setSettings(newSettings)
   }
 
   const getThemeIcon = () => {
@@ -338,11 +412,6 @@ function App() {
     }
   }
 
-
-  const handleSettingsChange = (newSettings) => {
-    setSettings(newSettings)
-  }
-
   const handleAddButtonClick = () => {
     setShowAddTodo(true)
   }
@@ -352,15 +421,29 @@ function App() {
     setShowListModal(true)
   }
 
-  const addList = (newList) => {
-    const list = {
-      id: Date.now().toString(),
-      name: newList.name,
-      color: newList.color || 'teal',
-      icon: newList.icon || 'List',
-      type: 'task'
+  const deleteList = async (id) => {
+    if (!currentUser || lists.length <= 1) return // Don't delete if it's the last list
+
+    const { error } = await dataService.deleteList(id)
+    
+    if (error) {
+      console.error('Error deleting list:', error)
+      return
     }
-    setLists([...lists, list])
+    
+    // Remove the list from local state
+    setLists(prev => prev.filter(list => list.id !== id))
+    
+    // Remove all todos that belong to this list from local state
+    setTodos(prev => prev.filter(todo => todo.list_id !== id))
+    
+    // If the deleted list was the active one, switch to the first remaining list
+    if (activeList === id) {
+      const remainingLists = lists.filter(list => list.id !== id)
+      if (remainingLists.length > 0) {
+        setActiveList(remainingLists[0].id)
+      }
+    }
   }
 
   // Calendar swipe handlers
@@ -408,20 +491,34 @@ function App() {
     
     return todos.filter(todo => {
       if (todo.completed) return false
-      if (!todo.dueDate) return false
+      if (!todo.due_date) return false
       
       // Parse date string in local timezone to avoid timezone issues
-      const [year, month, day] = todo.dueDate.split('-').map(Number)
-      const dueDate = new Date(year, month - 1, day) // month is 0-indexed
+      const dueDate = new Date(todo.due_date)
       dueDate.setHours(0, 0, 0, 0)
       
       return dueDate <= today
     })
   }
 
-  const currentTodos = todos.filter(todo => todo.listId === activeList)
+  const currentTodos = todos.filter(todo => todo.list_id === activeList)
   const currentList = lists.find(list => list.id === activeList)
   const todaysTasks = getTodaysTasks()
+
+  // Show loading screen during auth initialization
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-gradient-to-r from-teal-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 animate-pulse">
+            <CheckCircle className="w-8 h-8 text-white" />
+          </div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Doink</h1>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
 
   // Show authentication screen if not authenticated
@@ -631,7 +728,7 @@ function App() {
                       <p className={`text-sm ${
                         theme === 'cyberpunk' ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'
                       }`}>
-                        {todos.filter(todo => todo.listId === list.id && !todo.completed).length} tasks remaining
+                        {todos.filter(todo => todo.list_id === list.id && !todo.completed).length} tasks remaining
                       </p>
                     </motion.div>
                   ))}
@@ -775,10 +872,8 @@ function App() {
                         const isDayToday = isToday(date)
                         const isSelected = isSameDay(date, selectedDate)
                         const hasTasks = todos.some(todo => {
-                          if (!todo.dueDate) return false
-                          // Parse date string in local timezone to avoid timezone issues
-                          const [year, month, day] = todo.dueDate.split('-').map(Number)
-                          const todoDate = new Date(year, month - 1, day) // month is 0-indexed
+                          if (!todo.due_date) return false
+                          const todoDate = new Date(todo.due_date)
                           return todoDate.toDateString() === date.toDateString()
                         })
 
@@ -837,10 +932,8 @@ function App() {
                   
                   {(() => {
                     const dayTasks = todos.filter(todo => {
-                      if (!todo.dueDate) return false
-                      // Parse date string in local timezone to avoid timezone issues
-                      const [year, month, day] = todo.dueDate.split('-').map(Number)
-                      const todoDate = new Date(year, month - 1, day) // month is 0-indexed
+                      if (!todo.due_date) return false
+                      const todoDate = new Date(todo.due_date)
                       return todoDate.toDateString() === selectedDate.toDateString()
                     })
                     
@@ -897,11 +990,11 @@ function App() {
                                   {todo.title}
                                 </span>
                               </div>
-                              {todo.dueTime && (
+                              {todo.due_time && (
                                 <span className={`text-sm ${
                                   theme === 'cyberpunk' ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'
                                 }`}>
-                                  {todo.dueTime}
+                                  {todo.due_time}
                                 </span>
                               )}
                             </div>
@@ -1074,12 +1167,12 @@ function App() {
 
                 <div className="mb-4">
                   <p className="text-gray-600 dark:text-gray-400">
-                    {todos.filter(todo => todo.listId === selectedList.id && !todo.completed).length} tasks remaining
+                    {todos.filter(todo => todo.list_id === selectedList.id && !todo.completed).length} tasks remaining
                   </p>
                 </div>
 
                 <TodoList
-                  todos={todos.filter(todo => todo.listId === selectedList.id)}
+                  todos={todos.filter(todo => todo.list_id === selectedList.id)}
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
                 />
