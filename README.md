@@ -1,10 +1,12 @@
 # Doink - Mobile-First Task Manager
 
-A modern, beautiful, and functional task manager built with React, featuring a mobile-first design with bottom tab navigation, dual themes (Sunset/Night Sky), and smooth 60fps animations. Perfect for organizing tasks with reminders, recurrence, and calendar views.
+A modern, beautiful, and functional task manager built with React, featuring a mobile-first design with bottom tab navigation, dual themes (Sunset/Night Sky), smooth 60fps animations, and **persistent user accounts with cross-device synchronization**.
 
 ## ✨ Features
 
 - **Mobile-First Design**: Bottom tab navigation optimized for mobile devices (360px+)
+- **Persistent User Accounts**: Sign up/sign in with email, data syncs across all devices
+- **Cross-Device Sync**: Access your tasks from any device, anywhere
 - **Three Main Screens**: 
   - **Today**: View all tasks due today
   - **Lists**: Create/edit task lists, tap to view tasks in each list
@@ -18,7 +20,7 @@ A modern, beautiful, and functional task manager built with React, featuring a m
 - **Smooth Animations**: 60fps transitions with reduced motion accessibility support
 - **Touch-Friendly**: 44px+ touch targets for optimal mobile experience
 - **Safe Area Support**: Proper handling of device safe areas (notches, etc.)
-- **Local Storage**: All data persisted locally in your browser
+- **Secure Data**: PostgreSQL database with Row Level Security
 
 ## 🎨 Design & Themes
 
@@ -45,6 +47,7 @@ A modern, beautiful, and functional task manager built with React, featuring a m
 
 - Node.js (version 14 or higher)
 - npm or yarn
+- A Supabase account (free tier sufficient)
 
 ### Installation
 
@@ -59,12 +62,17 @@ A modern, beautiful, and functional task manager built with React, featuring a m
    npm install
    ```
 
-4. Start the development server:
+4. Set up Supabase (required for user accounts):
+   - Follow the detailed guide in [SUPABASE_SETUP.md](SUPABASE_SETUP.md)
+   - Create your Supabase project and configure the database
+   - Copy `.env.example` to `.env.local` and add your Supabase credentials
+
+5. Start the development server:
    ```bash
    npm run dev
    ```
 
-5. Open your browser and visit `http://localhost:3000`
+6. Open your browser and visit `http://localhost:3000`
 
 ### Building for Production
 
@@ -74,10 +82,25 @@ To create a production build:
 npm run build
 ```
 
+**Environment Variables for Production:**
+Make sure your production environment has the Supabase credentials:
+```env
+VITE_SUPABASE_URL=your-production-supabase-url
+VITE_SUPABASE_ANON_KEY=your-production-anon-key
+```
+
+See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for detailed setup instructions.
+
 ## 📱 How to Use
 
+### Creating Your Account
+1. On first visit, you'll see the sign-up/sign-in screen
+2. Create a new account with email and password
+3. Your account will be created and you'll be automatically signed in
+4. Default lists (Personal, Work, Shopping) will be created for you
+
 ### Creating Tasks
-1. Click the "Add Task" button
+1. Click the "Add Task" button (+ button)
 2. Fill in the task title (required)
 3. Add an optional description
 4. Select which list to add it to
@@ -92,13 +115,18 @@ npm run build
 
 ### Managing Lists
 - Create new lists with custom colors and icons
-- Switch between lists using the sidebar
+- Switch between lists using the Lists tab
 - Delete lists (tasks will be removed with the list)
 
 ### Task Management
 - Click the circle to mark tasks as complete
 - Hover over tasks to see the delete button
 - Tasks are automatically sorted by completion status and reminder time
+
+### Multi-Device Access
+- Sign in with the same account on any device
+- Your tasks, lists, and settings will automatically sync
+- Changes made on one device appear on all other devices
 
 ## 🛠️ Tech Stack
 
@@ -109,6 +137,8 @@ npm run build
 - **Lucide React**: Beautiful icons
 - **date-fns**: Date manipulation utilities
 - **React Router**: Client-side routing
+- **Supabase**: Backend-as-a-Service with PostgreSQL database
+- **Row Level Security**: Database-level security for user data isolation
 
 ## 📁 Project Structure
 
@@ -116,14 +146,25 @@ npm run build
 src/
 ├── components/
 │   ├── AddTodo.jsx      # Task creation modal
-│   ├── Sidebar.jsx      # Navigation sidebar
+│   ├── Auth.jsx         # Authentication component
 │   └── TodoList.jsx     # Task display component
+├── services/
+│   ├── authService.js   # Supabase authentication
+│   └── dataService.js   # Database operations
+├── lib/
+│   └── supabase.js      # Supabase client configuration
 ├── App.jsx              # Main application component
 ├── main.jsx            # React entry point
 └── index.css           # Global styles and Tailwind
 ```
 
 ## 🎯 Key Features Explained
+
+### User Authentication & Data Persistence
+- Secure email/password authentication via Supabase
+- Automatic user profile creation on signup
+- Cross-device data synchronization
+- Row Level Security ensures users only access their own data
 
 ### Reminder System
 - Browser notifications for task reminders
@@ -135,10 +176,11 @@ src/
 - Each list has its own color and icon
 - Easy switching between lists
 
-### Data Persistence
-- All data is saved to localStorage
-- No account required - your data stays on your device
-- Automatic saving on every change
+### Data Security
+- All user data stored in PostgreSQL database
+- Row Level Security (RLS) policies protect user privacy
+- Encrypted connections and secure authentication
+- Real-time data sync across devices
 
 ## 🎨 Customization
 

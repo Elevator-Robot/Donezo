@@ -166,7 +166,7 @@ function App() {
   }
 
   // Authentication handlers
-  const handleAuthSuccess = (user, userData) => {
+  const handleAuthSuccess = (user) => {
     console.log('Authentication successful:', user)
     setCurrentUser(user)
     setIsAuthenticated(true)

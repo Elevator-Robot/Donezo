@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { motion } from 'framer-motion'
 import { User, Lock, Mail, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, Key } from 'lucide-react'
 import { authService } from '../services/authService'
@@ -15,15 +15,11 @@ const Auth = ({ onAuthSuccess }) => {
     newPassword: '',
     confirmNewPassword: ''
   })
-  const [rememberMe, setRememberMe] = useState(false)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
-  const [showNewPassword, setShowNewPassword] = useState(false)
-  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [resetEmail, setResetEmail] = useState('')
 
   // Email validation function
   const isValidEmail = (email) => {
@@ -189,12 +185,12 @@ const Auth = ({ onAuthSuccess }) => {
             createdAt: new Date().toISOString()
           }
 
-          onAuthSuccess(userObj, userData, false)
+          onAuthSuccess(userObj, userData)
         }
       } else if (authMode === 'signin') {
         // Sign in with Supabase using email instead of username
         // First try to find email if username was provided
-        let email = formData.username
+        const email = formData.username
         if (!email.includes('@')) {
           // If it's a username, we need to convert it to email
           // For now, we'll require email for signin
@@ -202,7 +198,7 @@ const Auth = ({ onAuthSuccess }) => {
           return
         }
 
-        const { user, session, error: signinError } = await authService.signIn(email, formData.password)
+        const { user, error: signinError } = await authService.signIn(email, formData.password)
 
         if (signinError) {
           setError('Invalid email or password')
@@ -249,7 +245,7 @@ const Auth = ({ onAuthSuccess }) => {
             createdAt: profile?.created_at || new Date().toISOString()
           }
 
-          onAuthSuccess(userObj, userData, rememberMe)
+          onAuthSuccess(userObj, userData)
         }
       } else if (authMode === 'forgot-password') {
         // Send password reset email
@@ -291,10 +287,8 @@ const Auth = ({ onAuthSuccess }) => {
       newPassword: '',
       confirmNewPassword: ''
     })
-    setRememberMe(false)
     setError('')
     setSuccess('')
-    setResetEmail('')
   }
 
   const getTitle = () => {
@@ -404,19 +398,7 @@ const Auth = ({ onAuthSuccess }) => {
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.6 }}
             >
-              <motion.label 
-                className="flex items-center cursor-pointer"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 text-emerald-600 bg-gray-100 border-gray-300 rounded focus:ring-emerald-500 focus:ring-2"
-                />
-                <span className="ml-2 text-sm text-gray-700 dark:text-gray-300">Remember me</span>
-              </motion.label>
+              <div></div> {/* Empty div for spacing */}
 
               <div className="flex flex-col items-end space-y-1">
                 <motion.button
@@ -708,7 +690,6 @@ const Auth = ({ onAuthSuccess }) => {
       newPassword: '',
       confirmNewPassword: ''
     })
-    setRememberMe(false)
     setError('')
     setSuccess('')
   }
