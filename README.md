@@ -43,36 +43,41 @@ A modern, beautiful, and functional task manager built with React, featuring a m
 
 ## 🚀 Getting Started
 
-### Prerequisites
+### Quick Start (Demo Mode)
 
-- Node.js (version 14 or higher)
-- npm or yarn
-- An AWS account (free tier sufficient)
-
-### Installation
+The application works out-of-the-box in demo mode without any AWS configuration:
 
 1. Clone or download this project
 2. Navigate to the project directory:
    ```bash
-   cd Doink
+   cd Donezo
    ```
-
 3. Install dependencies:
    ```bash
    npm install
    ```
-
-4. Set up AWS (required for user accounts):
-   - Follow the detailed guide in [AWS_SETUP.md](AWS_SETUP.md)
-   - Create your AWS DynamoDB table and Cognito User Pool
-   - Copy `.env.example` to `.env.local` and add your AWS credentials
-
-5. Start the development server:
+4. Start the development server:
    ```bash
    npm run dev
    ```
+5. Open your browser and visit `http://localhost:3000`
 
-6. Open your browser and visit `http://localhost:3000`
+**Demo Mode Features:**
+- Full functionality with local data storage
+- Mock authentication (no real AWS required)
+- Perfect for development and testing
+
+### Production Setup (AWS Cloud)
+
+For persistent cloud storage and real authentication:
+
+1. Follow the steps above
+2. Set up AWS services (see [AWS_SETUP.md](AWS_SETUP.md))
+3. Copy `.env.example` to `.env.local` and configure AWS credentials
+4. Set `VITE_DEMO_MODE=false` in your `.env.local`
+5. Restart the development server
+
+**See [ENVIRONMENT_SETUP.md](ENVIRONMENT_SETUP.md) for detailed configuration guide.**
 
 ### Building for Production
 
