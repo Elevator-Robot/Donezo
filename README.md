@@ -1,6 +1,6 @@
 # Doink - Mobile-First Task Manager
 
-A modern, beautiful, and functional task manager built with React, featuring a mobile-first design with bottom tab navigation, dual themes (Sunset/Night Sky), smooth 60fps animations, and **persistent user accounts with cross-device synchronization**.
+A modern, beautiful, and functional task manager built with React, featuring a mobile-first design with bottom tab navigation, dual themes (Sunset/Night Sky), smooth 60fps animations, and **persistent user accounts with cross-device synchronization powered by AWS**.
 
 ## ✨ Features
 
@@ -20,7 +20,7 @@ A modern, beautiful, and functional task manager built with React, featuring a m
 - **Smooth Animations**: 60fps transitions with reduced motion accessibility support
 - **Touch-Friendly**: 44px+ touch targets for optimal mobile experience
 - **Safe Area Support**: Proper handling of device safe areas (notches, etc.)
-- **Secure Data**: PostgreSQL database with Row Level Security
+- **Secure Data**: AWS DynamoDB with IAM-based security and Cognito authentication
 
 ## 🎨 Design & Themes
 
@@ -47,7 +47,7 @@ A modern, beautiful, and functional task manager built with React, featuring a m
 
 - Node.js (version 14 or higher)
 - npm or yarn
-- A Supabase account (free tier sufficient)
+- An AWS account (free tier sufficient)
 
 ### Installation
 
@@ -62,10 +62,10 @@ A modern, beautiful, and functional task manager built with React, featuring a m
    npm install
    ```
 
-4. Set up Supabase (required for user accounts):
-   - Follow the detailed guide in [SUPABASE_SETUP.md](SUPABASE_SETUP.md)
-   - Create your Supabase project and configure the database
-   - Copy `.env.example` to `.env.local` and add your Supabase credentials
+4. Set up AWS (required for user accounts):
+   - Follow the detailed guide in [AWS_SETUP.md](AWS_SETUP.md)
+   - Create your AWS DynamoDB table and Cognito User Pool
+   - Copy `.env.example` to `.env.local` and add your AWS credentials
 
 5. Start the development server:
    ```bash
@@ -83,13 +83,15 @@ npm run build
 ```
 
 **Environment Variables for Production:**
-Make sure your production environment has the Supabase credentials:
+Make sure your production environment has the AWS credentials:
 ```env
-VITE_SUPABASE_URL=your-production-supabase-url
-VITE_SUPABASE_ANON_KEY=your-production-anon-key
+VITE_AWS_REGION=your-aws-region
+VITE_AWS_COGNITO_USER_POOL_ID=your-user-pool-id
+VITE_AWS_COGNITO_CLIENT_ID=your-client-id
+VITE_AWS_DYNAMODB_TABLE_NAME=your-table-name
 ```
 
-See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for detailed setup instructions.
+See [AWS_SETUP.md](AWS_SETUP.md) for detailed setup instructions.
 
 ## 📱 How to Use
 
@@ -137,8 +139,9 @@ See [SUPABASE_SETUP.md](SUPABASE_SETUP.md) for detailed setup instructions.
 - **Lucide React**: Beautiful icons
 - **date-fns**: Date manipulation utilities
 - **React Router**: Client-side routing
-- **Supabase**: Backend-as-a-Service with PostgreSQL database
-- **Row Level Security**: Database-level security for user data isolation
+- **AWS DynamoDB**: NoSQL database for scalable data storage
+- **AWS Cognito**: User authentication and management
+- **IAM Security**: AWS Identity and Access Management for secure data access
 
 ## 📁 Project Structure
 
@@ -149,10 +152,10 @@ src/
 │   ├── Auth.jsx         # Authentication component
 │   └── TodoList.jsx     # Task display component
 ├── services/
-│   ├── authService.js   # Supabase authentication
-│   └── dataService.js   # Database operations
+│   ├── authService.js   # AWS Cognito authentication
+│   └── dataService.js   # DynamoDB operations
 ├── lib/
-│   └── supabase.js      # Supabase client configuration
+│   └── aws.js           # AWS client configuration
 ├── App.jsx              # Main application component
 ├── main.jsx            # React entry point
 └── index.css           # Global styles and Tailwind
@@ -161,10 +164,10 @@ src/
 ## 🎯 Key Features Explained
 
 ### User Authentication & Data Persistence
-- Secure email/password authentication via Supabase
+- Secure email/password authentication via AWS Cognito
 - Automatic user profile creation on signup
 - Cross-device data synchronization
-- Row Level Security ensures users only access their own data
+- IAM policies ensure users only access their own data
 
 ### Reminder System
 - Browser notifications for task reminders
@@ -177,9 +180,9 @@ src/
 - Easy switching between lists
 
 ### Data Security
-- All user data stored in PostgreSQL database
-- Row Level Security (RLS) policies protect user privacy
-- Encrypted connections and secure authentication
+- All user data stored in AWS DynamoDB
+- IAM policies and application-level security protect user privacy
+- Encrypted connections and secure JWT authentication
 - Real-time data sync across devices
 
 ## 🎨 Customization

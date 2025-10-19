@@ -1,17 +1,33 @@
-import { supabase } from '../lib/supabase'
+import { PutCommand, GetCommand, DeleteCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
+import { dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES } from '../lib/aws'
+import { v4 as uuidv4 } from 'uuid'
 
 export const dataService = {
   // Lists operations
   async getUserLists(userId) {
     try {
-      const { data, error } = await supabase
-        .from('lists')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: true })
+      const command = new QueryCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': `USER#${userId}`,
+          ':sk': 'LIST#'
+        },
+        ScanIndexForward: true // Sort by SK (creation time)
+      })
 
-      if (error) throw error
-      return { lists: data || [], error: null }
+      const response = await dynamoDB.send(command)
+      const lists = response.Items?.map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        name: item.name,
+        color: item.color,
+        icon: item.icon,
+        type: item.type,
+        created_at: item.created_at
+      })) || []
+
+      return { lists, error: null }
     } catch (error) {
       console.error('Get lists error:', error)
       return { lists: [], error: error.message }
@@ -20,8 +36,13 @@ export const dataService = {
 
   async createList(userId, listData) {
     try {
+      const listId = uuidv4()
+      const listKeys = generateKeys.list(userId, listId)
+      
       const newList = {
-        id: crypto.randomUUID(),
+        ...listKeys,
+        EntityType: ENTITY_TYPES.LIST,
+        id: listId,
         user_id: userId,
         name: listData.name,
         color: listData.color || 'teal',
@@ -30,14 +51,16 @@ export const dataService = {
         created_at: new Date().toISOString()
       }
 
-      const { data, error } = await supabase
-        .from('lists')
-        .insert([newList])
-        .select()
-        .single()
+      const command = new PutCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        Item: newList
+      })
 
-      if (error) throw error
-      return { list: data, error: null }
+      await dynamoDB.send(command)
+      
+      // Return the list without DynamoDB keys
+      const { PK, SK, EntityType, ...returnList } = newList
+      return { list: returnList, error: null }
     } catch (error) {
       console.error('Create list error:', error)
       return { list: null, error: error.message }
@@ -46,36 +69,61 @@ export const dataService = {
 
   async updateList(listId, updates) {
     try {
-      const { data, error } = await supabase
-        .from('lists')
-        .update(updates)
-        .eq('id', listId)
-        .select()
-        .single()
+      // We need the userId to construct the key - this would need to be passed or retrieved
+      // For now, we'll implement a workaround by finding the list first
+      const userId = updates.user_id || updates.userId
+      if (!userId) {
+        throw new Error('User ID is required for list updates')
+      }
 
-      if (error) throw error
-      return { list: data, error: null }
+      const listKeys = generateKeys.list(userId, listId)
+      
+      const command = new UpdateCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        Key: listKeys,
+        UpdateExpression: 'SET #name = :name, #color = :color, #icon = :icon',
+        ExpressionAttributeNames: {
+          '#name': 'name',
+          '#color': 'color',
+          '#icon': 'icon'
+        },
+        ExpressionAttributeValues: {
+          ':name': updates.name,
+          ':color': updates.color,
+          ':icon': updates.icon
+        },
+        ReturnValues: 'ALL_NEW'
+      })
+
+      const response = await dynamoDB.send(command)
+      const { PK, SK, EntityType, ...list } = response.Attributes
+      
+      return { list, error: null }
     } catch (error) {
       console.error('Update list error:', error)
       return { list: null, error: error.message }
     }
   },
 
-  async deleteList(listId) {
+  async deleteList(listId, userId) {
     try {
       // First delete all todos in this list
-      await supabase
-        .from('todos')
-        .delete()
-        .eq('list_id', listId)
+      const todosResponse = await this.getUserTodos(userId)
+      const todosInList = todosResponse.todos.filter(todo => todo.list_id === listId)
+      
+      for (const todo of todosInList) {
+        await this.deleteTodo(todo.id, userId)
+      }
 
       // Then delete the list
-      const { error } = await supabase
-        .from('lists')
-        .delete()
-        .eq('id', listId)
+      const listKeys = generateKeys.list(userId, listId)
+      
+      const command = new DeleteCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        Key: listKeys
+      })
 
-      if (error) throw error
+      await dynamoDB.send(command)
       return { error: null }
     } catch (error) {
       console.error('Delete list error:', error)
@@ -86,14 +134,35 @@ export const dataService = {
   // Todos operations
   async getUserTodos(userId) {
     try {
-      const { data, error } = await supabase
-        .from('todos')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false })
+      const command = new QueryCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        KeyConditionExpression: 'PK = :pk AND begins_with(SK, :sk)',
+        ExpressionAttributeValues: {
+          ':pk': `USER#${userId}`,
+          ':sk': 'TODO#'
+        },
+        ScanIndexForward: false // Reverse order (newest first)
+      })
 
-      if (error) throw error
-      return { todos: data || [], error: null }
+      const response = await dynamoDB.send(command)
+      const todos = response.Items?.map(item => ({
+        id: item.id,
+        user_id: item.user_id,
+        list_id: item.list_id,
+        title: item.title,
+        description: item.description,
+        completed: item.completed,
+        priority: item.priority,
+        due_date: item.due_date,
+        due_time: item.due_time,
+        is_recurring_instance: item.is_recurring_instance,
+        parent_recurring_task_id: item.parent_recurring_task_id,
+        recurrence: item.recurrence,
+        created_at: item.created_at,
+        completed_at: item.completed_at
+      })) || []
+
+      return { todos, error: null }
     } catch (error) {
       console.error('Get todos error:', error)
       return { todos: [], error: error.message }
@@ -102,8 +171,13 @@ export const dataService = {
 
   async createTodo(userId, todoData) {
     try {
+      const todoId = uuidv4()
+      const todoKeys = generateKeys.todo(userId, todoId)
+      
       const newTodo = {
-        id: crypto.randomUUID(),
+        ...todoKeys,
+        EntityType: ENTITY_TYPES.TODO,
+        id: todoId,
         user_id: userId,
         list_id: todoData.listId,
         title: todoData.title,
@@ -119,45 +193,72 @@ export const dataService = {
         completed_at: null
       }
 
-      const { data, error } = await supabase
-        .from('todos')
-        .insert([newTodo])
-        .select()
-        .single()
+      const command = new PutCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        Item: newTodo
+      })
 
-      if (error) throw error
-      return { todo: data, error: null }
+      await dynamoDB.send(command)
+      
+      // Return the todo without DynamoDB keys
+      const { PK, SK, EntityType, ...returnTodo } = newTodo
+      return { todo: returnTodo, error: null }
     } catch (error) {
       console.error('Create todo error:', error)
       return { todo: null, error: error.message }
     }
   },
 
-  async updateTodo(todoId, updates) {
+  async updateTodo(todoId, updates, userId) {
     try {
-      const { data, error } = await supabase
-        .from('todos')
-        .update(updates)
-        .eq('id', todoId)
-        .select()
-        .single()
+      const todoKeys = generateKeys.todo(userId, todoId)
+      
+      // Build update expression dynamically
+      let updateExpression = 'SET '
+      const expressionAttributeNames = {}
+      const expressionAttributeValues = {}
+      
+      const updateFields = []
+      
+      Object.keys(updates).forEach(key => {
+        if (key !== 'user_id' && key !== 'id') { // Don't update these fields
+          updateFields.push(`#${key} = :${key}`)
+          expressionAttributeNames[`#${key}`] = key
+          expressionAttributeValues[`:${key}`] = updates[key]
+        }
+      })
+      
+      updateExpression += updateFields.join(', ')
 
-      if (error) throw error
-      return { todo: data, error: null }
+      const command = new UpdateCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        Key: todoKeys,
+        UpdateExpression: updateExpression,
+        ExpressionAttributeNames: expressionAttributeNames,
+        ExpressionAttributeValues: expressionAttributeValues,
+        ReturnValues: 'ALL_NEW'
+      })
+
+      const response = await dynamoDB.send(command)
+      const { PK, SK, EntityType, ...todo } = response.Attributes
+      
+      return { todo, error: null }
     } catch (error) {
       console.error('Update todo error:', error)
       return { todo: null, error: error.message }
     }
   },
 
-  async deleteTodo(todoId) {
+  async deleteTodo(todoId, userId) {
     try {
-      const { error } = await supabase
-        .from('todos')
-        .delete()
-        .eq('id', todoId)
+      const todoKeys = generateKeys.todo(userId, todoId)
+      
+      const command = new DeleteCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        Key: todoKeys
+      })
 
-      if (error) throw error
+      await dynamoDB.send(command)
       return { error: null }
     } catch (error) {
       console.error('Delete todo error:', error)
@@ -165,22 +266,14 @@ export const dataService = {
     }
   },
 
-  async toggleTodo(todoId, completed) {
+  async toggleTodo(todoId, completed, userId) {
     try {
       const updates = {
         completed,
         completed_at: completed ? new Date().toISOString() : null
       }
 
-      const { data, error } = await supabase
-        .from('todos')
-        .update(updates)
-        .eq('id', todoId)
-        .select()
-        .single()
-
-      if (error) throw error
-      return { todo: data, error: null }
+      return await this.updateTodo(todoId, updates, userId)
     } catch (error) {
       console.error('Toggle todo error:', error)
       return { todo: null, error: error.message }
@@ -190,23 +283,24 @@ export const dataService = {
   // User settings operations
   async getUserSettings(userId) {
     try {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .select('*')
-        .eq('user_id', userId)
-        .single()
+      const settingsKeys = generateKeys.userSettings(userId)
+      
+      const command = new GetCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        Key: settingsKeys
+      })
 
-      if (error && error.code !== 'PGRST116') throw error
+      const response = await dynamoDB.send(command)
       
       // Return default settings if none found
-      if (!data) {
+      if (!response.Item) {
         return { 
           settings: { font: 'Rock Salt', theme: 'light' }, 
           error: null 
         }
       }
       
-      return { settings: data.settings, error: null }
+      return { settings: response.Item.settings, error: null }
     } catch (error) {
       console.error('Get settings error:', error)
       return { settings: { font: 'Rock Salt', theme: 'light' }, error: error.message }
@@ -215,20 +309,23 @@ export const dataService = {
 
   async updateUserSettings(userId, settings) {
     try {
-      const { data, error } = await supabase
-        .from('user_settings')
-        .upsert([
-          {
-            user_id: userId,
-            settings,
-            updated_at: new Date().toISOString()
-          }
-        ])
-        .select()
-        .single()
+      const settingsKeys = generateKeys.userSettings(userId)
+      
+      const item = {
+        ...settingsKeys,
+        EntityType: ENTITY_TYPES.USER_SETTINGS,
+        user_id: userId,
+        settings,
+        updated_at: new Date().toISOString()
+      }
 
-      if (error) throw error
-      return { settings: data.settings, error: null }
+      const command = new PutCommand({
+        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
+        Item: item
+      })
+
+      await dynamoDB.send(command)
+      return { settings, error: null }
     } catch (error) {
       console.error('Update settings error:', error)
       return { settings: null, error: error.message }

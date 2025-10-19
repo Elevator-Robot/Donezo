@@ -8,16 +8,22 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "lint": "eslint . --ext js,jsx,ts,tsx"
+    "lint": "eslint . --ext js,jsx,ts,tsx",
+    "setup:dynamodb": "node aws-setup/create-dynamodb-table.js",
+    "setup:cognito": "node aws-setup/create-cognito-pool.js",
+    "setup:aws": "npm run setup:dynamodb && npm run setup:cognito"
   },
   "dependencies": {
-    "@supabase/supabase-js": "^2.75.0",
+    "@aws-sdk/client-cognito-identity-provider": "^3.913.0",
+    "@aws-sdk/client-dynamodb": "^3.913.0",
+    "@aws-sdk/lib-dynamodb": "^3.913.0",
     "date-fns": "^2.29.3",
     "framer-motion": "^10.12.16",
     "lucide-react": "^0.263.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "react-router-dom": "^6.8.0"
+    "react-router-dom": "^6.8.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@types/react": "^18.0.28",
