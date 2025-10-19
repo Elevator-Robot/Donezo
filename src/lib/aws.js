@@ -2,21 +2,36 @@ import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
 import { DynamoDBDocumentClient } from '@aws-sdk/lib-dynamodb'
 import { CognitoIdentityProviderClient } from '@aws-sdk/client-cognito-identity-provider'
 
-// AWS configuration
-const awsConfig = {
-  region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
-  credentials: {
-    accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID || '',
-    secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY || ''
+// Check if we're in demo mode
+export const DEMO_MODE = import.meta.env.VITE_DEMO_MODE === 'true'
+
+// AWS configuration - only initialize if not in demo mode and credentials are available
+const hasCredentials = !!(import.meta.env.VITE_AWS_ACCESS_KEY_ID && import.meta.env.VITE_AWS_SECRET_ACCESS_KEY)
+const hasCognitoConfig = !!(import.meta.env.VITE_AWS_COGNITO_USER_POOL_ID && import.meta.env.VITE_AWS_COGNITO_CLIENT_ID)
+
+let dynamoDB = null
+let cognito = null
+
+if (!DEMO_MODE && hasCredentials) {
+  const awsConfig = {
+    region: import.meta.env.VITE_AWS_REGION || 'us-east-1',
+    credentials: {
+      accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+      secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY
+    }
+  }
+
+  // DynamoDB client
+  const dynamoDBClient = new DynamoDBClient(awsConfig)
+  dynamoDB = DynamoDBDocumentClient.from(dynamoDBClient)
+
+  // Cognito client - only if config is available
+  if (hasCognitoConfig) {
+    cognito = new CognitoIdentityProviderClient(awsConfig)
   }
 }
 
-// DynamoDB client
-const dynamoDBClient = new DynamoDBClient(awsConfig)
-export const dynamoDB = DynamoDBDocumentClient.from(dynamoDBClient)
-
-// Cognito client
-export const cognito = new CognitoIdentityProviderClient(awsConfig)
+export { dynamoDB, cognito }
 
 // Configuration constants
 export const AWS_CONFIG = {

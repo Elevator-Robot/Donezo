@@ -1,8 +1,9 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { User, Lock, Mail, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, Key } from 'lucide-react'
+import { User, Lock, Mail, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, Key, Info } from 'lucide-react'
 import { authService } from '../services/authService'
 import { dataService } from '../services/dataService'
+import { DEMO_MODE } from '../lib/aws'
 
 const Auth = ({ onAuthSuccess }) => {
   const [authMode, setAuthMode] = useState('signin') // 'signin', 'signup', 'forgot-password', 'forgot-username', 'reset-password'
@@ -975,6 +976,25 @@ const Auth = ({ onAuthSuccess }) => {
               {getSubtitle()}
             </motion.p>
           </div>
+
+          {/* Demo Mode Notice */}
+          {DEMO_MODE && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-700 p-3 rounded-lg mb-4"
+            >
+              <div className="flex items-start space-x-2">
+                <Info className="w-4 h-4 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+                <div className="text-sm text-blue-700 dark:text-blue-300">
+                  <p className="font-medium mb-1">Demo Mode Active</p>
+                  <p className="text-xs">
+                    AWS services are not configured. Your data will be stored locally for this demo session.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
+          )}
 
           {/* Success Message */}
           {success && (

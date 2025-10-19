@@ -1,10 +1,34 @@
 import { PutCommand, GetCommand, DeleteCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
-import { dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES } from '../lib/aws'
+import { dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES, DEMO_MODE } from '../lib/aws'
+import { mockDataService } from './mockDataService'
 import { v4 as uuidv4 } from 'uuid'
+
+// If in demo mode or AWS is not configured, use mock service
+const isAwsAvailable = !DEMO_MODE && dynamoDB
+
+// Function to check if AWS is properly configured
+const checkAwsConfiguration = () => {
+  if (!isAwsAvailable) {
+    console.warn('AWS not configured or in demo mode. Using mock data service.')
+    return false
+  }
+  
+  if (!AWS_CONFIG.DYNAMODB_TABLE_NAME) {
+    console.error('AWS DynamoDB configuration missing. Please check environment variables.')
+    return false
+  }
+  
+  return true
+}
 
 export const dataService = {
   // Lists operations
   async getUserLists(userId) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.getUserLists(userId)
+    }
+
     try {
       const command = new QueryCommand({
         TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
@@ -35,6 +59,11 @@ export const dataService = {
   },
 
   async createList(userId, listData) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.createList(userId, listData)
+    }
+
     try {
       const listId = uuidv4()
       const listKeys = generateKeys.list(userId, listId)
@@ -68,6 +97,11 @@ export const dataService = {
   },
 
   async updateList(listId, updates) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.updateList(listId, updates)
+    }
+
     try {
       // We need the userId to construct the key - this would need to be passed or retrieved
       // For now, we'll implement a workaround by finding the list first
@@ -106,6 +140,11 @@ export const dataService = {
   },
 
   async deleteList(listId, userId) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.deleteList(listId, userId)
+    }
+
     try {
       // First delete all todos in this list
       const todosResponse = await this.getUserTodos(userId)
@@ -133,6 +172,11 @@ export const dataService = {
 
   // Todos operations
   async getUserTodos(userId) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.getUserTodos(userId)
+    }
+
     try {
       const command = new QueryCommand({
         TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
@@ -170,6 +214,11 @@ export const dataService = {
   },
 
   async createTodo(userId, todoData) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.createTodo(userId, todoData)
+    }
+
     try {
       const todoId = uuidv4()
       const todoKeys = generateKeys.todo(userId, todoId)
@@ -210,6 +259,11 @@ export const dataService = {
   },
 
   async updateTodo(todoId, updates, userId) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.updateTodo(todoId, updates, userId)
+    }
+
     try {
       const todoKeys = generateKeys.todo(userId, todoId)
       
@@ -250,6 +304,11 @@ export const dataService = {
   },
 
   async deleteTodo(todoId, userId) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.deleteTodo(todoId, userId)
+    }
+
     try {
       const todoKeys = generateKeys.todo(userId, todoId)
       
@@ -282,6 +341,11 @@ export const dataService = {
 
   // User settings operations
   async getUserSettings(userId) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.getUserSettings(userId)
+    }
+
     try {
       const settingsKeys = generateKeys.userSettings(userId)
       
@@ -308,6 +372,11 @@ export const dataService = {
   },
 
   async updateUserSettings(userId, settings) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.updateUserSettings(userId, settings)
+    }
+
     try {
       const settingsKeys = generateKeys.userSettings(userId)
       
@@ -334,6 +403,11 @@ export const dataService = {
 
   // Initialize default data for new users
   async initializeUserData(userId) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockDataService.initializeUserData(userId)
+    }
+
     try {
       // Create default lists
       const defaultLists = [

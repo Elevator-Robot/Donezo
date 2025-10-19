@@ -7,8 +7,27 @@ import {
   GetUserCommand
 } from '@aws-sdk/client-cognito-identity-provider'
 import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
-import { cognito, dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES } from '../lib/aws'
+import { cognito, dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES, DEMO_MODE } from '../lib/aws'
+import { mockAuthService } from './mockAuthService'
 import { v4 as uuidv4 } from 'uuid'
+
+// If in demo mode or AWS is not configured, use mock service
+const isAwsAvailable = !DEMO_MODE && cognito && dynamoDB
+
+// Function to check if AWS is properly configured
+const checkAwsConfiguration = () => {
+  if (!isAwsAvailable) {
+    console.warn('AWS not configured or in demo mode. Using mock auth service.')
+    return false
+  }
+  
+  if (!AWS_CONFIG.COGNITO_CLIENT_ID || !AWS_CONFIG.COGNITO_USER_POOL_ID) {
+    console.error('AWS Cognito configuration missing. Please check environment variables.')
+    return false
+  }
+  
+  return true
+}
 
 // Session management
 let currentSession = null
@@ -17,6 +36,11 @@ let sessionCallbacks = []
 export const authService = {
   // Sign up a new user
   async signUp(email, password, userData) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockAuthService.signUp(email, password, userData)
+    }
+
     try {
       const command = new SignUpCommand({
         ClientId: AWS_CONFIG.COGNITO_CLIENT_ID,
@@ -62,12 +86,23 @@ export const authService = {
       return { user: null, error: 'Failed to create user' }
     } catch (error) {
       console.error('Signup error:', error)
+      
+      // If AWS error, provide user-friendly message
+      if (error.name === 'NetworkingError' || error.name === 'TimeoutError') {
+        return { user: null, error: 'Unable to connect to authentication service. Please check your internet connection.' }
+      }
+      
       return { user: null, error: error.message }
     }
   },
 
   // Sign in existing user
   async signIn(email, password) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockAuthService.signIn(email, password)
+    }
+
     try {
       const command = new InitiateAuthCommand({
         ClientId: AWS_CONFIG.COGNITO_CLIENT_ID,
@@ -118,12 +153,23 @@ export const authService = {
       return { user: null, session: null, error: 'Authentication failed' }
     } catch (error) {
       console.error('Signin error:', error)
+      
+      // If AWS error, provide user-friendly message
+      if (error.name === 'NetworkingError' || error.name === 'TimeoutError') {
+        return { user: null, session: null, error: 'Unable to connect to authentication service. Please check your internet connection.' }
+      }
+      
       return { user: null, session: null, error: error.message }
     }
   },
 
   // Sign out user
   async signOut() {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockAuthService.signOut()
+    }
+
     try {
       if (currentSession?.accessToken) {
         const command = new GlobalSignOutCommand({
@@ -154,6 +200,11 @@ export const authService = {
 
   // Get current session
   async getSession() {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockAuthService.getSession()
+    }
+
     try {
       if (currentSession) {
         return { session: currentSession, error: null }
@@ -189,6 +240,11 @@ export const authService = {
 
   // Get current user
   async getCurrentUser() {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockAuthService.getCurrentUser()
+    }
+
     try {
       const { session } = await this.getSession()
       return { user: session?.user || null, error: null }
@@ -200,6 +256,11 @@ export const authService = {
 
   // Get user profile from database
   async getUserProfile(userId) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockAuthService.getUserProfile(userId)
+    }
+
     try {
       const userKeys = generateKeys.user(userId)
       
@@ -223,6 +284,11 @@ export const authService = {
 
   // Reset password
   async resetPassword(email) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockAuthService.resetPassword(email)
+    }
+
     try {
       const command = new ForgotPasswordCommand({
         ClientId: AWS_CONFIG.COGNITO_CLIENT_ID,
@@ -239,6 +305,11 @@ export const authService = {
 
   // Update password
   async updatePassword(newPassword) {
+    // Use mock service if AWS is not available
+    if (!checkAwsConfiguration()) {
+      return await mockAuthService.updatePassword(newPassword)
+    }
+
     try {
       if (!currentSession?.accessToken) {
         throw new Error('No active session')
