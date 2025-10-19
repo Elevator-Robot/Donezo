@@ -1,100 +1,139 @@
-# Migration Guide: From localStorage to Supabase
+# Migration Guide: From Supabase to AWS DynamoDB
 
-If you were using a previous version of Donezo that stored data in your browser's localStorage, this guide will help you understand the changes and migrate your data.
+If you were using a previous version of Donezo with Supabase, this guide will help you migrate to the new AWS-based infrastructure.
 
 ## What Changed
 
-**Previous Version:**
-- Data stored locally in your browser
-- No user accounts
-- Data was device-specific
-- No cross-device sync
+**Previous Version (Supabase):**
+- PostgreSQL database with Row Level Security
+- Supabase Auth for authentication
+- Real-time subscriptions
+- Supabase client SDK
 
-**New Version:**
-- User accounts with email/password
-- Data stored in cloud database (Supabase)
-- Cross-device synchronization
-- Secure, persistent data storage
+**New Version (AWS):**
+- AWS DynamoDB for data storage
+- AWS Cognito for authentication
+- RESTful API pattern with AWS SDK
+- Enhanced security with IAM policies
 
-## Your Existing Data
+## Your Existing Supabase Data
 
-Your previous tasks and lists are still stored in your browser's localStorage, but the new version doesn't automatically access this data for security and data integrity reasons.
+Your existing data is stored in your Supabase project and is not automatically migrated to AWS. You have several migration options.
 
 ## Migration Options
 
-### Option 1: Manual Migration (Recommended)
+### Option 1: Export from Supabase Dashboard
 
-1. **Before Upgrading**: If you haven't upgraded yet, you can manually note down your important tasks and lists.
+1. **Export your data**:
+   - Go to your Supabase dashboard
+   - Navigate to the Table Editor
+   - Export data from `users`, `lists`, `todos`, and `user_settings` tables
+   - Save as CSV or JSON files
 
-2. **After Upgrading**:
-   - Create a new account
-   - Manually recreate your important lists
-   - Add your important tasks
+2. **Set up AWS infrastructure**:
+   - Follow the [AWS_SETUP.md](AWS_SETUP.md) guide
+   - Create DynamoDB table and Cognito User Pool
 
-### Option 2: Export localStorage Data
+3. **Manual recreation**:
+   - Create a new account with the same email
+   - Manually recreate your lists and todos using the exported data
 
-If you're comfortable with browser developer tools:
+### Option 2: Programmatic Migration
 
-1. Open your browser's Developer Tools (F12)
-2. Go to the Console tab
-3. Run this command to see your old data:
+Create a migration script to transfer data:
+
+1. **Keep both systems running temporarily**
+2. **Export from Supabase**:
    ```javascript
-   // See all your old Doink data
-   Object.keys(localStorage).filter(key => key.startsWith('doink-')).forEach(key => {
-     console.log(key, JSON.parse(localStorage.getItem(key) || '{}'));
-   });
+   // Example export script for Supabase
+   const { createClient } = require('@supabase/supabase-js')
+   const supabase = createClient(SUPABASE_URL, SUPABASE_KEY)
+   
+   async function exportData(userId) {
+     const { data: lists } = await supabase.from('lists').select('*').eq('user_id', userId)
+     const { data: todos } = await supabase.from('todos').select('*').eq('user_id', userId)
+     const { data: settings } = await supabase.from('user_settings').select('*').eq('user_id', userId)
+     
+     return { lists, todos, settings }
+   }
    ```
 
-4. Copy the output and use it as reference when recreating your data in the new system.
+3. **Import to AWS**:
+   - Use the dataService methods to recreate the data in DynamoDB
 
-## Benefits of the New System
+### Option 3: Keep Supabase as Backup
 
-### For You
-- ✅ **Never lose your data**: Even if you clear your browser or switch devices
-- ✅ **Access anywhere**: Sign in from any device to see your tasks
-- ✅ **Real-time sync**: Changes appear instantly on all your devices
-- ✅ **Better security**: Your data is encrypted and securely stored
+- Maintain read-only access to your Supabase data
+- Use it as a reference while manually recreating important items
+- Gradually migrate over time
 
-### For the App
-- ✅ **Better performance**: Database queries are faster than localStorage for large datasets
-- ✅ **Collaboration ready**: Foundation for future sharing features
-- ✅ **Backup & recovery**: Your data is automatically backed up
-- ✅ **Scalability**: Can handle unlimited tasks and lists
+## Benefits of AWS Migration
+
+### Performance & Reliability
+- ✅ **Better scalability**: DynamoDB handles massive scale automatically
+- ✅ **Lower latency**: Single-digit millisecond response times
+- ✅ **High availability**: 99.99% availability SLA
+- ✅ **No cold starts**: Always-on performance
+
+### Cost & Management
+- ✅ **Pay-per-use**: Only pay for what you consume
+- ✅ **Free tier**: Generous free tier for development
+- ✅ **Reduced vendor lock-in**: Standard AWS services
+- ✅ **Better monitoring**: CloudWatch integration
+
+### Security & Compliance
+- ✅ **Enterprise security**: AWS security standards
+- ✅ **IAM integration**: Fine-grained access controls
+- ✅ **Audit trails**: CloudTrail logging
+- ✅ **Compliance**: SOC, HIPAA, PCI DSS compliance
 
 ## Frequently Asked Questions
 
-### Can I access my old localStorage data?
+### Can I keep using Supabase?
 
-Your old data is still in your browser's localStorage, but the new version uses a completely different data structure and storage method. For security and data integrity, we don't automatically migrate this data.
+The previous Supabase version is no longer maintained. You can continue using it temporarily, but you won't receive updates or bug fixes.
 
-### Will my old data interfere with the new system?
+### Will my Supabase data interfere with AWS?
 
-No, the old localStorage data won't interfere with the new system. The new version uses completely different storage keys and methods.
+No, the AWS version uses completely different storage and authentication systems. Your Supabase data remains in your Supabase project.
 
-### Can I use both versions?
+### Can I use both versions during migration?
 
-Technically yes, but we recommend using only the new version to avoid confusion. The old localStorage data won't sync with the new cloud database.
+Yes, you can run both versions during the migration period to ensure you don't lose any important data.
 
-### Is my data secure?
+### Is the AWS version more secure?
 
-Yes! The new system uses:
-- Industry-standard encryption
-- Row Level Security (RLS) in the database
-- Secure authentication with Supabase
-- Your data is isolated from other users
+Both versions are secure, but AWS provides additional enterprise-grade security features:
+- IAM policies for fine-grained access control
+- CloudTrail for audit logging
+- AWS security compliance certifications
+- Advanced threat detection
 
-### What if I don't want to create an account?
+### Will it cost more than Supabase?
 
-Unfortunately, the new version requires an account for the cloud sync functionality. However, creating an account is free and only requires an email address.
+For typical personal use, both AWS and Supabase have generous free tiers. AWS DynamoDB and Cognito free tier limits should cover most individual users at no cost.
+
+### Is the feature set the same?
+
+Yes, all existing features are maintained. The user interface and functionality remain identical.
 
 ## Need Help?
 
 If you encounter any issues during migration or have questions:
 
-1. Check the [SUPABASE_SETUP.md](SUPABASE_SETUP.md) guide for setup instructions
-2. Review the updated README.md for new features
-3. Open an issue on GitHub if you encounter bugs
+1. Check the [AWS_SETUP.md](AWS_SETUP.md) guide for setup instructions
+2. Review the updated README.md for AWS configuration
+3. Check AWS documentation for DynamoDB and Cognito
+4. Open an issue on GitHub if you encounter bugs
+
+## Migration Support Tools
+
+We've included helper scripts to make migration easier:
+
+- `npm run setup:aws` - Complete AWS setup
+- `npm run setup:dynamodb` - Create DynamoDB table only
+- `npm run setup:cognito` - Create Cognito User Pool only
 
 ## Summary
 
-While manual migration is required, the new system provides significant benefits in terms of data persistence, security, and cross-device access. The small effort to recreate your data will be worth the improved experience and peace of mind knowing your tasks are safely stored in the cloud.
+The migration to AWS provides enhanced scalability, reliability, and security. While it requires some setup work, the AWS infrastructure offers enterprise-grade capabilities with generous free tier limits for personal use. The improved performance and reliability make it worthwhile for long-term use.

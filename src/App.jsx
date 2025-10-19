@@ -298,7 +298,7 @@ function App() {
     const todo = todos.find(t => t.id === id)
     if (!todo) return
 
-    const { todo: updatedTodo, error } = await dataService.toggleTodo(id, !todo.completed)
+    const { todo: updatedTodo, error } = await dataService.toggleTodo(id, !todo.completed, currentUser.id)
     
     if (error) {
       console.error('Error toggling todo:', error)
@@ -338,7 +338,7 @@ function App() {
   const deleteTodo = async (id) => {
     if (!currentUser) return
 
-    const { error } = await dataService.deleteTodo(id)
+    const { error } = await dataService.deleteTodo(id, currentUser.id)
     
     if (error) {
       console.error('Error deleting todo:', error)
@@ -424,7 +424,7 @@ function App() {
   const deleteList = async (id) => {
     if (!currentUser || lists.length <= 1) return // Don't delete if it's the last list
 
-    const { error } = await dataService.deleteList(id)
+    const { error } = await dataService.deleteList(id, currentUser.id)
     
     if (error) {
       console.error('Error deleting list:', error)
