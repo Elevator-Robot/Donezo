@@ -7,7 +7,7 @@ import {
   GetUserCommand
 } from '@aws-sdk/client-cognito-identity-provider'
 import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
-import { cognito, dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES, validateAWSConfig } from '../lib/aws'
+import { cognito, dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES, validateAWSConfig, formatConfigError } from '../lib/aws'
 import { v4 as uuidv4 } from 'uuid'
 
 // Session management
@@ -70,17 +70,9 @@ export const authService = {
     } catch (error) {
       console.error('Signup error:', error)
       
-      // Provide specific guidance for CLIENT_ID configuration errors
-      if (error.configValidation?.clientIdHelp) {
-        console.error('🔧 CLIENT_ID Configuration Help:', error.configValidation.clientIdHelp)
-        return { 
-          user: null, 
-          error: `${error.message}. Missing COGNITO_CLIENT_ID environment variable. Check console for setup instructions.`,
-          configValidation: error.configValidation
-        }
-      }
-      
-      return { user: null, error: error.message }
+      // Format configuration error with helpful guidance
+      const errorResponse = formatConfigError(error, error.configValidation)
+      return { user: null, ...errorResponse }
     }
   },
 
@@ -144,18 +136,9 @@ export const authService = {
     } catch (error) {
       console.error('Signin error:', error)
       
-      // Provide specific guidance for CLIENT_ID configuration errors
-      if (error.configValidation?.clientIdHelp) {
-        console.error('🔧 CLIENT_ID Configuration Help:', error.configValidation.clientIdHelp)
-        return { 
-          user: null, 
-          session: null,
-          error: `${error.message}. Missing COGNITO_CLIENT_ID environment variable. Check console for setup instructions.`,
-          configValidation: error.configValidation
-        }
-      }
-      
-      return { user: null, session: null, error: error.message }
+      // Format configuration error with helpful guidance
+      const errorResponse = formatConfigError(error, error.configValidation)
+      return { user: null, session: null, ...errorResponse }
     }
   },
 
@@ -278,16 +261,8 @@ export const authService = {
     } catch (error) {
       console.error('Password reset error:', error)
       
-      // Provide specific guidance for CLIENT_ID configuration errors
-      if (error.configValidation?.clientIdHelp) {
-        console.error('🔧 CLIENT_ID Configuration Help:', error.configValidation.clientIdHelp)
-        return { 
-          error: `${error.message}. Missing COGNITO_CLIENT_ID environment variable. Check console for setup instructions.`,
-          configValidation: error.configValidation
-        }
-      }
-      
-      return { error: error.message }
+      // Format configuration error with helpful guidance
+      return formatConfigError(error, error.configValidation)
     }
   },
 

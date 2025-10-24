@@ -28,7 +28,6 @@ export const AWS_CONFIG = {
 // Validation function to check if AWS configuration is properly set
 export const validateAWSConfig = () => {
   const missing = []
-  const warnings = []
   
   // Check for required AWS Cognito configuration
   if (!AWS_CONFIG.COGNITO_USER_POOL_ID) {
@@ -51,7 +50,6 @@ export const validateAWSConfig = () => {
   return {
     isValid: missing.length === 0,
     missing,
-    warnings,
     // Troubleshooting guidance for CLIENT_ID specifically
     clientIdHelp: !AWS_CONFIG.COGNITO_CLIENT_ID ? {
       issue: 'Missing AWS Cognito Client ID',
@@ -71,6 +69,18 @@ export const validateAWSConfig = () => {
       ]
     } : null
   }
+}
+
+// Helper function to format configuration error messages
+export const formatConfigError = (error, configValidation) => {
+  if (configValidation?.clientIdHelp) {
+    console.error('🔧 CLIENT_ID Configuration Help:', configValidation.clientIdHelp)
+    return {
+      error: `${error.message}. Missing COGNITO_CLIENT_ID environment variable. Check console for setup instructions.`,
+      configValidation
+    }
+  }
+  return { error: error.message }
 }
 
 // Entity types for DynamoDB single-table design
