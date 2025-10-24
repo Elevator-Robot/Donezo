@@ -91,6 +91,8 @@ VITE_AWS_COGNITO_CLIENT_ID=your-client-id
 VITE_AWS_DYNAMODB_TABLE_NAME=your-table-name
 ```
 
+**⚠️ Critical:** The `VITE_AWS_COGNITO_CLIENT_ID` is required for all authentication flows (sign up, sign in, password recovery). If this is missing or incorrect, authentication will fail with configuration errors. See troubleshooting in [AWS_SETUP.md](AWS_SETUP.md).
+
 See [AWS_SETUP.md](AWS_SETUP.md) for detailed setup instructions.
 
 ## 📱 How to Use
