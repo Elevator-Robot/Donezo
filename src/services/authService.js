@@ -7,7 +7,7 @@ import {
   GetUserCommand
 } from '@aws-sdk/client-cognito-identity-provider'
 import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
-import { cognito, dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES } from '../lib/aws'
+import { cognito, dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES, validateAWSConfig, formatConfigError } from '../lib/aws'
 import { v4 as uuidv4 } from 'uuid'
 
 // Session management
@@ -18,6 +18,13 @@ export const authService = {
   // Sign up a new user
   async signUp(email, password, userData) {
     try {
+      // Validate AWS configuration before attempting authentication
+      const configValidation = validateAWSConfig()
+      if (!configValidation.isValid) {
+        const error = new Error('AWS configuration incomplete')
+        error.configValidation = configValidation
+        throw error
+      }
       const command = new SignUpCommand({
         ClientId: AWS_CONFIG.COGNITO_CLIENT_ID,
         Username: email,
@@ -62,13 +69,23 @@ export const authService = {
       return { user: null, error: 'Failed to create user' }
     } catch (error) {
       console.error('Signup error:', error)
-      return { user: null, error: error.message }
+      
+      // Format configuration error with helpful guidance
+      const errorResponse = formatConfigError(error, error.configValidation)
+      return { user: null, ...errorResponse }
     }
   },
 
   // Sign in existing user
   async signIn(email, password) {
     try {
+      // Validate AWS configuration before attempting authentication
+      const configValidation = validateAWSConfig()
+      if (!configValidation.isValid) {
+        const error = new Error('AWS configuration incomplete')
+        error.configValidation = configValidation
+        throw error
+      }
       const command = new InitiateAuthCommand({
         ClientId: AWS_CONFIG.COGNITO_CLIENT_ID,
         AuthFlow: 'USER_PASSWORD_AUTH',
@@ -118,7 +135,10 @@ export const authService = {
       return { user: null, session: null, error: 'Authentication failed' }
     } catch (error) {
       console.error('Signin error:', error)
-      return { user: null, session: null, error: error.message }
+      
+      // Format configuration error with helpful guidance
+      const errorResponse = formatConfigError(error, error.configValidation)
+      return { user: null, session: null, ...errorResponse }
     }
   },
 
@@ -224,6 +244,13 @@ export const authService = {
   // Reset password
   async resetPassword(email) {
     try {
+      // Validate AWS configuration before attempting password reset
+      const configValidation = validateAWSConfig()
+      if (!configValidation.isValid) {
+        const error = new Error('AWS configuration incomplete')
+        error.configValidation = configValidation
+        throw error
+      }
       const command = new ForgotPasswordCommand({
         ClientId: AWS_CONFIG.COGNITO_CLIENT_ID,
         Username: email
@@ -233,7 +260,9 @@ export const authService = {
       return { error: null }
     } catch (error) {
       console.error('Password reset error:', error)
-      return { error: error.message }
+      
+      // Format configuration error with helpful guidance
+      return formatConfigError(error, error.configValidation)
     }
   },
 

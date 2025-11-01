@@ -244,6 +244,47 @@ VITE_AWS_DYNAMODB_TABLE_NAME=donezo-app-prod
    - Check that USER_PASSWORD_AUTH is enabled in your User Pool Client
    - Ensure email verification is configured correctly
 
+### CLIENT_ID Configuration Issues
+
+If you're seeing authentication errors, the most common cause is missing or incorrect `VITE_AWS_COGNITO_CLIENT_ID`:
+
+**Symptoms:**
+- "AWS configuration incomplete" error on startup
+- Authentication fails with generic error messages
+- Console shows CLIENT_ID configuration help
+
+**Solutions:**
+1. **Check your .env.local file exists** in your project root
+2. **Verify the CLIENT_ID variable** is properly set:
+   ```env
+   VITE_AWS_COGNITO_CLIENT_ID=your-actual-client-id-here
+   ```
+3. **Get your Client ID from AWS Console:**
+   - Go to AWS Console → Cognito → User Pools
+   - Select your user pool
+   - Go to "App clients and analytics" tab
+   - Copy the Client ID (usually 26 characters)
+
+4. **Common CLIENT_ID mistakes:**
+   - Missing `VITE_` prefix (required by Vite)
+   - Spaces around the `=` sign
+   - Using User Pool ID instead of Client ID
+   - Quotes around the value (not needed)
+   - File saved as `.env` instead of `.env.local`
+
+5. **Restart your development server** after making changes:
+   ```bash
+   npm run dev
+   ```
+
+**Automated Setup:**
+Run our setup script to create and configure everything automatically:
+```bash
+npm run setup:cognito
+```
+
+This will create the User Pool and Client, then display the exact values to add to your `.env.local` file.
+
 ### Getting Help
 
 - Check the [AWS DynamoDB documentation](https://docs.aws.amazon.com/dynamodb/)
