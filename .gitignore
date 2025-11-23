@@ -49,3 +49,8 @@ coverage/
 tmp/
 temp/
 .vercel
+
+# Amplify artifacts
+.amplify/
+amplify/**/cdk.out/
+amplify_outputs.json

@@ -64,7 +64,8 @@ A modern, beautiful, and functional task manager built with React, featuring a m
 
 4. Set up AWS (required for user accounts):
    - Follow the detailed guide in [AWS_SETUP.md](AWS_SETUP.md)
-   - Create your AWS DynamoDB table and Cognito User Pool
+   - (Recommended) Provision the Cognito User Pool via the Amplify Gen 2 backend in `/amplify` by running `npm install` inside that folder and then `npx ampx sandbox` or `npx ampx deploy`
+   - Create your AWS DynamoDB table (manual script still lives in `aws-setup/`)
    - Copy `.env.example` to `.env.local` and add your AWS credentials
 
 5. Start the development server:
@@ -86,12 +87,12 @@ npm run build
 Make sure your production environment has the AWS credentials:
 ```env
 VITE_AWS_REGION=your-aws-region
-VITE_AWS_COGNITO_USER_POOL_ID=your-user-pool-id
-VITE_AWS_COGNITO_CLIENT_ID=your-client-id
+VITE_AWS_ACCESS_KEY_ID=your-access-key
+VITE_AWS_SECRET_ACCESS_KEY=your-secret-key
 VITE_AWS_DYNAMODB_TABLE_NAME=your-table-name
 ```
 
-**⚠️ Critical:** The `VITE_AWS_COGNITO_CLIENT_ID` is required for all authentication flows (sign up, sign in, password recovery). If this is missing or incorrect, authentication will fail with configuration errors. See troubleshooting in [AWS_SETUP.md](AWS_SETUP.md).
+**⚠️ Critical:** These variables power the DynamoDB client used for lists/todos/settings. Without them the app cannot read or write user data.
 
 See [AWS_SETUP.md](AWS_SETUP.md) for detailed setup instructions.
 
@@ -141,6 +142,7 @@ See [AWS_SETUP.md](AWS_SETUP.md) for detailed setup instructions.
 - **Lucide React**: Beautiful icons
 - **date-fns**: Date manipulation utilities
 - **React Router**: Client-side routing
+- **aws-amplify**: Front-end bridge to Cognito (email/password + Google SSO)
 - **AWS DynamoDB**: NoSQL database for scalable data storage
 - **AWS Cognito**: User authentication and management
 - **IAM Security**: AWS Identity and Access Management for secure data access
