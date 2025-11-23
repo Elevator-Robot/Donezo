@@ -11,6 +11,8 @@ const UserProfile = ({ currentUser, onLogout, onOpenSettings }) => {
     onLogout()
   }
 
+  const displayName = currentUser?.email || currentUser?.username || 'User'
+
   return (
     <div className="relative">
       {/* User Button */}
@@ -25,10 +27,7 @@ const UserProfile = ({ currentUser, onLogout, onOpenSettings }) => {
         </div>
         <div className="hidden sm:block text-left">
           <p className="text-xs font-medium text-gray-900 dark:text-white">
-            {currentUser?.username || 'User'}
-          </p>
-          <p className="text-xs text-gray-500 dark:text-gray-400">
-            {currentUser?.email || ''}
+            {displayName}
           </p>
         </div>
         <AnimatePresence mode="wait">
@@ -74,10 +73,7 @@ const UserProfile = ({ currentUser, onLogout, onOpenSettings }) => {
                 </div>
                 <div>
                   <p className="font-semibold text-gray-900 dark:text-white text-sm sm:text-base">
-                    {currentUser?.username || 'User'}
-                  </p>
-                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
-                    {currentUser?.email || ''}
+                    {displayName}
                   </p>
                   <p className="text-xs text-gray-400 dark:text-gray-500">
                     Member since {currentUser?.createdAt ? new Date(currentUser.createdAt).toLocaleDateString() : 'Unknown'}

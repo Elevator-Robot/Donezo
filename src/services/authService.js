@@ -1,297 +1,319 @@
-import { 
-  SignUpCommand, 
-  InitiateAuthCommand, 
-  GlobalSignOutCommand,
-  ForgotPasswordCommand,
-  ChangePasswordCommand,
-  GetUserCommand
-} from '@aws-sdk/client-cognito-identity-provider'
-import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
-import { cognito, dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES, validateAWSConfig, formatConfigError } from '../lib/aws'
-import { v4 as uuidv4 } from 'uuid'
+import {
+  signIn as amplifySignIn,
+  signUp as amplifySignUp,
+  signOut as amplifySignOut,
+  getCurrentUser as amplifyGetCurrentUser,
+  fetchAuthSession,
+  resetPassword as amplifyResetPassword,
+  confirmResetPassword as amplifyConfirmResetPassword,
+  updatePassword as amplifyUpdatePassword,
+  confirmSignUp as amplifyConfirmSignUp,
+  signInWithRedirect
+} from 'aws-amplify/auth'
+import { generateClient } from 'aws-amplify/data'
+import '../lib/amplifyClient'
+
+const dataClient = generateClient()
 
 // Session management
 let currentSession = null
 let sessionCallbacks = []
 
+const persistSession = (session) => {
+  currentSession = session
+  localStorage.setItem('donezo_session', JSON.stringify(session))
+}
+
+const clearSession = () => {
+  currentSession = null
+  localStorage.removeItem('donezo_session')
+}
+
+const notifyAuthListeners = (event, session) => {
+  sessionCallbacks.forEach(callback => callback(event, session))
+}
+
+const deriveUsernames = (email, fallbackUsername) => {
+  if (fallbackUsername && fallbackUsername !== email) {
+    return fallbackUsername
+  }
+  if (email?.includes('@')) {
+    return email.split('@')[0]
+  }
+  return fallbackUsername || 'donezo-user'
+}
+
+const ensureUserProfile = async (userId, email, username) => {
+  if (!userId) return null
+
+  const existing = await dataClient.models.UserProfile.get({ id: userId })
+  if (existing.errors?.length) {
+    throw new Error(existing.errors[0].message)
+  }
+
+  if (existing.data) {
+    return existing.data
+  }
+
+  const timestamp = new Date().toISOString()
+  const { data, errors } = await dataClient.models.UserProfile.create({
+    id: userId,
+    email,
+    username,
+    created_at: timestamp,
+    updated_at: timestamp
+  })
+
+  if (errors?.length) {
+    throw new Error(errors[0].message)
+  }
+
+  return data
+}
+
+const buildSessionFromAmplify = async ({ notifyListeners = false } = {}) => {
+  const user = await amplifyGetCurrentUser()
+  const sessionResult = await fetchAuthSession()
+  const tokens = sessionResult.tokens || {}
+
+  const email = user?.signInDetails?.loginId || user?.username || ''
+  const friendlyUsername = deriveUsernames(email, user?.username)
+
+  await ensureUserProfile(user.userId, email, friendlyUsername)
+
+  const sessionPayload = {
+    accessToken: tokens.accessToken?.toString() || '',
+    idToken: tokens.idToken?.toString() || '',
+    refreshToken: tokens.refreshToken?.toString() || '',
+    user: {
+      id: user.userId,
+      email,
+      username: friendlyUsername
+    }
+  }
+
+  persistSession(sessionPayload)
+
+  if (notifyListeners) {
+    notifyAuthListeners('SIGNED_IN', sessionPayload)
+  }
+
+  return sessionPayload
+}
+
+const handleAuthError = (error) => {
+  if (!error) return 'Unknown authentication error'
+  if (typeof error === 'string') return error
+  if (error.message) return error.message
+  return 'Unknown authentication error'
+}
+
 export const authService = {
-  // Sign up a new user
   async signUp(email, password, userData) {
     try {
-      // Validate AWS configuration before attempting authentication
-      const configValidation = validateAWSConfig()
-      if (!configValidation.isValid) {
-        const error = new Error('AWS configuration incomplete')
-        error.configValidation = configValidation
-        throw error
-      }
-      const command = new SignUpCommand({
-        ClientId: AWS_CONFIG.COGNITO_CLIENT_ID,
-        Username: email,
-        Password: password,
-        UserAttributes: [
-          { Name: 'email', Value: email },
-          { Name: 'custom:username', Value: userData.username }
-        ]
+      const signUpResult = await amplifySignUp({
+        username: email,
+        password,
+        options: {
+          userAttributes: {
+            email,
+            nickname: userData.username
+          }
+        }
       })
 
-      const response = await cognito.send(command)
-      
-      if (response.UserSub) {
-        const userId = response.UserSub
-        
-        // Create user profile in DynamoDB
-        const userKeys = generateKeys.user(userId)
-        const userItem = {
-          ...userKeys,
-          EntityType: ENTITY_TYPES.USER,
-          id: userId,
-          email: email,
-          username: userData.username,
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+      // If Cognito requires confirmation, surface a friendly message
+      if (signUpResult?.nextStep?.signUpStep && signUpResult.nextStep.signUpStep !== 'DONE') {
+        return {
+          user: null,
+          error: null,
+          requiresConfirmation: true,
+          nextStep: signUpResult.nextStep,
+          errorCode: null
         }
-
-        await dynamoDB.send(new PutCommand({
-          TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
-          Item: userItem
-        }))
-
-        const user = {
-          id: userId,
-          email: email,
-          username: userData.username
-        }
-
-        return { user, error: null }
       }
 
-      return { user: null, error: 'Failed to create user' }
+      const signInResult = await amplifySignIn({ username: email, password })
+
+      if (!signInResult?.isSignedIn) {
+        const step = signInResult?.nextStep?.signInStep || 'additional verification'
+        return {
+          user: null,
+          error: `Please complete the ${step} challenge in the hosted UI before continuing.`
+        }
+      }
+
+      try {
+        const session = await buildSessionFromAmplify({ notifyListeners: true })
+        return { user: session?.user || null, error: null, requiresConfirmation: false, errorCode: null }
+      } catch (sessionError) {
+        console.error('Post-signup session error:', sessionError)
+        return {
+          user: null,
+          error: 'Sign-up succeeded, but we could not finalize the session. Please sign in again.',
+          requiresConfirmation: false,
+          errorCode: null
+        }
+      }
     } catch (error) {
       console.error('Signup error:', error)
-      
-      // Format configuration error with helpful guidance
-      const errorResponse = formatConfigError(error, error.configValidation)
-      return { user: null, ...errorResponse }
+      return { user: null, error: handleAuthError(error), requiresConfirmation: false, errorCode: error?.name }
     }
   },
 
-  // Sign in existing user
   async signIn(email, password) {
+    const performSignIn = async () => amplifySignIn({ username: email, password })
+
     try {
-      // Validate AWS configuration before attempting authentication
-      const configValidation = validateAWSConfig()
-      if (!configValidation.isValid) {
-        const error = new Error('AWS configuration incomplete')
-        error.configValidation = configValidation
-        throw error
-      }
-      const command = new InitiateAuthCommand({
-        ClientId: AWS_CONFIG.COGNITO_CLIENT_ID,
-        AuthFlow: 'USER_PASSWORD_AUTH',
-        AuthParameters: {
-          USERNAME: email,
-          PASSWORD: password
+      let signInResult
+      try {
+        signInResult = await performSignIn()
+      } catch (error) {
+        if (error?.name === 'UserAlreadyAuthenticatedException' || error?.message?.includes('already a signed in user')) {
+          try {
+            await amplifySignOut({ global: false })
+          } catch (signOutError) {
+            console.warn('Soft sign-out failed, continuing anyway:', signOutError)
+          }
+          signInResult = await performSignIn()
+        } else {
+          throw error
         }
-      })
-
-      const response = await cognito.send(command)
-      
-      if (response.AuthenticationResult) {
-        const accessToken = response.AuthenticationResult.AccessToken
-        
-        // Get user info using access token
-        const getUserCommand = new GetUserCommand({
-          AccessToken: accessToken
-        })
-        
-        const userResponse = await cognito.send(getUserCommand)
-        const userId = userResponse.Username
-        
-        // Get user profile from DynamoDB
-        const { profile } = await this.getUserProfile(userId)
-        
-        const user = {
-          id: userId,
-          email: email,
-          username: profile?.username || email.split('@')[0]
-        }
-
-        const session = {
-          accessToken,
-          refreshToken: response.AuthenticationResult.RefreshToken,
-          user
-        }
-
-        currentSession = session
-        localStorage.setItem('donezo_session', JSON.stringify(session))
-        
-        // Notify listeners
-        sessionCallbacks.forEach(callback => callback('SIGNED_IN', session))
-
-        return { user, session, error: null }
       }
 
-      return { user: null, session: null, error: 'Authentication failed' }
+      if (!signInResult?.isSignedIn) {
+        const nextStep = signInResult?.nextStep?.signInStep || 'additional verification'
+        return {
+          user: null,
+          session: null,
+          error: `Please complete the ${nextStep} challenge via the hosted UI before continuing.`,
+          errorCode: signInResult?.nextStep?.signInStep || 'NEXT_STEP_REQUIRED'
+        }
+      }
+
+      const session = await buildSessionFromAmplify({ notifyListeners: true })
+      return { user: session.user, session, error: null, errorCode: null }
     } catch (error) {
       console.error('Signin error:', error)
-      
-      // Format configuration error with helpful guidance
-      const errorResponse = formatConfigError(error, error.configValidation)
-      return { user: null, session: null, ...errorResponse }
+      return { user: null, session: null, error: handleAuthError(error), errorCode: error?.name }
     }
   },
 
-  // Sign out user
+  async signInWithGoogle() {
+    await signInWithRedirect({ provider: 'Google' })
+  },
+
   async signOut() {
     try {
-      if (currentSession?.accessToken) {
-        const command = new GlobalSignOutCommand({
-          AccessToken: currentSession.accessToken
-        })
-        
-        await cognito.send(command)
-      }
-      
-      currentSession = null
-      localStorage.removeItem('donezo_session')
-      
-      // Notify listeners
-      sessionCallbacks.forEach(callback => callback('SIGNED_OUT', null))
-      
-      return { error: null }
+      await amplifySignOut({ global: true })
     } catch (error) {
       console.error('Signout error:', error)
-      
-      // Clear session even if logout fails
-      currentSession = null
-      localStorage.removeItem('donezo_session')
-      sessionCallbacks.forEach(callback => callback('SIGNED_OUT', null))
-      
-      return { error: error.message }
+      return { error: handleAuthError(error) }
+    } finally {
+      clearSession()
+      notifyAuthListeners('SIGNED_OUT', null)
     }
+
+    return { error: null }
   },
 
-  // Get current session
   async getSession() {
     try {
       if (currentSession) {
         return { session: currentSession, error: null }
       }
-      
-      // Try to restore from localStorage
-      const storedSession = localStorage.getItem('donezo_session')
-      if (storedSession) {
-        const session = JSON.parse(storedSession)
-        
-        // Verify the session is still valid
-        try {
-          const getUserCommand = new GetUserCommand({
-            AccessToken: session.accessToken
-          })
-          
-          await cognito.send(getUserCommand)
-          currentSession = session
-          
-          return { session, error: null }
-        } catch (verifyError) {
-          // Session is invalid, clear it
-          localStorage.removeItem('donezo_session')
-        }
-      }
-      
-      return { session: null, error: null }
+
+      const session = await buildSessionFromAmplify()
+      return { session, error: null }
     } catch (error) {
+      if (error?.name === 'UserUnAuthenticatedException') {
+        clearSession()
+        return { session: null, error: null }
+      }
+
       console.error('Get session error:', error)
-      return { session: null, error: error.message }
+      return { session: null, error: handleAuthError(error) }
     }
   },
 
-  // Get current user
   async getCurrentUser() {
     try {
-      const { session } = await this.getSession()
-      return { user: session?.user || null, error: null }
+      const session = await buildSessionFromAmplify()
+      return { user: session.user, error: null }
     } catch (error) {
-      console.error('Get user error:', error)
-      return { user: null, error: error.message }
+      if (error?.name === 'UserUnAuthenticatedException') {
+        return { user: null, error: null }
+      }
+      console.error('Get current user error:', error)
+      return { user: null, error: handleAuthError(error) }
     }
   },
 
-  // Get user profile from database
   async getUserProfile(userId) {
     try {
-      const userKeys = generateKeys.user(userId)
-      
-      const command = new GetCommand({
-        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
-        Key: userKeys
-      })
-
-      const response = await dynamoDB.send(command)
-      
-      if (response.Item) {
-        return { profile: response.Item, error: null }
+      const { data, errors } = await dataClient.models.UserProfile.get({ id: userId })
+      if (errors?.length) {
+        throw new Error(errors[0].message)
       }
-      
-      return { profile: null, error: 'Profile not found' }
+
+      if (!data) {
+        return { profile: null, error: 'Profile not found' }
+      }
+
+      return { profile: data, error: null }
     } catch (error) {
       console.error('Get profile error:', error)
-      return { profile: null, error: error.message }
+      return { profile: null, error: handleAuthError(error) }
     }
   },
 
-  // Reset password
   async resetPassword(email) {
     try {
-      // Validate AWS configuration before attempting password reset
-      const configValidation = validateAWSConfig()
-      if (!configValidation.isValid) {
-        const error = new Error('AWS configuration incomplete')
-        error.configValidation = configValidation
-        throw error
-      }
-      const command = new ForgotPasswordCommand({
-        ClientId: AWS_CONFIG.COGNITO_CLIENT_ID,
-        Username: email
-      })
-
-      await cognito.send(command)
-      return { error: null }
+      const result = await amplifyResetPassword({ username: email })
+      return { error: null, nextStep: result.nextStep }
     } catch (error) {
       console.error('Password reset error:', error)
-      
-      // Format configuration error with helpful guidance
-      return formatConfigError(error, error.configValidation)
+      return { error: handleAuthError(error) }
     }
   },
 
-  // Update password
-  async updatePassword(newPassword) {
+  async confirmPasswordReset(email, confirmationCode, newPassword) {
     try {
-      if (!currentSession?.accessToken) {
-        throw new Error('No active session')
-      }
-
-      const command = new ChangePasswordCommand({
-        AccessToken: currentSession.accessToken,
-        PreviousPassword: 'old-password', // This would need to be provided by the user
-        ProposedPassword: newPassword
+      await amplifyConfirmResetPassword({
+        username: email,
+        confirmationCode,
+        newPassword
       })
+      return { error: null }
+    } catch (error) {
+      console.error('Confirm password reset error:', error)
+      return { error: handleAuthError(error) }
+    }
+  },
 
-      await cognito.send(command)
+  async confirmSignUp(email, confirmationCode) {
+    try {
+      await amplifyConfirmSignUp({ username: email, confirmationCode })
+      return { error: null }
+    } catch (error) {
+      console.error('Confirm signup error:', error)
+      return { error: handleAuthError(error) }
+    }
+  },
+
+  async updatePassword(oldPassword, newPassword) {
+    try {
+      await amplifyUpdatePassword({ oldPassword, newPassword })
       return { error: null }
     } catch (error) {
       console.error('Update password error:', error)
-      return { error: error.message }
+      return { error: handleAuthError(error) }
     }
   },
 
-  // Listen to auth state changes
   onAuthStateChange(callback) {
     sessionCallbacks.push(callback)
-    
-    // Return unsubscribe function
+
     return {
       data: {
         subscription: {

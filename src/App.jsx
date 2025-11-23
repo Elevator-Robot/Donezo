@@ -12,7 +12,6 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInte
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 import { authService } from './services/authService'
 import { dataService } from './services/dataService'
-import { validateAWSConfig } from './lib/aws'
 
 function App() {
   // Authentication state
@@ -46,20 +45,6 @@ function App() {
 
     async function initializeAuth() {
       try {
-        // Validate AWS configuration at startup
-        const configValidation = validateAWSConfig()
-        if (!configValidation.isValid) {
-          console.warn('⚠️  AWS Configuration Incomplete:', configValidation.missing)
-          if (configValidation.clientIdHelp) {
-            console.group('🔧 AWS Cognito Client ID Setup Instructions:')
-            console.log(configValidation.clientIdHelp.description)
-            console.log('\nSolutions:')
-            configValidation.clientIdHelp.solutions.forEach(solution => console.log(solution))
-            console.log('\nCommon Issues:')
-            configValidation.clientIdHelp.commonErrors.forEach(error => console.log('- ' + error))
-            console.groupEnd()
-          }
-        }
         const { session, error } = await authService.getSession()
         
         if (error) {

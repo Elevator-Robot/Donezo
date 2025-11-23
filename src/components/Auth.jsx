@@ -1,906 +1,239 @@
 import { useState } from 'react'
 import { motion } from 'framer-motion'
-import { User, Lock, Mail, Eye, EyeOff, LogIn, UserPlus, ArrowLeft, Key } from 'lucide-react'
+import { Mail, Lock, Eye, EyeOff, ArrowLeft, CheckCircle } from 'lucide-react'
 import { authService } from '../services/authService'
 import { dataService } from '../services/dataService'
 
+const deriveUsernameFromEmail = (value = '') => {
+  if (!value.includes('@')) return value || 'donezo-user'
+  return value.split('@')[0]
+}
+
 const Auth = ({ onAuthSuccess }) => {
-  const [authMode, setAuthMode] = useState('signin') // 'signin', 'signup', 'forgot-password', 'forgot-username', 'reset-password'
-  const [formData, setFormData] = useState({
-    username: '',
-    email: '',
-    password: '',
-    confirmPassword: '',
-    resetCode: '',
-    newPassword: '',
-    confirmNewPassword: ''
-  })
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [isOAuthLoading, setIsOAuthLoading] = useState(false)
   const [error, setError] = useState('')
   const [success, setSuccess] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
+  const [showPasswordStep, setShowPasswordStep] = useState(false)
+  const [needsConfirmation, setNeedsConfirmation] = useState(false)
+  const [confirmationCode, setConfirmationCode] = useState('')
 
-  // Email validation function
-  const isValidEmail = (email) => {
+  const resetAlerts = () => {
+    setError('')
+    setSuccess('')
+  }
+
+  const validateEmail = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-    return emailRegex.test(email.trim())
-  }
-
-  // Password strength validation function
-  const isStrongPassword = (password) => {
-    const hasUpperCase = /[A-Z]/.test(password)
-    const hasLowerCase = /[a-z]/.test(password)
-    const hasNumbers = /\d/.test(password)
-    return hasUpperCase && hasLowerCase && hasNumbers
-  }
-
-  const handleInputChange = (e) => {
-    const { name, value } = e.target
-    setFormData(prev => ({
-      ...prev,
-      [name]: value
-    }))
-    setError('') // Clear error when user types
-    setSuccess('') // Clear success message when user types
-  }
-
-  const validateForm = () => {
-    if (authMode === 'signin') {
-      if (!formData.username.trim()) {
-        setError('Email is required')
-        return false
-      }
-      if (!isValidEmail(formData.username)) {
-        setError('Please enter a valid email address')
-        return false
-      }
-      if (!formData.password) {
-        setError('Password is required')
-        return false
-      }
-    } else if (authMode === 'signup') {
-      if (!formData.username.trim()) {
-        setError('Username is required')
-        return false
-      }
-      if (formData.username.length < 3) {
-        setError('Username must be at least 3 characters')
-        return false
-      }
-      if (!formData.email.trim()) {
-        setError('Email is required')
-        return false
-      }
-      if (!isValidEmail(formData.email)) {
-        setError('Please enter a valid email address')
-        return false
-      }
-      if (!formData.password) {
-        setError('Password is required')
-        return false
-      }
-      if (formData.password.length < 6) {
-        setError('Password must be at least 6 characters')
-        return false
-      }
-      if (!isStrongPassword(formData.password)) {
-        setError('Password must contain at least one uppercase letter, one lowercase letter, and one number')
-        return false
-      }
-      if (formData.password !== formData.confirmPassword) {
-        setError('Passwords do not match')
-        return false
-      }
-    } else if (authMode === 'forgot-password') {
-      if (!formData.email.trim()) {
-        setError('Email is required')
-        return false
-      }
-      if (!isValidEmail(formData.email)) {
-        setError('Please enter a valid email address')
-        return false
-      }
-    } else if (authMode === 'forgot-username') {
-      if (!formData.email.trim()) {
-        setError('Email is required')
-        return false
-      }
-      if (!isValidEmail(formData.email)) {
-        setError('Please enter a valid email address')
-        return false
-      }
-    } else if (authMode === 'reset-password') {
-      if (!formData.resetCode.trim()) {
-        setError('Reset code is required')
-        return false
-      }
-      if (!formData.newPassword) {
-        setError('New password is required')
-        return false
-      }
-      if (formData.newPassword.length < 6) {
-        setError('Password must be at least 6 characters')
-        return false
-      }
-      if (!isStrongPassword(formData.newPassword)) {
-        setError('New password must contain at least one uppercase letter, one lowercase letter, and one number')
-        return false
-      }
-      if (formData.newPassword !== formData.confirmNewPassword) {
-        setError('Passwords do not match')
-        return false
-      }
+    if (!email.trim()) {
+      setError('Email is required')
+      return false
+    }
+    if (!emailRegex.test(email.trim())) {
+      setError('Please enter a valid email address')
+      return false
     }
     return true
   }
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!validateForm()) return
+  const handleEmailContinue = () => {
+    resetAlerts()
+    if (!validateEmail()) return
+    setShowPasswordStep(true)
+  }
+
+  const hydrateUserContext = async (userId, username, emailAddress, { seedDefaults = false } = {}) => {
+    try {
+      const profileResult = await authService.getUserProfile(userId)
+      const resolvedUsername = profileResult.profile?.username || username
+
+      let lists = []
+      let todos = []
+      let settings = { font: 'Rock Salt', theme: 'light' }
+
+      if (seedDefaults) {
+        const { lists: seededLists, settings: seededSettings } = await dataService.initializeUserData(userId)
+        if (seededLists?.length) lists = seededLists
+        if (seededSettings) settings = seededSettings
+      }
+
+      const [listsRes, todosRes, settingsRes] = await Promise.all([
+        dataService.getUserLists(userId),
+        dataService.getUserTodos(userId),
+        dataService.getUserSettings(userId)
+      ])
+
+      if (!lists.length) {
+        lists = listsRes.lists || []
+      }
+      todos = todosRes.todos || []
+      if (settingsRes.settings) {
+        settings = settingsRes.settings
+      }
+
+      if (!lists.length) {
+        const { lists: seededLists, settings: seededSettings } = await dataService.initializeUserData(userId)
+        if (seededLists?.length) lists = seededLists
+        if (seededSettings) settings = seededSettings || settings
+      }
+
+      const userData = {
+        todos,
+        lists,
+        settings,
+        theme: settings?.theme || 'light'
+      }
+
+      const userObj = {
+        id: userId,
+        username: resolvedUsername,
+        email: emailAddress,
+        createdAt: profileResult.profile?.created_at || new Date().toISOString()
+      }
+
+      onAuthSuccess(userObj, userData)
+    } catch (err) {
+      console.error('Failed to load user data:', err)
+      setError('Signed in, but failed to load your data. Please refresh the page.')
+    }
+  }
+
+  const handleCreateAccount = async () => {
+    const username = deriveUsernameFromEmail(email)
+    const {
+      user,
+      error: signupError,
+      requiresConfirmation,
+      errorCode: signupErrorCode
+    } = await authService.signUp(email, password, { username })
+
+    if (signupError) {
+      if (signupErrorCode === 'UsernameExistsException') {
+        setError('Account already exists. Double-check your password or continue with Google.')
+      } else {
+        setError(signupError)
+      }
+      return { success: false, handled: true }
+    }
+
+    if (requiresConfirmation) {
+      setNeedsConfirmation(true)
+      setSuccess('Check your email for the verification code to finish creating your account.')
+      return { success: false, handled: true }
+    }
+
+    if (user) {
+      await hydrateUserContext(user.id, username, email, { seedDefaults: true })
+      return { success: true, handled: true }
+    }
+
+    return { success: false, handled: false }
+  }
+
+  const attemptSignIn = async () => {
+    const { user, error: signInError, errorCode } = await authService.signIn(email, password)
+
+    if (signInError) {
+      const shouldAutoCreate = errorCode === 'UserNotFoundException' || errorCode === 'NotAuthorizedException'
+      if (shouldAutoCreate) {
+        const result = await handleCreateAccount()
+        if (result?.success || result?.handled) {
+          return
+        }
+      }
+      setError(signInError)
+      return
+    }
+
+    if (user) {
+      await hydrateUserContext(user.id, deriveUsernameFromEmail(email), email)
+    }
+  }
+
+  const handleConfirmation = async () => {
+    if (!confirmationCode.trim()) {
+      setError('Please enter the confirmation code from your email.')
+      return
+    }
 
     setIsLoading(true)
-    setError('')
-    setSuccess('')
-
+    resetAlerts()
     try {
-      if (authMode === 'signup') {
-        // Sign up with Supabase
-        const { user, error: signupError } = await authService.signUp(
-          formData.email,
-          formData.password,
-          { username: formData.username }
-        )
-
-        if (signupError) {
-          setError(signupError)
-          return
-        }
-
-        if (user) {
-          // Initialize default user data
-          const { lists, settings, error: initError } = await dataService.initializeUserData(user.id)
-          
-          if (initError) {
-            console.error('Failed to initialize user data:', initError)
-            // Still proceed with login even if initialization fails
-          }
-
-          const userData = {
-            todos: [],
-            lists: lists || [
-              { id: '1', name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
-              { id: '2', name: 'Work', color: 'blue', icon: 'Zap', type: 'task' },
-              { id: '3', name: 'Shopping', color: 'green', icon: 'ShoppingCart', type: 'task' }
-            ],
-            settings: settings || { font: 'Rock Salt' },
-            theme: settings?.theme || 'light'
-          }
-
-          // Create user object that matches the existing format
-          const userObj = {
-            id: user.id,
-            username: formData.username,
-            email: formData.email,
-            createdAt: new Date().toISOString()
-          }
-
-          onAuthSuccess(userObj, userData)
-        }
-      } else if (authMode === 'signin') {
-        // Sign in with Supabase using email instead of username
-        // First try to find email if username was provided
-        const email = formData.username
-        if (!email.includes('@')) {
-          // If it's a username, we need to convert it to email
-          // For now, we'll require email for signin
-          setError('Please use your email address to sign in')
-          return
-        }
-
-        const { user, error: signinError } = await authService.signIn(email, formData.password)
-
-        if (signinError) {
-          setError('Invalid email or password')
-          return
-        }
-
-        if (user) {
-          // Get user profile
-          const { profile, error: profileError } = await authService.getUserProfile(user.id)
-          
-          if (profileError) {
-            setError('Failed to load user profile')
-            return
-          }
-
-          // Load user data
-          const [
-            { lists, error: listsError },
-            { todos, error: todosError },
-            { settings, error: settingsError }
-          ] = await Promise.all([
-            dataService.getUserLists(user.id),
-            dataService.getUserTodos(user.id),
-            dataService.getUserSettings(user.id)
-          ])
-
-          if (listsError || todosError || settingsError) {
-            console.error('Error loading user data:', { listsError, todosError, settingsError })
-            // Continue with empty data if there are errors
-          }
-
-          const userData = {
-            todos: todos || [],
-            lists: lists || [],
-            settings: settings || { font: 'Rock Salt' },
-            theme: settings?.theme || 'light'
-          }
-
-          // Create user object that matches the existing format
-          const userObj = {
-            id: user.id,
-            username: profile?.username || user.email.split('@')[0],
-            email: user.email,
-            createdAt: profile?.created_at || new Date().toISOString()
-          }
-
-          onAuthSuccess(userObj, userData)
-        }
-      } else if (authMode === 'forgot-password') {
-        // Send password reset email
-        const { error: resetError } = await authService.resetPassword(formData.email)
-
-        if (resetError) {
-          setError(resetError)
-          return
-        }
-
-        setSuccess(`Password reset email sent to ${formData.email}. Please check your inbox.`)
-      } else if (authMode === 'forgot-username') {
-        // Just go back to sign in
-        goBack()
-        return
-      } else if (authMode === 'reset-password') {
-        // Just go back to sign in
-        goBack()
+      const { error: confirmError } = await authService.confirmSignUp(email, confirmationCode.trim())
+      if (confirmError) {
+        setError(confirmError)
         return
       }
-    } catch (err) {
-      console.error('Auth error:', err)
-      setError('An unexpected error occurred. Please try again.')
+      setNeedsConfirmation(false)
+      setSuccess('Account confirmed! Signing you in...')
+      await attemptSignIn()
     } finally {
       setIsLoading(false)
     }
   }
 
+  const handlePrimarySubmit = async (e) => {
+    e.preventDefault()
+    resetAlerts()
 
+    if (needsConfirmation) {
+      await handleConfirmation()
+      return
+    }
 
-  const goBack = () => {
-    setAuthMode('signin')
-    setFormData({
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      resetCode: '',
-      newPassword: '',
-      confirmNewPassword: ''
-    })
-    setError('')
-    setSuccess('')
-  }
+    if (!showPasswordStep) {
+      handleEmailContinue()
+      return
+    }
 
-  const getTitle = () => {
-    switch (authMode) {
-      case 'signup':
-        return 'Create Account'
-      case 'signin':
-        return 'Welcome Back'
-      case 'forgot-password':
-        return 'Forgot Password'
-      case 'forgot-username':
-        return 'Forgot Username'
-      case 'reset-password':
-        return 'Reset Password'
-      default:
-        return 'Welcome Back'
+    if (!password) {
+      setError('Password is required')
+      return
+    }
+
+    setIsLoading(true)
+    try {
+      await attemptSignIn()
+    } finally {
+      setIsLoading(false)
     }
   }
 
-  const getSubtitle = () => {
-    switch (authMode) {
-      case 'signup':
-        return 'Sign up to get started with Doink'
-      case 'signin':
-        return 'Sign in to your account'
-      case 'forgot-password':
-        return 'Enter your email to receive a reset link'
-      case 'forgot-username':
-        return 'Username recovery not available'
-      case 'reset-password':
-        return 'Reset handled via email link'
-      default:
-        return 'Sign in to your account'
-    }
+  const handleBackToEmail = () => {
+    setShowPasswordStep(false)
+    setNeedsConfirmation(false)
+    setPassword('')
+    setConfirmationCode('')
+    resetAlerts()
   }
 
-  const renderForm = () => {
-    switch (authMode) {
-      case 'signin':
-        return (
-          <>
-            {/* Username */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email
-              </label>
-              <motion.div 
-                className="relative"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <input
-                  type="email"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm sm:text-base transition-all duration-200 hover:bg-white dark:hover:bg-gray-700"
-                  placeholder="Enter your email address"
-                />
-              </motion.div>
-            </motion.div>
-
-            {/* Password */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <motion.div 
-                className="relative"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full pl-9 sm:pl-10 pr-10 sm:pr-12 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm sm:text-base transition-all duration-200 hover:bg-white dark:hover:bg-gray-700"
-                  placeholder="Enter your password"
-                />
-                <motion.button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
-                </motion.button>
-              </motion.div>
-            </motion.div>
-
-            {/* Remember Me and Forgot Password */}
-            <motion.div
-              className="flex items-center justify-between"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <div></div> {/* Empty div for spacing */}
-
-              <div className="flex flex-col items-end space-y-1">
-                <motion.button
-                  type="button"
-                  onClick={() => setAuthMode('forgot-password')}
-                  className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors duration-200"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Forgot your password?
-                </motion.button>
-                <motion.button
-                  type="button"
-                  onClick={() => setAuthMode('forgot-username')}
-                  className="text-sm text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors duration-200"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  Forgot your username?
-                </motion.button>
-              </div>
-            </motion.div>
-          </>
-        )
-
-      case 'signup':
-        return (
-          <>
-            {/* Username */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Username
-              </label>
-              <motion.div 
-                className="relative"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <input
-                  type="text"
-                  name="username"
-                  value={formData.username}
-                  onChange={handleInputChange}
-                  className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm sm:text-base transition-all duration-200 hover:bg-white dark:hover:bg-gray-700"
-                  placeholder="Enter your username"
-                />
-              </motion.div>
-            </motion.div>
-
-            {/* Email */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.5 }}
-            >
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email
-              </label>
-              <motion.div 
-                className="relative"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm sm:text-base transition-all duration-200 hover:bg-white dark:hover:bg-gray-700"
-                  placeholder="Enter your email"
-                />
-              </motion.div>
-            </motion.div>
-
-            {/* Password */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.6 }}
-            >
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Password
-              </label>
-              <motion.div 
-                className="relative"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  name="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className="w-full pl-9 sm:pl-10 pr-10 sm:pr-12 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm sm:text-base transition-all duration-200 hover:bg-white dark:hover:bg-gray-700"
-                  placeholder="Enter your password"
-                />
-                <motion.button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  {showPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
-                </motion.button>
-              </motion.div>
-            </motion.div>
-
-            {/* Confirm Password */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.7 }}
-            >
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Confirm Password
-              </label>
-              <motion.div 
-                className="relative"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <input
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  name="confirmPassword"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className="w-full pl-9 sm:pl-10 pr-10 sm:pr-12 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm sm:text-base transition-all duration-200 hover:bg-white dark:hover:bg-gray-700"
-                  placeholder="Confirm your password"
-                />
-                <motion.button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-                  whileHover={{ scale: 1.1 }}
-                  whileTap={{ scale: 0.9 }}
-                >
-                  {showConfirmPassword ? <EyeOff className="w-4 h-4 sm:w-5 sm:h-5" /> : <Eye className="w-4 h-4 sm:w-5 sm:h-5" />}
-                </motion.button>
-              </motion.div>
-            </motion.div>
-          </>
-        )
-
-      case 'forgot-password':
-        return (
-          <>
-            {/* Email */}
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-            >
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                Email Address
-              </label>
-              <motion.div 
-                className="relative"
-                whileHover={{ scale: 1.02 }}
-                transition={{ duration: 0.2 }}
-              >
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 sm:w-5 sm:h-5 text-gray-400" />
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className="w-full pl-9 sm:pl-10 pr-4 py-2.5 sm:py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm text-gray-900 dark:text-white text-sm sm:text-base transition-all duration-200 hover:bg-white dark:hover:bg-gray-700"
-                  placeholder="Enter your email address"
-                />
-              </motion.div>
-            </motion.div>
-          </>
-        )
-
-      case 'forgot-username':
-        return (
-          <>
-            <div className="text-center py-8">
-              <User className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-              <p className="text-gray-500 dark:text-gray-400">
-                Username recovery is not available. Please use your email address to sign in.
-              </p>
-            </div>
-          </>
-        )
-
-      case 'reset-password':
-        return (
-          <>
-            <div className="text-center py-8">
-              <Key className="w-12 h-12 mx-auto mb-3 text-gray-400" />
-              <p className="text-gray-500 dark:text-gray-400">
-                Password reset is handled via secure email link. Please check your email inbox.
-              </p>
-            </div>
-          </>
-        )
-
-      default:
-        return null
+  const handleGoogleSignIn = async () => {
+    try {
+      setIsOAuthLoading(true)
+      await authService.signInWithGoogle()
+    } catch (err) {
+      console.error('Google sign-in error:', err)
+      setError('Failed to start Google sign-in. Please try again.')
+      setIsOAuthLoading(false)
     }
-  }
-
-  const getSubmitButtonText = () => {
-    if (isLoading) {
-      switch (authMode) {
-        case 'signup':
-          return 'Creating Account...'
-        case 'signin':
-          return 'Signing In...'
-        case 'forgot-password':
-          return 'Sending Reset Email...'
-        default:
-          return 'Loading...'
-      }
-    }
-
-    switch (authMode) {
-      case 'signup':
-        return 'Create Account'
-      case 'signin':
-        return 'Sign In'
-      case 'forgot-password':
-        return 'Send Reset Email'
-      case 'forgot-username':
-        return 'Go Back'
-      case 'reset-password':
-        return 'Go Back'
-      default:
-        return 'Sign In'
-    }
-  }
-
-  const getSubmitButtonIcon = () => {
-    if (isLoading) {
-      return <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-    }
-
-    switch (authMode) {
-      case 'signup':
-        return <UserPlus className="w-4 h-4 mr-2" />
-      case 'signin':
-        return <LogIn className="w-4 h-4 mr-2" />
-      case 'forgot-password':
-        return <Mail className="w-4 h-4 mr-2" />
-      case 'forgot-username':
-      case 'reset-password':
-        return <ArrowLeft className="w-4 h-4 mr-2" />
-      default:
-        return <LogIn className="w-4 h-4 mr-2" />
-    }
-  }
-
-  const getToggleModeText = () => {
-    switch (authMode) {
-      case 'signin':
-        return { question: "Don't have an account?", action: 'Sign Up' }
-      case 'signup':
-        return { question: 'Already have an account?', action: 'Sign In' }
-      default:
-        return { question: 'Back to sign in', action: 'Sign In' }
-    }
-  }
-
-  const handleToggleMode = () => {
-    if (authMode === 'signin') {
-      setAuthMode('signup')
-    } else if (authMode === 'signup') {
-      setAuthMode('signin')
-    } else {
-      goBack()
-    }
-    
-    setFormData({
-      username: '',
-      email: '',
-      password: '',
-      confirmPassword: '',
-      resetCode: '',
-      newPassword: '',
-      confirmNewPassword: ''
-    })
-    setError('')
-    setSuccess('')
   }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-blue-900 dark:to-purple-900 p-4 relative overflow-hidden">
-      {/* Enhanced Ambient Cloud Background */}
       <div className="absolute inset-0 overflow-hidden">
-        {/* Primary Floating Cloud Elements */}
         <motion.div
           className="absolute top-20 left-10 w-32 h-32 bg-white/20 dark:bg-white/10 rounded-full blur-xl"
-          animate={{
-            x: [0, 100, 0],
-            y: [0, -50, 0],
-            scale: [1, 1.2, 1],
-            rotate: [0, 5, 0],
-          }}
-          transition={{
-            duration: 20,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute top-40 right-20 w-24 h-24 bg-blue-200/30 dark:bg-blue-400/20 rounded-full blur-lg"
-          animate={{
-            x: [0, -80, 0],
-            y: [0, 60, 0],
-            scale: [1, 0.8, 1],
-            rotate: [0, -3, 0],
-          }}
-          transition={{
-            duration: 25,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 2
-          }}
+          animate={{ x: [0, 100, 0], y: [0, -50, 0], scale: [1, 1.2, 1] }}
+          transition={{ duration: 20, repeat: Infinity, ease: 'easeInOut' }}
         />
         <motion.div
           className="absolute bottom-32 left-1/4 w-40 h-40 bg-purple-200/25 dark:bg-purple-400/15 rounded-full blur-2xl"
-          animate={{
-            x: [0, 120, 0],
-            y: [0, -80, 0],
-            scale: [1, 1.3, 1],
-            rotate: [0, 8, 0],
-          }}
-          transition={{
-            duration: 30,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 5
-          }}
+          animate={{ x: [0, 120, 0], y: [0, -80, 0], scale: [1, 1.3, 1] }}
+          transition={{ duration: 30, repeat: Infinity, ease: 'easeInOut', delay: 5 }}
         />
-        <motion.div
-          className="absolute top-1/2 right-1/3 w-20 h-20 bg-indigo-200/30 dark:bg-indigo-400/20 rounded-full blur-lg"
-          animate={{
-            x: [0, -60, 0],
-            y: [0, 40, 0],
-            scale: [1, 1.1, 1],
-            rotate: [0, -5, 0],
-          }}
-          transition={{
-            duration: 18,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 8
-          }}
-        />
-        <motion.div
-          className="absolute bottom-20 right-10 w-36 h-36 bg-cyan-200/20 dark:bg-cyan-400/15 rounded-full blur-xl"
-          animate={{
-            x: [0, 80, 0],
-            y: [0, -60, 0],
-            scale: [1, 0.9, 1],
-            rotate: [0, 4, 0],
-          }}
-          transition={{
-            duration: 22,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 3
-          }}
-        />
-
-        {/* Additional Serene Elements */}
-        <motion.div
-          className="absolute top-1/3 left-1/2 w-16 h-16 bg-pink-200/20 dark:bg-pink-400/15 rounded-full blur-md"
-          animate={{
-            x: [0, 40, 0],
-            y: [0, -30, 0],
-            scale: [1, 1.15, 1],
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{
-            duration: 16,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 1
-          }}
-        />
-        <motion.div
-          className="absolute bottom-1/3 left-1/6 w-28 h-28 bg-yellow-200/15 dark:bg-yellow-400/10 rounded-full blur-lg"
-          animate={{
-            x: [0, -50, 0],
-            y: [0, 70, 0],
-            scale: [1, 0.85, 1],
-            rotate: [0, -6, 0],
-          }}
-          transition={{
-            duration: 28,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 6
-          }}
-        />
-        <motion.div
-          className="absolute top-2/3 right-1/6 w-12 h-12 bg-green-200/25 dark:bg-green-400/15 rounded-full blur-sm"
-          animate={{
-            x: [0, 35, 0],
-            y: [0, -25, 0],
-            scale: [1, 1.2, 1],
-            opacity: [0.4, 0.7, 0.4],
-          }}
-          transition={{
-            duration: 14,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 4
-          }}
-        />
-
-        {/* Flowing Wave Elements */}
-        <motion.div
-          className="absolute top-0 left-0 w-full h-32 bg-gradient-to-b from-transparent via-white/5 to-transparent"
-          animate={{
-            y: [0, 100, 0],
-            opacity: [0.3, 0.6, 0.3],
-          }}
-          transition={{
-            duration: 12,
-            repeat: Infinity,
-            ease: "easeInOut"
-          }}
-        />
-        <motion.div
-          className="absolute bottom-0 right-0 w-full h-40 bg-gradient-to-t from-transparent via-blue-100/10 to-transparent"
-          animate={{
-            y: [0, -80, 0],
-            opacity: [0.2, 0.5, 0.2],
-          }}
-          transition={{
-            duration: 15,
-            repeat: Infinity,
-            ease: "easeInOut",
-            delay: 3
-          }}
-        />
-        
-        {/* Enhanced Gradient Overlays */}
-        <div className="absolute inset-0 bg-gradient-to-tr from-transparent via-white/10 dark:via-white/5 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-bl from-transparent via-blue-100/20 dark:via-blue-900/20 to-transparent" />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-purple-100/15 dark:via-purple-900/15 to-transparent" />
-        
-        {/* Enhanced Particle Effect */}
-        <div className="absolute inset-0">
-          {Array.from({ length: 25 }).map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-1 h-1 bg-white/40 dark:bg-white/20 rounded-full"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-              }}
-              animate={{
-                y: [0, -30, 0],
-                x: [0, Math.random() * 20 - 10, 0],
-                opacity: [0.2, 0.8, 0.2],
-                scale: [1, 1.5, 1],
-              }}
-              transition={{
-                duration: Math.random() * 4 + 3,
-                repeat: Infinity,
-                ease: "easeInOut",
-                delay: Math.random() * 3,
-              }}
-            />
-          ))}
-        </div>
-
-        {/* Floating Light Orbs */}
-        {Array.from({ length: 8 }).map((_, i) => (
-          <motion.div
-            key={`orb-${i}`}
-            className="absolute w-2 h-2 bg-white/60 dark:bg-white/30 rounded-full"
-            style={{
-              left: `${Math.random() * 100}%`,
-              top: `${Math.random() * 100}%`,
-            }}
-            animate={{
-              y: [0, -40, 0],
-              opacity: [0.4, 1, 0.4],
-              scale: [1, 1.8, 1],
-            }}
-            transition={{
-              duration: Math.random() * 5 + 8,
-              repeat: Infinity,
-              ease: "easeInOut",
-              delay: Math.random() * 5,
-            }}
-          />
-        ))}
       </div>
 
       <motion.div
@@ -911,152 +244,152 @@ const Auth = ({ onAuthSuccess }) => {
       >
         <motion.div
           className="bg-gradient-to-br from-teal-50 via-blue-50 to-cyan-100 dark:from-teal-900/30 dark:via-blue-900/30 dark:to-cyan-900/30 backdrop-blur-sm rounded-3xl shadow-2xl p-6 sm:p-8 border border-white/20 dark:border-white/10"
-          initial={{ scale: 0.9, rotateY: -5 }}
-          animate={{ scale: 1, rotateY: 0 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          whileHover={{ 
-            scale: 1.02,
-            rotateY: 2,
-            transition: { duration: 0.3 }
-          }}
+          initial={{ scale: 0.95 }}
+          animate={{ scale: 1 }}
+          transition={{ duration: 0.4, ease: 'easeOut' }}
         >
-          {/* Header */}
-          <div className="text-center mb-6 sm:mb-8">
-            {(authMode === 'forgot-password' || authMode === 'forgot-username' || authMode === 'reset-password') && (
+          <div className="text-center mb-6">
+            {(showPasswordStep || needsConfirmation) && (
               <motion.button
-                onClick={goBack}
-                className="absolute top-6 left-6 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                onClick={handleBackToEmail}
+                className="absolute top-6 left-6 p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
-                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-400" />
+                <ArrowLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
               </motion.button>
             )}
-            
             <motion.div
               className="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-r from-teal-500 to-blue-500 rounded-full flex items-center justify-center mx-auto mb-4 shadow-lg"
-              whileHover={{ 
-                scale: 1.1,
-                rotate: 5,
-                transition: { type: "spring", stiffness: 300 }
-              }}
-              whileTap={{ scale: 0.95 }}
-              animate={{
-                y: [0, -5, 0],
-              }}
-              transition={{
-                y: {
-                  duration: 3,
-                  repeat: Infinity,
-                  ease: "easeInOut"
-                }
-              }}
+              animate={{ y: [0, -5, 0] }}
+              transition={{ duration: 3, repeat: Infinity, ease: 'easeInOut' }}
             >
-              {authMode === 'forgot-password' || authMode === 'reset-password' ? (
-                <Key className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              ) : (
-                <User className="w-6 h-6 sm:w-8 sm:h-8 text-white" />
-              )}
+              <CheckCircle className="w-7 h-7 text-white" />
             </motion.div>
-            <motion.h1 
-              className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-            >
-              {getTitle()}
-            </motion.h1>
-            <motion.p 
-              className="text-sm sm:text-base text-gray-600 dark:text-gray-400"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.3 }}
-            >
-              {getSubtitle()}
-            </motion.p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white mb-2">
+              {needsConfirmation ? 'Confirm your account' : showPasswordStep ? 'Welcome back' : 'Log in or sign up'}
+            </h1>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {needsConfirmation ? 'Enter the code we sent to your email to finish signing up.' : 'Use your email and password or continue with Google.'}
+            </p>
           </div>
 
-          {/* Success Message */}
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-green-600 dark:text-green-400 text-sm bg-green-50 dark:bg-green-900/20 p-3 rounded-lg mb-4"
-            >
-              {success}
-            </motion.div>
-          )}
-
-          {/* Error Message */}
           {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg mb-4"
-            >
+            <div className="text-red-500 text-sm bg-red-50 dark:bg-red-900/20 p-3 rounded-lg mb-4">
               {error}
-            </motion.div>
+            </div>
           )}
 
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-3 sm:space-y-4">
-            {renderForm()}
+          {success && (
+            <div className="text-emerald-600 text-sm bg-emerald-50 dark:bg-emerald-900/20 p-3 rounded-lg mb-4">
+              {success}
+            </div>
+          )}
 
-            {/* Submit Button */}
-            <motion.button
-              type="submit"
-              disabled={isLoading}
-              className="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white py-2.5 px-4 rounded-lg font-medium hover:from-teal-600 hover:to-blue-700 focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 text-sm sm:text-base shadow-lg"
-              whileHover={{ 
-                scale: 1.02,
-                y: -2,
-                transition: { duration: 0.2 }
-              }}
-              whileTap={{ 
-                scale: 0.98,
-                y: 0,
-                transition: { duration: 0.1 }
-              }}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.7 }}
-            >
-              <div className="flex items-center justify-center">
-                {getSubmitButtonIcon()}
-                <span className="text-sm sm:text-base">{getSubmitButtonText()}</span>
+          <form className="space-y-4" onSubmit={handlePrimarySubmit}>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                Email address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  disabled={showPasswordStep || needsConfirmation}
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white"
+                  placeholder="you@example.com"
+                />
               </div>
-            </motion.button>
+            </div>
+
+            {needsConfirmation ? (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Confirmation code
+                </label>
+                <input
+                  type="text"
+                  value={confirmationCode}
+                  onChange={(e) => setConfirmationCode(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white tracking-widest text-center"
+                  placeholder="123456"
+                />
+              </div>
+            ) : showPasswordStep && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Password
+                </label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full pl-10 pr-10 py-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-teal-500 focus:border-transparent bg-white/80 dark:bg-gray-700/80 text-gray-900 dark:text-white"
+                    placeholder="Enter your password"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!showPasswordStep && !needsConfirmation && (
+              <motion.button
+                type="button"
+                onClick={handleEmailContinue}
+                className="w-full bg-gray-900 text-white py-3 rounded-lg font-semibold hover:bg-gray-800"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Continue
+              </motion.button>
+            )}
+
+            {(showPasswordStep || needsConfirmation) && (
+              <motion.button
+                type="submit"
+                disabled={isLoading}
+                className="w-full bg-gradient-to-r from-teal-500 to-blue-500 text-white py-3 rounded-lg font-semibold hover:from-teal-600 hover:to-blue-600 disabled:opacity-50"
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                {isLoading ? 'Please wait…' : needsConfirmation ? 'Confirm account' : 'Continue'}
+              </motion.button>
+            )}
           </form>
 
-          {/* Toggle Mode */}
-          {(authMode === 'signin' || authMode === 'signup') && (
-            <motion.div 
-              className="mt-5 sm:mt-6 text-center"
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.8 }}
+          <div className="mt-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+              <span className="text-xs uppercase tracking-widest text-gray-500 dark:text-gray-400">Or continue with</span>
+              <div className="flex-1 h-px bg-gray-200 dark:bg-gray-700" />
+            </div>
+            <motion.button
+              type="button"
+              onClick={handleGoogleSignIn}
+              disabled={isOAuthLoading}
+              className="w-full flex items-center justify-center gap-3 border border-gray-300 dark:border-gray-600 rounded-lg py-2.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white/80 dark:bg-gray-800/80 hover:bg-white disabled:opacity-60"
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
             >
-              <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400">
-                {getToggleModeText().question}
-              </p>
-              <motion.button
-                onClick={handleToggleMode}
-                className="text-emerald-600 dark:text-emerald-400 font-semibold hover:text-emerald-700 dark:hover:text-emerald-300 transition-colors duration-200 text-sm sm:text-base"
-                whileHover={{ 
-                  scale: 1.05,
-                  y: -1,
-                  transition: { duration: 0.2 }
-                }}
-                whileTap={{ 
-                  scale: 0.95,
-                  y: 0,
-                  transition: { duration: 0.1 }
-                }}
-              >
-                {getToggleModeText().action}
-              </motion.button>
-            </motion.div>
-          )}
+              <svg className="w-5 h-5" viewBox="0 0 24 24" aria-hidden="true">
+                <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
+                <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
+                <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" />
+                <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
+              </svg>
+              <span>{isOAuthLoading ? 'Redirecting…' : 'Continue with Google'}</span>
+            </motion.button>
+          </div>
         </motion.div>
       </motion.div>
     </div>
