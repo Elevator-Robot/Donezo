@@ -49,16 +49,7 @@ function App() {
         // Validate AWS configuration at startup
         const configValidation = validateAWSConfig()
         if (!configValidation.isValid) {
-          console.warn('⚠️  AWS Configuration Incomplete:', configValidation.missing)
-          if (configValidation.clientIdHelp) {
-            console.group('🔧 AWS Cognito Client ID Setup Instructions:')
-            console.log(configValidation.clientIdHelp.description)
-            console.log('\nSolutions:')
-            configValidation.clientIdHelp.solutions.forEach(solution => console.log(solution))
-            console.log('\nCommon Issues:')
-            configValidation.clientIdHelp.commonErrors.forEach(error => console.log('- ' + error))
-            console.groupEnd()
-          }
+          console.warn('⚠️  AWS configuration incomplete:', configValidation.missing)
         }
         const { session, error } = await authService.getSession()
         
