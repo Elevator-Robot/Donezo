@@ -7,11 +7,13 @@ import {
   resetPassword as amplifyResetPassword,
   confirmResetPassword as amplifyConfirmResetPassword,
   updatePassword as amplifyUpdatePassword,
+  confirmSignUp as amplifyConfirmSignUp,
   signInWithRedirect
 } from 'aws-amplify/auth'
+import { generateClient } from 'aws-amplify/data'
 import '../lib/amplifyClient'
-import { PutCommand, GetCommand } from '@aws-sdk/lib-dynamodb'
-import { dynamoDB, AWS_CONFIG, generateKeys, ENTITY_TYPES } from '../lib/aws'
+
+const dataClient = generateClient()
 
 // Session management
 let currentSession = null
@@ -42,36 +44,31 @@ const deriveUsernames = (email, fallbackUsername) => {
 }
 
 const ensureUserProfile = async (userId, email, username) => {
-  if (!userId || !AWS_CONFIG.DYNAMODB_TABLE_NAME) return
+  if (!userId) return null
 
-  const userKeys = generateKeys.user(userId)
+  const existing = await dataClient.models.UserProfile.get({ id: userId })
+  if (existing.errors?.length) {
+    throw new Error(existing.errors[0].message)
+  }
 
-  const existing = await dynamoDB.send(new GetCommand({
-    TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
-    Key: userKeys
-  }))
-
-  if (existing.Item) {
-    return existing.Item
+  if (existing.data) {
+    return existing.data
   }
 
   const timestamp = new Date().toISOString()
-  const userItem = {
-    ...userKeys,
-    EntityType: ENTITY_TYPES.USER,
+  const { data, errors } = await dataClient.models.UserProfile.create({
     id: userId,
     email,
     username,
     created_at: timestamp,
     updated_at: timestamp
+  })
+
+  if (errors?.length) {
+    throw new Error(errors[0].message)
   }
 
-  await dynamoDB.send(new PutCommand({
-    TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
-    Item: userItem
-  }))
-
-  return userItem
+  return data
 }
 
 const buildSessionFromAmplify = async ({ notifyListeners = false } = {}) => {
@@ -129,7 +126,10 @@ export const authService = {
       if (signUpResult?.nextStep?.signUpStep && signUpResult.nextStep.signUpStep !== 'DONE') {
         return {
           user: null,
-          error: 'Check your email for a confirmation link/code, then sign in again.'
+          error: null,
+          requiresConfirmation: true,
+          nextStep: signUpResult.nextStep,
+          errorCode: null
         }
       }
 
@@ -145,38 +145,57 @@ export const authService = {
 
       try {
         const session = await buildSessionFromAmplify({ notifyListeners: true })
-        return { user: session?.user || null, error: null }
+        return { user: session?.user || null, error: null, requiresConfirmation: false, errorCode: null }
       } catch (sessionError) {
         console.error('Post-signup session error:', sessionError)
         return {
           user: null,
-          error: 'Sign-up succeeded, but we could not finalize the session. Please sign in again.'
+          error: 'Sign-up succeeded, but we could not finalize the session. Please sign in again.',
+          requiresConfirmation: false,
+          errorCode: null
         }
       }
     } catch (error) {
       console.error('Signup error:', error)
-      return { user: null, error: handleAuthError(error) }
+      return { user: null, error: handleAuthError(error), requiresConfirmation: false, errorCode: error?.name }
     }
   },
 
   async signIn(email, password) {
+    const performSignIn = async () => amplifySignIn({ username: email, password })
+
     try {
-      const signInResult = await amplifySignIn({ username: email, password })
+      let signInResult
+      try {
+        signInResult = await performSignIn()
+      } catch (error) {
+        if (error?.name === 'UserAlreadyAuthenticatedException' || error?.message?.includes('already a signed in user')) {
+          try {
+            await amplifySignOut({ global: false })
+          } catch (signOutError) {
+            console.warn('Soft sign-out failed, continuing anyway:', signOutError)
+          }
+          signInResult = await performSignIn()
+        } else {
+          throw error
+        }
+      }
 
       if (!signInResult?.isSignedIn) {
         const nextStep = signInResult?.nextStep?.signInStep || 'additional verification'
         return {
           user: null,
           session: null,
-          error: `Please complete the ${nextStep} challenge via the hosted UI before continuing.`
+          error: `Please complete the ${nextStep} challenge via the hosted UI before continuing.`,
+          errorCode: signInResult?.nextStep?.signInStep || 'NEXT_STEP_REQUIRED'
         }
       }
 
       const session = await buildSessionFromAmplify({ notifyListeners: true })
-      return { user: session.user, session, error: null }
+      return { user: session.user, session, error: null, errorCode: null }
     } catch (error) {
       console.error('Signin error:', error)
-      return { user: null, session: null, error: handleAuthError(error) }
+      return { user: null, session: null, error: handleAuthError(error), errorCode: error?.name }
     }
   },
 
@@ -232,20 +251,16 @@ export const authService = {
 
   async getUserProfile(userId) {
     try {
-      const userKeys = generateKeys.user(userId)
-
-      const command = new GetCommand({
-        TableName: AWS_CONFIG.DYNAMODB_TABLE_NAME,
-        Key: userKeys
-      })
-
-      const response = await dynamoDB.send(command)
-
-      if (response.Item) {
-        return { profile: response.Item, error: null }
+      const { data, errors } = await dataClient.models.UserProfile.get({ id: userId })
+      if (errors?.length) {
+        throw new Error(errors[0].message)
       }
 
-      return { profile: null, error: 'Profile not found' }
+      if (!data) {
+        return { profile: null, error: 'Profile not found' }
+      }
+
+      return { profile: data, error: null }
     } catch (error) {
       console.error('Get profile error:', error)
       return { profile: null, error: handleAuthError(error) }
@@ -272,6 +287,16 @@ export const authService = {
       return { error: null }
     } catch (error) {
       console.error('Confirm password reset error:', error)
+      return { error: handleAuthError(error) }
+    }
+  },
+
+  async confirmSignUp(email, confirmationCode) {
+    try {
+      await amplifyConfirmSignUp({ username: email, confirmationCode })
+      return { error: null }
+    } catch (error) {
+      console.error('Confirm signup error:', error)
       return { error: handleAuthError(error) }
     }
   },

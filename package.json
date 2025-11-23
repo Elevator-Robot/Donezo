@@ -13,7 +13,8 @@
     "setup:cognito": "node aws-setup/create-cognito-pool.js",
     "setup:aws": "npm run setup:dynamodb && npm run setup:cognito",
     "sandbox": "npx ampx sandbox --once",
-    "sandbox:local": "AMPLIFY_EXTERNAL_PROVIDERS=false npx ampx sandbox --once"
+    "sandbox:local": "AMPLIFY_EXTERNAL_PROVIDERS=false npx ampx sandbox --once",
+    "sandbox:delete": "npx ampx sandbox delete"
   },
   "dependencies": {
     "@aws-sdk/client-cognito-identity-provider": "^3.913.0",

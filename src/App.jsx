@@ -12,7 +12,6 @@ import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInte
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 import { authService } from './services/authService'
 import { dataService } from './services/dataService'
-import { validateAWSConfig } from './lib/aws'
 
 function App() {
   // Authentication state
@@ -46,11 +45,6 @@ function App() {
 
     async function initializeAuth() {
       try {
-        // Validate AWS configuration at startup
-        const configValidation = validateAWSConfig()
-        if (!configValidation.isValid) {
-          console.warn('⚠️  AWS configuration incomplete:', configValidation.missing)
-        }
         const { session, error } = await authService.getSession()
         
         if (error) {
