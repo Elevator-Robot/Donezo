@@ -20,12 +20,15 @@ const loadAmplifyOutputs = async () => {
   throw new Error('Amplify outputs missing. Provide VITE_AMPLIFY_OUTPUTS_JSON or run `npm run sandbox`.')
 }
 
-loadAmplifyOutputs()
+const configurePromise = loadAmplifyOutputs()
   .then((outputs) => {
     // Configure Amplify with the generated backend outputs once on app startup
     Amplify.configure(outputs)
+    return outputs
   })
   .catch((error) => {
     console.error('Failed to configure Amplify', error)
     throw error
   })
+
+export const ensureAmplifyConfigured = () => configurePromise

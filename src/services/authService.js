@@ -11,9 +11,15 @@ import {
   signInWithRedirect
 } from 'aws-amplify/auth'
 import { generateClient } from 'aws-amplify/data'
-import '../lib/amplifyClient'
+import { ensureAmplifyConfigured } from '../lib/amplifyClient'
 
-const dataClient = generateClient()
+let dataClientPromise
+const getDataClient = () => {
+  if (!dataClientPromise) {
+    dataClientPromise = ensureAmplifyConfigured().then(() => generateClient())
+  }
+  return dataClientPromise
+}
 
 // Session management
 let currentSession = null
@@ -46,6 +52,7 @@ const deriveUsernames = (email, fallbackUsername) => {
 const ensureUserProfile = async (userId, email, username) => {
   if (!userId) return null
 
+  const dataClient = await getDataClient()
   const existing = await dataClient.models.UserProfile.get({ id: userId })
   if (existing.errors?.length) {
     throw new Error(existing.errors[0].message)
@@ -251,6 +258,7 @@ export const authService = {
 
   async getUserProfile(userId) {
     try {
+      const dataClient = await getDataClient()
       const { data, errors } = await dataClient.models.UserProfile.get({ id: userId })
       if (errors?.length) {
         throw new Error(errors[0].message)

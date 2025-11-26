@@ -1,8 +1,14 @@
 import { generateClient } from 'aws-amplify/data'
-import '../lib/amplifyClient'
+import { ensureAmplifyConfigured } from '../lib/amplifyClient'
 import { v4 as uuidv4 } from 'uuid'
 
-const dataClient = generateClient()
+let dataClientPromise
+const getDataClient = () => {
+  if (!dataClientPromise) {
+    dataClientPromise = ensureAmplifyConfigured().then(() => generateClient())
+  }
+  return dataClientPromise
+}
 const DEFAULT_SETTINGS = { font: 'Rock Salt', theme: 'light' }
 const DEFAULT_LISTS = [
   { name: 'Personal', color: 'teal', icon: 'Heart', type: 'task' },
@@ -42,6 +48,7 @@ const mapTodo = (item) => ({
 export const dataService = {
   async getUserLists(userId) {
     try {
+      const dataClient = await getDataClient()
       const { data, errors } = await dataClient.models.List.list({
         filter: { user_id: { eq: userId } },
         limit: 1000
@@ -71,6 +78,7 @@ export const dataService = {
         created_at: new Date().toISOString()
       }
 
+      const dataClient = await getDataClient()
       const { data, errors } = await dataClient.models.List.create(payload)
       const error = extractError(errors)
       if (error) throw new Error(error)
@@ -84,6 +92,7 @@ export const dataService = {
 
   async updateList(listId, updates) {
     try {
+      const dataClient = await getDataClient()
       const { data, errors } = await dataClient.models.List.update({
         id: listId,
         name: updates.name,
@@ -104,6 +113,7 @@ export const dataService = {
 
   async deleteList(listId) {
     try {
+      const dataClient = await getDataClient()
       const { errors } = await dataClient.models.List.delete({ id: listId })
       const error = extractError(errors)
       if (error) throw new Error(error)
@@ -116,6 +126,7 @@ export const dataService = {
 
   async getUserTodos(userId) {
     try {
+      const dataClient = await getDataClient()
       const { data, errors } = await dataClient.models.Todo.list({
         filter: { user_id: { eq: userId } },
         limit: 1000
@@ -152,6 +163,7 @@ export const dataService = {
         completed_at: null
       }
 
+      const dataClient = await getDataClient()
       const { data, errors } = await dataClient.models.Todo.create(payload)
       const error = extractError(errors)
       if (error) throw new Error(error)
@@ -165,6 +177,7 @@ export const dataService = {
 
   async updateTodo(todoId, updates) {
     try {
+      const dataClient = await getDataClient()
       const { data, errors } = await dataClient.models.Todo.update({
         id: todoId,
         ...updates
@@ -182,6 +195,7 @@ export const dataService = {
 
   async deleteTodo(todoId) {
     try {
+      const dataClient = await getDataClient()
       const { errors } = await dataClient.models.Todo.delete({ id: todoId })
       const error = extractError(errors)
       if (error) throw new Error(error)
@@ -208,6 +222,7 @@ export const dataService = {
 
   async getUserSettings(userId) {
     try {
+      const dataClient = await getDataClient()
       const { data, errors } = await dataClient.models.UserSettings.get({ id: userId })
       const error = extractError(errors)
       if (error) throw new Error(error)
@@ -231,6 +246,7 @@ export const dataService = {
 
   async updateUserSettings(userId, settings) {
     try {
+      const dataClient = await getDataClient()
       const existing = await dataClient.models.UserSettings.get({ id: userId })
       const existingError = extractError(existing.errors)
       if (existingError) throw new Error(existingError)
