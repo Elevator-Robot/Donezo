@@ -79,6 +79,7 @@ const ensureUserProfile = async (userId, email, username) => {
 }
 
 const buildSessionFromAmplify = async ({ notifyListeners = false } = {}) => {
+  await ensureAmplifyConfigured()
   const user = await amplifyGetCurrentUser()
   const sessionResult = await fetchAuthSession()
   const tokens = sessionResult.tokens || {}
@@ -118,6 +119,7 @@ const handleAuthError = (error) => {
 export const authService = {
   async signUp(email, password, userData) {
     try {
+      await ensureAmplifyConfigured()
       const signUpResult = await amplifySignUp({
         username: email,
         password,
@@ -169,6 +171,7 @@ export const authService = {
   },
 
   async signIn(email, password) {
+    await ensureAmplifyConfigured()
     const performSignIn = async () => amplifySignIn({ username: email, password })
 
     try {
@@ -207,11 +210,13 @@ export const authService = {
   },
 
   async signInWithGoogle() {
+    await ensureAmplifyConfigured()
     await signInWithRedirect({ provider: 'Google' })
   },
 
   async signOut() {
     try {
+      await ensureAmplifyConfigured()
       await amplifySignOut({ global: true })
     } catch (error) {
       console.error('Signout error:', error)
@@ -277,6 +282,7 @@ export const authService = {
 
   async resetPassword(email) {
     try {
+      await ensureAmplifyConfigured()
       const result = await amplifyResetPassword({ username: email })
       return { error: null, nextStep: result.nextStep }
     } catch (error) {
@@ -287,6 +293,7 @@ export const authService = {
 
   async confirmPasswordReset(email, confirmationCode, newPassword) {
     try {
+      await ensureAmplifyConfigured()
       await amplifyConfirmResetPassword({
         username: email,
         confirmationCode,
@@ -301,6 +308,7 @@ export const authService = {
 
   async confirmSignUp(email, confirmationCode) {
     try {
+      await ensureAmplifyConfigured()
       await amplifyConfirmSignUp({ username: email, confirmationCode })
       return { error: null }
     } catch (error) {
@@ -311,6 +319,7 @@ export const authService = {
 
   async updatePassword(oldPassword, newPassword) {
     try {
+      await ensureAmplifyConfigured()
       await amplifyUpdatePassword({ oldPassword, newPassword })
       return { error: null }
     } catch (error) {
