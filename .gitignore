@@ -53,4 +53,3 @@ temp/
 # Amplify artifacts
 .amplify/
 amplify/**/cdk.out/
-amplify_outputs.json
