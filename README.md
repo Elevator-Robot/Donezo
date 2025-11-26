@@ -39,7 +39,7 @@ A modern, beautiful, and functional task manager built with React, featuring a m
 - **Bottom Tab Bar**: Fixed navigation with icons and labels
 - **Floating Action Buttons**: Easy-to-reach add buttons on each screen
 - **Swipe-Friendly**: Smooth transitions between screens
-- **Theme Toggle**: Instant theme switching available on all screens
+- **Theme Toggle**: Instant theme switching available on all screens..
 
 ## 🚀 Getting Started
 
