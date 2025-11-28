@@ -10,12 +10,10 @@ const loadAmplifyOutputs = async () => {
     return window.__AMPLIFY_OUTPUTS__
   }
 
-  if (import.meta.env.DEV) {
-    const [localOutputs] = Object.values(
-      import.meta.glob('../../amplify_outputs.json', { eager: true, import: 'default' })
-    )
-    if (localOutputs) return localOutputs
-  }
+  const [localOutputs] = Object.values(
+    import.meta.glob('../../amplify_outputs.json', { eager: true, import: 'default' })
+  )
+  if (localOutputs) return localOutputs
 
   throw new Error('Amplify outputs missing. Provide VITE_AMPLIFY_OUTPUTS_JSON or run `npm run sandbox`.')
 }
