@@ -30,8 +30,8 @@ function createSecretOrDefault(secretName: string, defaultValue: string): Backen
   return secret(secretName)
 }
 
-const localUrls = ['http://localhost:5173/']
-const productionUrls = ['https://donezo.app/']
+const localUrls = ['http://localhost:3000/']
+const productionUrls = ['https://mydoink.com/']
 
 const callbackUrls = [...localUrls, ...productionUrls]
 const logoutUrls = [...localUrls, ...productionUrls]

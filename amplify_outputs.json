@@ -29,12 +29,12 @@
         "GOOGLE"
       ],
       "redirect_sign_in_uri": [
-        "http://localhost:5173/",
-        "https://donezo.app/"
+        "http://localhost:3000/",
+        "https://mydoink.com/"
       ],
       "redirect_sign_out_uri": [
-        "http://localhost:5173/",
-        "https://donezo.app/"
+        "http://localhost:3000/",
+        "https://mydoink.com/"
       ],
       "response_type": "code",
       "scopes": [
