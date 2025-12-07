@@ -84,7 +84,8 @@ const buildSessionFromAmplify = async ({ notifyListeners = false } = {}) => {
   const sessionResult = await fetchAuthSession()
   const tokens = sessionResult.tokens || {}
 
-  const email = user?.signInDetails?.loginId || user?.username || ''
+  const idTokenPayload = tokens.idToken?.payload || {}
+  const email = idTokenPayload.email || user?.signInDetails?.loginId || user?.username || ''
   const friendlyUsername = deriveUsernames(email, user?.username)
 
   await ensureUserProfile(user.userId, email, friendlyUsername)
