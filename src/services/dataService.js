@@ -28,6 +28,24 @@ const mapList = (item) => ({
   created_at: item.created_at
 })
 
+const formatRecurrenceInput = (recurrence) => {
+  if (!recurrence) return null
+  return typeof recurrence === 'string' ? recurrence : JSON.stringify(recurrence)
+}
+
+const parseRecurrenceOutput = (recurrence) => {
+  if (!recurrence) return null
+  if (typeof recurrence === 'string') {
+    try {
+      return JSON.parse(recurrence)
+    } catch (error) {
+      console.warn('Failed to parse recurrence JSON:', error)
+      return null
+    }
+  }
+  return recurrence
+}
+
 const mapTodo = (item) => ({
   id: item.id,
   user_id: item.user_id,
@@ -40,7 +58,7 @@ const mapTodo = (item) => ({
   due_time: item.due_time,
   is_recurring_instance: item.is_recurring_instance,
   parent_recurring_task_id: item.parent_recurring_task_id,
-  recurrence: item.recurrence,
+  recurrence: parseRecurrenceOutput(item.recurrence),
   created_at: item.created_at,
   completed_at: item.completed_at
 })
@@ -158,7 +176,7 @@ export const dataService = {
         due_time: todoData.dueTime || null,
         is_recurring_instance: todoData.isRecurringInstance || false,
         parent_recurring_task_id: todoData.parentRecurringTaskId || null,
-        recurrence: todoData.recurrence || null,
+        recurrence: formatRecurrenceInput(todoData.recurrence),
         created_at: new Date().toISOString(),
         completed_at: null
       }
@@ -178,9 +196,14 @@ export const dataService = {
   async updateTodo(todoId, updates) {
     try {
       const dataClient = await getDataClient()
+      const formattedUpdates = { ...updates }
+      if (Object.prototype.hasOwnProperty.call(formattedUpdates, 'recurrence')) {
+        formattedUpdates.recurrence = formatRecurrenceInput(formattedUpdates.recurrence)
+      }
+
       const { data, errors } = await dataClient.models.Todo.update({
         id: todoId,
-        ...updates
+        ...formattedUpdates
       })
 
       const error = extractError(errors)
