@@ -37,6 +37,8 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [showDeleteListModal, setShowDeleteListModal] = useState(false)
   const [listPendingDelete, setListPendingDelete] = useState(null)
+  const [activeFocusLane, setActiveFocusLane] = useState(null)
+  const [listNavExpanded, setListNavExpanded] = useState(false)
 
   // Initialize auth state on app start
   useEffect(() => {
@@ -452,11 +454,18 @@ function App() {
     setShowAddTodo(true)
   }
 
+  const handleFocusLaneSelect = (laneKey) => {
+    setListFilter('all')
+    setActiveFocusLane(prev => (prev === laneKey ? null : laneKey))
+  }
+
   const handleListFilterChange = (value) => {
+    setActiveFocusLane(null)
     setListFilter(value)
     if (value !== 'all') {
       setActiveList(value)
     }
+    setListNavExpanded(false)
   }
 
   const handleDeleteActiveList = () => {
@@ -532,10 +541,12 @@ function App() {
   const filteredTodos = listFilter === 'all'
     ? todos
     : todos.filter(todo => (todo.list_id || todo.listId) === listFilter)
-  const todaysTasks = getTodaysTasks(filteredTodos)
-  const focusTasks = listFilter === 'all' ? todos : filteredTodos
+  const baseFocusTasks = listFilter === 'all' ? todos : filteredTodos
 
-  const upcomingTasks = filteredTodos
+  const todaysTasks = getTodaysTasks(filteredTodos)
+  const todaysTasksAll = getTodaysTasks(todos)
+
+  const upcomingTaskPoolAll = todos
     .filter(todo => {
       if (todo.completed) return false
       if (!todo.due_date) return false
@@ -546,7 +557,61 @@ function App() {
       return dueDate > today
     })
     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
-    .slice(0, 5)
+
+  const upcomingTaskPool = filteredTodos
+    .filter(todo => {
+      if (todo.completed) return false
+      if (!todo.due_date) return false
+      const dueDate = new Date(todo.due_date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate > today
+    })
+    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+
+  const priorityTaskPoolAll = todos
+    .filter(todo => {
+      if (todo.completed) return false
+      const priority = String(todo.priority || '').toLowerCase()
+      return ['high', 'urgent', 'p1'].includes(priority)
+    })
+    .sort((a, b) => {
+      const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity
+      const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity
+      return dateA - dateB
+    })
+
+  const lanePreviewLimit = 4
+  const focusLanes = [
+    {
+      key: 'today',
+      title: 'Today',
+      description: 'Due today & overdue',
+      accent: 'teal',
+      previewTasks: todaysTasksAll.slice(0, lanePreviewLimit),
+      allTasks: todaysTasksAll
+    },
+    {
+      key: 'priority',
+      title: 'High Priority',
+      description: 'Flagged items that need attention',
+      accent: 'rose',
+      previewTasks: priorityTaskPoolAll.slice(0, lanePreviewLimit),
+      allTasks: priorityTaskPoolAll
+    },
+    {
+      key: 'upcoming',
+      title: 'Next Up',
+      description: 'Coming in the next few days',
+      accent: 'amber',
+      previewTasks: upcomingTaskPoolAll.slice(0, lanePreviewLimit),
+      allTasks: upcomingTaskPoolAll
+    }
+  ]
+
+  const activeLaneConfig = focusLanes.find(lane => lane.key === activeFocusLane)
+  const focusTasks = activeLaneConfig ? activeLaneConfig.allTasks : baseFocusTasks
 
   const calendarMonthStart = startOfMonth(selectedDate)
   const calendarMonthEnd = endOfMonth(selectedDate)
@@ -561,18 +626,25 @@ function App() {
 
   const selectedDayLabel = format(selectedDate, 'EEEE, MMM d')
   const calendarContextTasks = selectedDayTasks.length === 0
-    ? (todaysTasks.length > 0 ? todaysTasks.slice(0, 3) : upcomingTasks.slice(0, 3))
+    ? (todaysTasks.length > 0 ? todaysTasks.slice(0, 3) : upcomingTaskPool.slice(0, 3))
     : []
   const calendarContextLabel = todaysTasks.length > 0 ? 'Redirect overdue items' : 'Plan ahead'
   const selectedDayTaskCountLabel = selectedDayTasks.length === 1 ? 'task' : 'tasks'
 
   const activeFilterList = lists.find(list => list.id === listFilter)
-  const focusHeading = listFilter === 'all' ? 'All lists' : activeFilterList?.name || 'Selected list'
-  const focusDescription = focusTasks.length > 0
-    ? `${focusTasks.length} task${focusTasks.length === 1 ? '' : 's'} ${listFilter === 'all' ? 'across all lists' : 'in this list'}`
+  const baseFocusHeading = listFilter === 'all' ? 'All lists' : activeFilterList?.name || 'Selected list'
+  const baseFocusDescription = baseFocusTasks.length > 0
+    ? `${baseFocusTasks.length} task${baseFocusTasks.length === 1 ? '' : 's'} ${listFilter === 'all' ? 'across all lists' : 'in this list'}`
     : listFilter === 'all'
       ? 'No tasks yet. Create your first one!'
       : 'No tasks in this list yet.'
+  const focusHeading = activeLaneConfig ? activeLaneConfig.title : baseFocusHeading
+  const focusDescription = activeLaneConfig
+    ? `${activeLaneConfig.allTasks.length} task${activeLaneConfig.allTasks.length === 1 ? '' : 's'} • ${activeLaneConfig.description}`
+    : baseFocusDescription
+  const focusEmptyCopy = activeLaneConfig
+    ? 'No tasks match this lane yet.'
+    : (listFilter === 'all' ? 'No tasks yet. Create your first one!' : 'No tasks in this list yet.')
 
   const cardClasses = theme === 'cyberpunk'
     ? 'bg-black/80 border-cyan-500/30 shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
@@ -725,74 +797,48 @@ function App() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto bg-gray-50/50 dark:bg-gray-900/50 pb-24">
           <div className="p-6">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-              <section className="space-y-5">
-                <div className={`${cardClasses} rounded-lg p-5 space-y-4`}>
-                  <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                      <p className={`text-xs font-semibold tracking-[0.2em] uppercase ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
-                        Command center
-                      </p>
-                      <h2 className={`text-2xl font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
-                        {listFilter === 'all' ? 'All tasks' : activeFilterList?.name || 'Filtered tasks'}
-                      </h2>
-                      {listFilter !== 'all' && activeFilterList && (
-                        <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'} text-sm mt-1`}>
-                          Showing tasks from {activeFilterList.name}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                      <button
-                        onClick={() => setShowCreateListModal(true)}
-                        className={`px-3 py-1.5 rounded-lg border transition-colors ${
-                          theme === 'cyberpunk'
-                            ? 'border-cyan-500/40 text-cyan-200 hover:border-cyan-300'
-                            : 'border-gray-200 text-gray-700 hover:border-teal-400 dark:border-gray-600 dark:text-gray-200'
-                        }`}
-                      >
-                        New List
-                      </button>
-                      {listFilter !== 'all' && activeFilterList && (
-                        <button
-                          onClick={handleDeleteActiveList}
-                          className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 ${
-                            theme === 'cyberpunk'
-                              ? 'border-red-500/40 text-red-300 hover:border-red-400'
-                              : 'border-red-200 text-red-600 hover:border-red-400 dark:border-red-500 dark:text-red-300'
-                          }`}
-                        >
-                          Delete List
-                        </button>
-                      )}
-                    </div>
+            <div className="grid gap-5 lg:grid-cols-[minmax(200px,240px)_minmax(0,3fr)_minmax(280px,1fr)]">
+              <nav className={`${cardClasses} rounded-lg p-4 space-y-4 lg:sticky lg:top-6 h-fit`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className={`text-[0.65rem] uppercase tracking-[0.3em] ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                      Lists
+                    </p>
+                    <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'} text-sm`}>
+                      Jump between contexts quickly.
+                    </p>
                   </div>
-                  <div className="flex flex-wrap gap-3" role="tablist" aria-label="List filters">
+                  <button
+                    onClick={() => setShowCreateListModal(true)}
+                    className={`p-2 rounded-lg border transition-colors ${
+                      theme === 'cyberpunk'
+                        ? 'border-cyan-500/40 text-cyan-200 hover:border-cyan-300'
+                        : 'border-gray-200 text-gray-700 hover:border-teal-400 dark:border-gray-600 dark:text-gray-200'
+                    }`}
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className={`flex flex-col gap-1 pr-1 transition-all duration-300 ${listNavExpanded ? 'max-h-[420px]' : 'max-h-48'} overflow-hidden`}>
                     <button
                       onClick={() => handleListFilterChange('all')}
                       aria-pressed={listFilter === 'all'}
-                      className={`px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                      className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 text-sm font-semibold transition-all ${
                         listFilter === 'all'
                           ? theme === 'cyberpunk'
-                            ? 'bg-cyan-500/90 text-black border-cyan-300 shadow-[0_8px_25px_rgba(6,182,212,0.35)]'
-                            : 'bg-gradient-to-r from-teal-500 to-teal-400 text-white border-transparent shadow-lg shadow-teal-500/40'
+                            ? 'bg-cyan-500/20 text-cyan-100 border border-cyan-400/60'
+                            : 'bg-teal-500/10 text-teal-700 dark:text-teal-200 border border-teal-400/50'
                           : theme === 'cyberpunk'
-                            ? 'text-cyan-200 border-cyan-500/30 hover:border-cyan-400 hover:text-cyan-100'
-                            : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-teal-400'
+                            ? 'text-cyan-200 border border-transparent hover:border-cyan-500/40'
+                            : 'text-gray-700 dark:text-gray-200 border border-transparent hover:border-teal-400/40'
                       }`}
                     >
-                      All lists
-                      <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full ${
-                        listFilter === 'all'
-                          ? theme === 'cyberpunk'
-                            ? 'bg-black/30 text-cyan-100'
-                            : 'bg-white/25 text-white'
-                          : theme === 'cyberpunk'
-                            ? 'bg-cyan-500/10 text-cyan-200'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-                      }`}>
-                        {todos.length}
+                      <span className="flex items-center gap-2">
+                        <span className={`h-2 w-2 rounded-full ${listFilter === 'all' ? 'bg-teal-400' : 'bg-gray-300 dark:bg-gray-600'}`}></span>
+                        All lists
                       </span>
+                      <span className="text-xs opacity-80">{todos.length}</span>
                     </button>
                     {lists.map((list) => {
                       const incompleteTasksCount = todos.filter(todo => (todo.list_id || todo.listId) === list.id && !todo.completed).length
@@ -802,36 +848,59 @@ function App() {
                           key={list.id}
                           onClick={() => handleListFilterChange(list.id)}
                           aria-pressed={isActive}
-                          className={`px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                          className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition-all ${
                             isActive
                               ? theme === 'cyberpunk'
-                                ? 'bg-cyan-500/90 text-black border-cyan-300 shadow-[0_8px_25px_rgba(6,182,212,0.35)]'
-                                : 'bg-gradient-to-r from-teal-500 to-teal-400 text-white border-transparent shadow-lg shadow-teal-500/40'
+                                ? 'bg-cyan-500/20 text-cyan-100 border border-cyan-400/60'
+                                : 'bg-teal-500/10 text-teal-700 dark:text-teal-200 border border-teal-400/50'
                               : theme === 'cyberpunk'
-                                ? 'text-cyan-200 border-cyan-500/30 hover:border-cyan-400 hover:text-cyan-100'
-                                : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-teal-400'
+                                ? 'text-cyan-200 border border-transparent hover:border-cyan-500/40'
+                                : 'text-gray-700 dark:text-gray-200 border border-transparent hover:border-teal-400/40'
                           }`}
                         >
-                          {list.name}
-                          <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full ${
-                            isActive
-                              ? theme === 'cyberpunk'
-                                ? 'bg-black/30 text-cyan-100'
-                                : 'bg-white/25 text-white'
-                              : theme === 'cyberpunk'
-                                ? 'bg-cyan-500/10 text-cyan-200'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-                          }`}>
-                            {incompleteTasksCount}
+                          <span className="flex items-center gap-2">
+                            <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-cyan-400' : 'bg-gray-300 dark:bg-gray-600'}`}></span>
+                            {list.name}
                           </span>
+                          <span className="text-xs opacity-80">{incompleteTasksCount}</span>
                         </button>
                       )
                     })}
                   </div>
+                  {!listNavExpanded && lists.length > 4 && (
+                    <div className={`${theme === 'cyberpunk' ? 'from-black/80' : 'from-white dark:from-gray-900'} pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t to-transparent`}></div>
+                  )}
                 </div>
+                {lists.length > 4 && (
+                  <button
+                    onClick={() => setListNavExpanded(prev => !prev)}
+                    className={`w-full rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+                      theme === 'cyberpunk'
+                        ? 'text-cyan-200 hover:text-cyan-100'
+                        : 'text-teal-600 hover:text-teal-500 dark:text-teal-300'
+                    }`}
+                  >
+                    {listNavExpanded ? 'Collapse lists' : 'Show all lists'}
+                  </button>
+                )}
+                <button
+                  onClick={handleDeleteActiveList}
+                  disabled={listFilter === 'all' || !activeFilterList}
+                  className={`w-full rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+                    listFilter === 'all' || !activeFilterList
+                      ? 'border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
+                      : theme === 'cyberpunk'
+                        ? 'border-red-400/60 text-red-300 hover:border-red-300'
+                        : 'border-red-200 text-red-600 hover:border-red-400 dark:border-red-500 dark:text-red-300'
+                  }`}
+                >
+                  Delete active list
+                </button>
+              </nav>
 
-                <div className={`${cardClasses} rounded-lg p-5`}>
-                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+              <section className="space-y-5">
+                <div className={`${cardClasses} rounded-lg p-5 space-y-6`}>
+                  <div className="flex flex-wrap items-center justify-between gap-4">
                     <div>
                       <p className={`text-sm uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
                         Focus
@@ -855,22 +924,97 @@ function App() {
                       Add task
                     </button>
                   </div>
-                  {focusTasks.length > 0 ? (
-                    <TodoList
-                      todos={focusTasks}
-                      onToggle={toggleTodo}
-                      onDelete={deleteTodo}
-                      onEdit={handleEditTodo}
-                    />
-                  ) : (
-                    <div className="text-center py-8">
-                      <CheckCircle className={`w-12 h-12 mx-auto mb-3 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
-                      <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        {listFilter === 'all' ? 'No tasks yet. Create your first one!' : 'No tasks in this list yet.'}
-                      </p>
-                    </div>
-                  )}
 
+                  <div className="space-y-4">
+                    {focusLanes.map((lane) => {
+                      const isActiveLane = activeFocusLane === lane.key
+                      return (
+                        <div key={lane.key} className="space-y-2">
+                          <button
+                            type="button"
+                            onClick={() => handleFocusLaneSelect(lane.key)}
+                            className={`flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-left transition-all ${
+                              isActiveLane
+                                ? theme === 'cyberpunk'
+                                  ? 'border-cyan-400/70 bg-cyan-500/10 text-cyan-100'
+                                  : 'border-teal-400/70 bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-100'
+                                : theme === 'cyberpunk'
+                                  ? 'border-cyan-500/20 text-cyan-200 hover:border-cyan-400/40'
+                                  : 'border-gray-200 text-gray-800 hover:border-teal-200 dark:border-gray-700 dark:text-gray-100'
+                            }`}
+                          >
+                            <div>
+                              <p className="text-sm font-semibold">{lane.title}</p>
+                              <p className="text-xs opacity-80">{lane.description}</p>
+                            </div>
+                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide opacity-80">
+                              <span>{lane.allTasks.length} task{lane.allTasks.length === 1 ? '' : 's'}</span>
+                              <ChevronRight size={14} />
+                            </div>
+                          </button>
+                          <div className="overflow-x-auto pb-2 -mx-5 px-5 sm:mx-0 sm:px-0">
+                            <div className="flex min-w-full gap-3 pr-5 snap-x snap-mandatory scroll-smooth">
+                              {lane.previewTasks.length > 0 ? (
+                                lane.previewTasks.map(task => {
+                                  const listMeta = lists.find(l => l.id === (task.list_id || task.listId))
+                                  const dueLabel = task.due_date ? format(new Date(task.due_date), 'MMM d') : 'Anytime'
+                                  return (
+                                    <button
+                                      type="button"
+                                      key={`${lane.key}-${task.id}`}
+                                      onClick={() => handleFocusLaneSelect(lane.key)}
+                                      className={`min-w-[220px] snap-start rounded-2xl border p-4 text-left transition-all ${
+                                        theme === 'cyberpunk'
+                                          ? 'border-cyan-500/20 bg-black/40 hover:border-cyan-400/60'
+                                          : 'border-gray-200 bg-white/60 hover:border-teal-200 dark:border-gray-700 dark:bg-gray-800/60'
+                                      } ${isActiveLane ? 'ring-2 ring-offset-2 ring-offset-transparent ' + (theme === 'cyberpunk' ? 'ring-cyan-400/70' : 'ring-teal-400/70') : ''}`}
+                                    >
+                                      <p className={`text-sm font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
+                                        {task.title}
+                                      </p>
+                                      <p className={`text-xs mt-1 ${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                        {dueLabel}{task.due_time ? ` • ${task.due_time}` : ''}
+                                      </p>
+                                      <div className="mt-3 flex items-center justify-between text-xs opacity-80">
+                                        <span>{listMeta ? listMeta.name : 'No list'}</span>
+                                        <span>Tap to focus</span>
+                                      </div>
+                                    </button>
+                                  )
+                                })
+                              ) : (
+                                <div className={`min-w-[220px] snap-start rounded-2xl border border-dashed p-4 text-sm ${
+                                  theme === 'cyberpunk'
+                                    ? 'border-cyan-500/40 text-cyan-200'
+                                    : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-300'
+                                }`}>
+                                  Nothing in this lane yet.
+                                </div>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      )
+                    })}
+                  </div>
+
+                  <div className={`border-t ${theme === 'cyberpunk' ? 'border-cyan-500/30' : 'border-gray-100 dark:border-gray-700'} pt-5`}>
+                    {focusTasks.length > 0 ? (
+                      <TodoList
+                        todos={focusTasks}
+                        onToggle={toggleTodo}
+                        onDelete={deleteTodo}
+                        onEdit={handleEditTodo}
+                      />
+                    ) : (
+                      <div className="text-center py-8">
+                        <CheckCircle className={`w-12 h-12 mx-auto mb-3 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
+                        <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                          {focusEmptyCopy}
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
 
