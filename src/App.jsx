@@ -559,6 +559,13 @@ function App() {
     return isSameDay(new Date(todo.due_date), selectedDate)
   })
 
+  const selectedDayLabel = format(selectedDate, 'EEEE, MMM d')
+  const calendarContextTasks = selectedDayTasks.length === 0
+    ? (todaysTasks.length > 0 ? todaysTasks.slice(0, 3) : upcomingTasks.slice(0, 3))
+    : []
+  const calendarContextLabel = todaysTasks.length > 0 ? 'Redirect overdue items' : 'Plan ahead'
+  const selectedDayTaskCountLabel = selectedDayTasks.length === 1 ? 'task' : 'tasks'
+
   const activeFilterList = lists.find(list => list.id === listFilter)
   const focusHeading = listFilter === 'all' ? 'All lists' : activeFilterList?.name || 'Selected list'
   const focusDescription = focusTasks.length > 0
@@ -718,13 +725,13 @@ function App() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto bg-gray-50/50 dark:bg-gray-900/50 pb-24">
           <div className="p-6">
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-              <section className="space-y-6">
-                <div className={`${cardClasses} rounded-lg p-5`}>
-                  <div className="flex items-center justify-between mb-4">
+            <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
+              <section className="space-y-5">
+                <div className={`${cardClasses} rounded-lg p-5 space-y-4`}>
+                  <div className="flex flex-wrap items-end justify-between gap-4">
                     <div>
-                      <p className={`text-sm uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
-                        Lists
+                      <p className={`text-xs font-semibold tracking-[0.2em] uppercase ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                        Command center
                       </p>
                       <h2 className={`text-2xl font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
                         {listFilter === 'all' ? 'All tasks' : activeFilterList?.name || 'Filtered tasks'}
@@ -735,13 +742,13 @@ function App() {
                         </p>
                       )}
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
                       <button
                         onClick={() => setShowCreateListModal(true)}
-                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        className={`px-3 py-1.5 rounded-lg border transition-colors ${
                           theme === 'cyberpunk'
-                            ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/50 hover:bg-cyan-500/30'
-                            : 'bg-white text-gray-800 border border-gray-200 hover:border-teal-400 dark:bg-gray-900 dark:text-white'
+                            ? 'border-cyan-500/40 text-cyan-200 hover:border-cyan-300'
+                            : 'border-gray-200 text-gray-700 hover:border-teal-400 dark:border-gray-600 dark:text-gray-200'
                         }`}
                       >
                         New List
@@ -749,10 +756,10 @@ function App() {
                       {listFilter !== 'all' && activeFilterList && (
                         <button
                           onClick={handleDeleteActiveList}
-                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
+                          className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 ${
                             theme === 'cyberpunk'
-                              ? 'border border-red-400/60 text-red-300 hover:bg-red-500/10'
-                              : 'border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-500 dark:text-red-300 dark:hover:bg-red-500/10'
+                              ? 'border-red-500/40 text-red-300 hover:border-red-400'
+                              : 'border-red-200 text-red-600 hover:border-red-400 dark:border-red-500 dark:text-red-300'
                           }`}
                         >
                           Delete List
@@ -760,40 +767,63 @@ function App() {
                       )}
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2">
+                  <div className="flex flex-wrap gap-3" role="tablist" aria-label="List filters">
                     <button
                       onClick={() => handleListFilterChange('all')}
-                      className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-colors flex items-center gap-2 ${
+                      aria-pressed={listFilter === 'all'}
+                      className={`px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
                         listFilter === 'all'
                           ? theme === 'cyberpunk'
-                            ? 'bg-cyan-500 text-black border-cyan-400'
-                            : 'bg-teal-500 text-white border-teal-400'
+                            ? 'bg-cyan-500/90 text-black border-cyan-300 shadow-[0_8px_25px_rgba(6,182,212,0.35)]'
+                            : 'bg-gradient-to-r from-teal-500 to-teal-400 text-white border-transparent shadow-lg shadow-teal-500/40'
                           : theme === 'cyberpunk'
-                            ? 'text-cyan-200 border-cyan-500/40 hover:border-cyan-400'
+                            ? 'text-cyan-200 border-cyan-500/30 hover:border-cyan-400 hover:text-cyan-100'
                             : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-teal-400'
                       }`}
                     >
                       All lists
-                      <span className="text-xs opacity-80">{todos.length}</span>
+                      <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full ${
+                        listFilter === 'all'
+                          ? theme === 'cyberpunk'
+                            ? 'bg-black/30 text-cyan-100'
+                            : 'bg-white/25 text-white'
+                          : theme === 'cyberpunk'
+                            ? 'bg-cyan-500/10 text-cyan-200'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                      }`}>
+                        {todos.length}
+                      </span>
                     </button>
                     {lists.map((list) => {
                       const incompleteTasksCount = todos.filter(todo => (todo.list_id || todo.listId) === list.id && !todo.completed).length
+                      const isActive = listFilter === list.id
                       return (
                         <button
                           key={list.id}
                           onClick={() => handleListFilterChange(list.id)}
-                          className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-colors flex items-center gap-2 ${
-                            listFilter === list.id
+                          aria-pressed={isActive}
+                          className={`px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                            isActive
                               ? theme === 'cyberpunk'
-                                ? 'bg-cyan-500 text-black border-cyan-400'
-                                : 'bg-teal-500 text-white border-teal-400'
+                                ? 'bg-cyan-500/90 text-black border-cyan-300 shadow-[0_8px_25px_rgba(6,182,212,0.35)]'
+                                : 'bg-gradient-to-r from-teal-500 to-teal-400 text-white border-transparent shadow-lg shadow-teal-500/40'
                               : theme === 'cyberpunk'
-                                ? 'text-cyan-200 border-cyan-500/40 hover:border-cyan-400'
+                                ? 'text-cyan-200 border-cyan-500/30 hover:border-cyan-400 hover:text-cyan-100'
                                 : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-teal-400'
                           }`}
                         >
                           {list.name}
-                          <span className="text-xs opacity-80">{incompleteTasksCount}</span>
+                          <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full ${
+                            isActive
+                              ? theme === 'cyberpunk'
+                                ? 'bg-black/30 text-cyan-100'
+                                : 'bg-white/25 text-white'
+                              : theme === 'cyberpunk'
+                                ? 'bg-cyan-500/10 text-cyan-200'
+                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
+                          }`}>
+                            {incompleteTasksCount}
+                          </span>
                         </button>
                       )
                     })}
@@ -801,7 +831,7 @@ function App() {
                 </div>
 
                 <div className={`${cardClasses} rounded-lg p-5`}>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <div>
                       <p className={`text-sm uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
                         Focus
@@ -815,14 +845,14 @@ function App() {
                     </div>
                     <button
                       onClick={openNewTaskModal}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                      className={`inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-base font-semibold shadow-lg transition-all w-full sm:w-auto justify-center ${
                         theme === 'cyberpunk'
-                          ? 'bg-cyan-500 text-black hover:bg-cyan-400'
-                          : 'bg-teal-500 text-white hover:bg-teal-600'
+                          ? 'bg-cyan-500 text-black hover:bg-cyan-400 shadow-[0_18px_35px_rgba(6,182,212,0.35)]'
+                          : 'bg-gradient-to-r from-teal-500 to-teal-400 text-white hover:from-teal-500 hover:to-teal-500 shadow-lg shadow-teal-500/40'
                       }`}
                     >
-                      <Plus size={16} />
-                      Add Task
+                      <Plus size={18} />
+                      Add task
                     </button>
                   </div>
                   {focusTasks.length > 0 ? (
@@ -833,87 +863,32 @@ function App() {
                       onEdit={handleEditTodo}
                     />
                   ) : (
-                    <div className="text-center py-10">
+                    <div className="text-center py-8">
                       <CheckCircle className={`w-12 h-12 mx-auto mb-3 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
                       <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
                         {listFilter === 'all' ? 'No tasks yet. Create your first one!' : 'No tasks in this list yet.'}
                       </p>
                     </div>
                   )}
-                </div>
 
-                <div className={`${cardClasses} rounded-lg p-5`}>
-                  <div className="flex items-center justify-between mb-4">
-                    <div>
-                      <p className={`text-sm ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
-                        Up next
-                      </p>
-                      <h2 className={`text-2xl font-bold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
-                        Upcoming tasks
-                      </h2>
-                    </div>
-                    <button
-                      onClick={() => setShowRecurringTask(true)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
-                        theme === 'cyberpunk'
-                          ? 'border border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/10'
-                          : 'border border-teal-500 text-teal-600 hover:bg-teal-50 dark:border-teal-400 dark:text-teal-300 dark:hover:bg-teal-400/10'
-                      }`}
-                    >
-                      <Clock size={16} />
-                      Schedule recurring
-                    </button>
-                  </div>
-                  {upcomingTasks.length > 0 ? (
-                    <div className="space-y-3">
-                      {upcomingTasks.map(todo => {
-                        const list = lists.find(l => l.id === (todo.list_id || todo.listId))
-                        const dueDateLabel = todo.due_date ? format(new Date(todo.due_date), 'MMM d') : 'No due date'
-                        return (
-                          <div
-                            key={todo.id}
-                            className={`flex items-center justify-between p-3 rounded-lg border ${
-                              theme === 'cyberpunk'
-                                ? 'border-cyan-500/30 bg-black/40'
-                                : 'border-gray-200 dark:border-gray-700'
-                            }`}
-                          >
-                            <div>
-                              <p className={`font-medium ${todo.completed ? 'line-through text-gray-500' : theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
-                                {todo.title}
-                              </p>
-                              <p className={`text-sm ${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                                {dueDateLabel}{list ? ` • ${list.name}` : ''}
-                              </p>
-                            </div>
-                            <div className={`flex items-center gap-2 text-sm ${theme === 'cyberpunk' ? 'text-cyan-200' : 'text-gray-500 dark:text-gray-400'}`}>
-                              <Clock size={14} />
-                              <span>{todo.due_time || 'Anytime'}</span>
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  ) : (
-                    <div className="text-center py-8">
-                      <Calendar className={`w-10 h-10 mx-auto mb-3 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
-                      <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        No upcoming tasks scheduled.
-                      </p>
-                    </div>
-                  )}
                 </div>
               </section>
 
-              <aside className="space-y-6">
+              <aside className="space-y-5">
                 <div className={`${cardClasses} rounded-lg p-5`}>
-                  <div className="flex items-center justify-between mb-4">
+                  <div className="flex flex-wrap items-start justify-between gap-3 mb-4">
                     <div>
-                      <h3 className={`text-sm uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                      <p className={`text-xs uppercase tracking-[0.3em] ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                        Timeline
+                      </p>
+                      <h3 className={`text-xl font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
                         {format(selectedDate, 'MMMM yyyy')}
                       </h3>
+                      <p className={`text-sm ${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        Upcoming work and future planning live here.
+                      </p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex items-center gap-2">
                       <button
                         onClick={() => {
                           const newDate = new Date(selectedDate)
@@ -944,6 +919,17 @@ function App() {
                       </button>
                     </div>
                   </div>
+                  <button
+                    onClick={() => setShowRecurringTask(true)}
+                    className={`w-full mb-3 flex items-center justify-center gap-2 rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                      theme === 'cyberpunk'
+                        ? 'border-cyan-500/40 text-cyan-200 hover:border-cyan-300'
+                        : 'border-gray-200 text-gray-700 hover:border-teal-400 dark:border-gray-600 dark:text-gray-200'
+                    }`}
+                  >
+                    <Clock size={16} />
+                    Schedule recurring task
+                  </button>
                   <div className={`grid grid-cols-7 gap-1 text-[0.65rem] uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300/80' : 'text-gray-500 dark:text-gray-400'}`}>
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
                       <span key={day} className="text-center">
@@ -994,11 +980,11 @@ function App() {
                     <div className="flex items-center justify-between mb-3">
                       <div>
                         <h4 className={`text-lg font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
-                          {format(selectedDate, 'EEEE, MMM d')}
+                          {selectedDayLabel}
                         </h4>
                       </div>
                       <span className={`text-sm ${theme === 'cyberpunk' ? 'text-cyan-200' : 'text-gray-600 dark:text-gray-300'}`}>
-                        {selectedDayTasks.length} tasks
+                        {selectedDayTasks.length} {selectedDayTaskCountLabel}
                       </span>
                     </div>
                     {selectedDayTasks.length > 0 ? (
@@ -1041,11 +1027,51 @@ function App() {
                         })}
                       </div>
                     ) : (
-                      <div className="text-center py-6">
-                        <Calendar className={`w-10 h-10 mx-auto mb-2 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
-                        <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          No tasks scheduled for this day.
-                        </p>
+                      <div className={`rounded-lg border border-dashed p-4 ${theme === 'cyberpunk' ? 'border-cyan-500/40 bg-black/30' : 'border-gray-200 dark:border-gray-700 bg-white/30 dark:bg-gray-800/40'}`}>
+                        <div className="flex items-start gap-3">
+                          <Calendar className={`w-8 h-8 flex-shrink-0 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-teal-500 dark:text-teal-400'}`} />
+                          <div>
+                            <p className={`font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
+                              Nothing scheduled for {selectedDayLabel}.
+                            </p>
+                            <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'} text-sm`}>
+                              {calendarContextTasks.length > 0
+                                ? `${calendarContextLabel} from your queue:`
+                                : 'Use the Add task button to plot your next move.'}
+                            </p>
+                          </div>
+                        </div>
+                        {calendarContextTasks.length > 0 && (
+                          <div className="mt-4 space-y-2">
+                            {calendarContextTasks.map(task => {
+                              const list = lists.find(l => l.id === (task.list_id || task.listId))
+                              const dueDateLabel = task.due_date ? format(new Date(task.due_date), 'MMM d') : 'No due date'
+                              return (
+                                <div
+                                  key={`${task.id}-context`}
+                                  className={`flex items-center justify-between rounded-md border px-3 py-2 ${
+                                    theme === 'cyberpunk'
+                                      ? 'border-cyan-500/30 bg-black/40'
+                                      : 'border-gray-200 dark:border-gray-700'
+                                  }`}
+                                >
+                                  <div>
+                                    <p className={`text-sm font-medium ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
+                                      {task.title}
+                                    </p>
+                                    <p className={`text-xs ${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                      {dueDateLabel}{list ? ` • ${list.name}` : ''}
+                                    </p>
+                                  </div>
+                                  <div className={`flex items-center gap-1 text-xs ${theme === 'cyberpunk' ? 'text-cyan-200' : 'text-gray-500 dark:text-gray-400'}`}>
+                                    <Clock size={12} />
+                                    <span>{task.due_time || 'Anytime'}</span>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
