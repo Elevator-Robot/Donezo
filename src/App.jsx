@@ -454,9 +454,9 @@ function App() {
     setShowAddTodo(true)
   }
 
-  const handleFocusLaneSelect = (laneKey) => {
+  const handleFocusShortcutSelect = (shortcutKey) => {
     setListFilter('all')
-    setActiveFocusLane(prev => (prev === laneKey ? null : laneKey))
+    setActiveFocusLane(prev => (prev === shortcutKey ? null : shortcutKey))
   }
 
   const handleListFilterChange = (value) => {
@@ -544,19 +544,31 @@ function App() {
   const baseFocusTasks = listFilter === 'all' ? todos : filteredTodos
 
   const todaysTasks = getTodaysTasks(filteredTodos)
-  const todaysTasksAll = getTodaysTasks(todos)
 
-  const upcomingTaskPoolAll = todos
-    .filter(todo => {
-      if (todo.completed) return false
-      if (!todo.due_date) return false
-      const dueDate = new Date(todo.due_date)
-      const today = new Date()
-      today.setHours(0, 0, 0, 0)
-      dueDate.setHours(0, 0, 0, 0)
-      return dueDate > today
-    })
-    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date(todayStart)
+  todayEnd.setDate(todayEnd.getDate() + 1)
+  const sevenDayWindowEnd = new Date(todayEnd)
+  sevenDayWindowEnd.setDate(sevenDayWindowEnd.getDate() + 6)
+
+  const overdueTasksAll = todos.filter(todo => {
+    if (todo.completed || !todo.due_date) return false
+    const dueDate = new Date(todo.due_date)
+    return dueDate < todayStart
+  })
+
+  const todayOnlyTasksAll = todos.filter(todo => {
+    if (todo.completed || !todo.due_date) return false
+    const dueDate = new Date(todo.due_date)
+    return dueDate >= todayStart && dueDate < todayEnd
+  })
+
+  const nextSevenDaysTasksAll = todos.filter(todo => {
+    if (todo.completed || !todo.due_date) return false
+    const dueDate = new Date(todo.due_date)
+    return dueDate >= todayEnd && dueDate <= sevenDayWindowEnd
+  })
 
   const upcomingTaskPool = filteredTodos
     .filter(todo => {
@@ -582,36 +594,44 @@ function App() {
       return dateA - dateB
     })
 
-  const lanePreviewLimit = 4
-  const focusLanes = [
+  const focusShortcuts = [
     {
       key: 'today',
-      title: 'Today',
-      description: 'Due today & overdue',
-      accent: 'teal',
-      previewTasks: todaysTasksAll.slice(0, lanePreviewLimit),
-      allTasks: todaysTasksAll
+      label: 'Today',
+      description: 'Due before midnight',
+      tasks: todayOnlyTasksAll
+    },
+    {
+      key: 'overdue',
+      label: 'Overdue',
+      description: 'Past their due date',
+      tasks: overdueTasksAll
+    },
+    {
+      key: 'week',
+      label: 'Next 7 Days',
+      description: 'Coming up this week',
+      tasks: nextSevenDaysTasksAll
     },
     {
       key: 'priority',
-      title: 'High Priority',
-      description: 'Flagged items that need attention',
-      accent: 'rose',
-      previewTasks: priorityTaskPoolAll.slice(0, lanePreviewLimit),
-      allTasks: priorityTaskPoolAll
-    },
-    {
-      key: 'upcoming',
-      title: 'Next Up',
-      description: 'Coming in the next few days',
-      accent: 'amber',
-      previewTasks: upcomingTaskPoolAll.slice(0, lanePreviewLimit),
-      allTasks: upcomingTaskPoolAll
+      label: 'High Priority',
+      description: 'Flagged as urgent',
+      tasks: priorityTaskPoolAll
     }
   ]
 
-  const activeLaneConfig = focusLanes.find(lane => lane.key === activeFocusLane)
-  const focusTasks = activeLaneConfig ? activeLaneConfig.allTasks : baseFocusTasks
+  const visibleFocusShortcuts = focusShortcuts.filter(shortcut => shortcut.tasks.length > 0)
+  const activeShortcut = focusShortcuts.find(shortcut => shortcut.key === activeFocusLane && shortcut.tasks.length > 0)
+  const focusTasks = activeShortcut ? activeShortcut.tasks : baseFocusTasks
+
+  useEffect(() => {
+    if (!activeFocusLane) return
+    const shortcutHasTasks = focusShortcuts.some(shortcut => shortcut.key === activeFocusLane && shortcut.tasks.length > 0)
+    if (!shortcutHasTasks) {
+      setActiveFocusLane(null)
+    }
+  }, [activeFocusLane, focusShortcuts])
 
   const calendarMonthStart = startOfMonth(selectedDate)
   const calendarMonthEnd = endOfMonth(selectedDate)
@@ -638,12 +658,12 @@ function App() {
     : listFilter === 'all'
       ? 'No tasks yet. Create your first one!'
       : 'No tasks in this list yet.'
-  const focusHeading = activeLaneConfig ? activeLaneConfig.title : baseFocusHeading
-  const focusDescription = activeLaneConfig
-    ? `${activeLaneConfig.allTasks.length} task${activeLaneConfig.allTasks.length === 1 ? '' : 's'} • ${activeLaneConfig.description}`
+  const focusHeading = activeShortcut ? activeShortcut.label : baseFocusHeading
+  const focusDescription = activeShortcut
+    ? `${activeShortcut.tasks.length} task${activeShortcut.tasks.length === 1 ? '' : 's'} • ${activeShortcut.description}`
     : baseFocusDescription
-  const focusEmptyCopy = activeLaneConfig
-    ? 'No tasks match this lane yet.'
+  const focusEmptyCopy = activeShortcut
+    ? 'No tasks match this filter yet.'
     : (listFilter === 'all' ? 'No tasks yet. Create your first one!' : 'No tasks in this list yet.')
 
   const cardClasses = theme === 'cyberpunk'
@@ -899,11 +919,60 @@ function App() {
               </nav>
 
               <section className="space-y-5">
-                <div className={`${cardClasses} rounded-lg p-5 space-y-6`}>
-                  <div className="flex flex-wrap items-center justify-between gap-4">
+                <div className={`${cardClasses} rounded-lg p-5 space-y-3`}>
+                  <div>
+                    <p className={`text-sm uppercase tracking-[0.3em] ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                      Focus shortcuts
+                    </p>
+                    <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'} text-sm`}>
+                      Route attention without leaving the list.
+                    </p>
+                  </div>
+                  {visibleFocusShortcuts.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {visibleFocusShortcuts.map(shortcut => {
+                        const isActive = activeFocusLane === shortcut.key
+                        return (
+                          <button
+                            key={shortcut.key}
+                            type="button"
+                            aria-pressed={isActive}
+                            onClick={() => handleFocusShortcutSelect(shortcut.key)}
+                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors ${
+                              isActive
+                                ? theme === 'cyberpunk'
+                                  ? 'border-cyan-400/70 bg-cyan-500/10 text-cyan-100'
+                                  : 'border-teal-400/70 bg-teal-50 text-teal-800 dark:bg-teal-900/50 dark:text-teal-100'
+                                : theme === 'cyberpunk'
+                                  ? 'border-cyan-500/20 text-cyan-200 hover:border-cyan-400/40'
+                                  : 'border-gray-200 text-gray-800 hover:border-teal-200 dark:border-gray-700 dark:text-gray-100'
+                            }`}
+                          >
+                            <div>
+                              <p className="text-sm font-semibold">{shortcut.label}</p>
+                              <p className="text-xs opacity-80">{shortcut.description}</p>
+                            </div>
+                            <span className="text-xs font-semibold uppercase tracking-wide opacity-80">
+                              {shortcut.tasks.length}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className={`rounded-lg border border-dashed px-3 py-2 text-center text-sm ${
+                      theme === 'cyberpunk' ? 'border-cyan-500/30 text-cyan-200' : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-300'
+                    }`}>
+                      Nothing needs urgent attention.
+                    </div>
+                  )}
+                </div>
+
+                <div className={`${cardClasses} rounded-lg p-5`}>
+                  <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <div>
                       <p className={`text-sm uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
-                        Focus
+                        Tasks
                       </p>
                       <h2 className={`text-2xl font-bold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
                         {focusHeading}
@@ -925,96 +994,21 @@ function App() {
                     </button>
                   </div>
 
-                  <div className="space-y-4">
-                    {focusLanes.map((lane) => {
-                      const isActiveLane = activeFocusLane === lane.key
-                      return (
-                        <div key={lane.key} className="space-y-2">
-                          <button
-                            type="button"
-                            onClick={() => handleFocusLaneSelect(lane.key)}
-                            className={`flex w-full items-center justify-between rounded-2xl border px-3 py-2 text-left transition-all ${
-                              isActiveLane
-                                ? theme === 'cyberpunk'
-                                  ? 'border-cyan-400/70 bg-cyan-500/10 text-cyan-100'
-                                  : 'border-teal-400/70 bg-teal-50 text-teal-800 dark:bg-teal-950/40 dark:text-teal-100'
-                                : theme === 'cyberpunk'
-                                  ? 'border-cyan-500/20 text-cyan-200 hover:border-cyan-400/40'
-                                  : 'border-gray-200 text-gray-800 hover:border-teal-200 dark:border-gray-700 dark:text-gray-100'
-                            }`}
-                          >
-                            <div>
-                              <p className="text-sm font-semibold">{lane.title}</p>
-                              <p className="text-xs opacity-80">{lane.description}</p>
-                            </div>
-                            <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide opacity-80">
-                              <span>{lane.allTasks.length} task{lane.allTasks.length === 1 ? '' : 's'}</span>
-                              <ChevronRight size={14} />
-                            </div>
-                          </button>
-                          <div className="overflow-x-auto pb-2 -mx-5 px-5 sm:mx-0 sm:px-0">
-                            <div className="flex min-w-full gap-3 pr-5 snap-x snap-mandatory scroll-smooth">
-                              {lane.previewTasks.length > 0 ? (
-                                lane.previewTasks.map(task => {
-                                  const listMeta = lists.find(l => l.id === (task.list_id || task.listId))
-                                  const dueLabel = task.due_date ? format(new Date(task.due_date), 'MMM d') : 'Anytime'
-                                  return (
-                                    <button
-                                      type="button"
-                                      key={`${lane.key}-${task.id}`}
-                                      onClick={() => handleFocusLaneSelect(lane.key)}
-                                      className={`min-w-[220px] snap-start rounded-2xl border p-4 text-left transition-all ${
-                                        theme === 'cyberpunk'
-                                          ? 'border-cyan-500/20 bg-black/40 hover:border-cyan-400/60'
-                                          : 'border-gray-200 bg-white/60 hover:border-teal-200 dark:border-gray-700 dark:bg-gray-800/60'
-                                      } ${isActiveLane ? 'ring-2 ring-offset-2 ring-offset-transparent ' + (theme === 'cyberpunk' ? 'ring-cyan-400/70' : 'ring-teal-400/70') : ''}`}
-                                    >
-                                      <p className={`text-sm font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
-                                        {task.title}
-                                      </p>
-                                      <p className={`text-xs mt-1 ${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                                        {dueLabel}{task.due_time ? ` • ${task.due_time}` : ''}
-                                      </p>
-                                      <div className="mt-3 flex items-center justify-between text-xs opacity-80">
-                                        <span>{listMeta ? listMeta.name : 'No list'}</span>
-                                        <span>Tap to focus</span>
-                                      </div>
-                                    </button>
-                                  )
-                                })
-                              ) : (
-                                <div className={`min-w-[220px] snap-start rounded-2xl border border-dashed p-4 text-sm ${
-                                  theme === 'cyberpunk'
-                                    ? 'border-cyan-500/40 text-cyan-200'
-                                    : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-300'
-                                }`}>
-                                  Nothing in this lane yet.
-                                </div>
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )
-                    })}
-                  </div>
-
-                  <div className={`border-t ${theme === 'cyberpunk' ? 'border-cyan-500/30' : 'border-gray-100 dark:border-gray-700'} pt-5`}>
-                    {focusTasks.length > 0 ? (
-                      <TodoList
-                        todos={focusTasks}
-                        onToggle={toggleTodo}
-                        onDelete={deleteTodo}
-                        onEdit={handleEditTodo}
-                      />
-                    ) : (
-                      <div className="text-center py-8">
-                        <CheckCircle className={`w-12 h-12 mx-auto mb-3 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
-                        <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                          {focusEmptyCopy}
-                        </p>
-                      </div>
-                    )}
-                  </div>
+                  {focusTasks.length > 0 ? (
+                    <TodoList
+                      todos={focusTasks}
+                      onToggle={toggleTodo}
+                      onDelete={deleteTodo}
+                      onEdit={handleEditTodo}
+                    />
+                  ) : (
+                    <div className="text-center py-8">
+                      <CheckCircle className={`w-12 h-12 mx-auto mb-3 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
+                      <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {focusEmptyCopy}
+                      </p>
+                    </div>
+                  )}
                 </div>
               </section>
 
