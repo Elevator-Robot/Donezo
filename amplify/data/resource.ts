@@ -43,7 +43,7 @@ const schema = a.schema({
     id: a.id(),
     user_id: a.string(),
     font: a.string().default('Rock Salt'),
-    theme: a.string().default('light'),
+    theme: a.string().default('dark'),
     updated_at: a.string()
   }).authorization(allow => [allow.owner()])
 })

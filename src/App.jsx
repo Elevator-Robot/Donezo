@@ -37,6 +37,8 @@ function App() {
   const [selectedDate, setSelectedDate] = useState(new Date())
   const [showDeleteListModal, setShowDeleteListModal] = useState(false)
   const [listPendingDelete, setListPendingDelete] = useState(null)
+  const [activeFocusLane, setActiveFocusLane] = useState(null)
+  const [listNavExpanded, setListNavExpanded] = useState(false)
 
   // Initialize auth state on app start
   useEffect(() => {
@@ -452,11 +454,18 @@ function App() {
     setShowAddTodo(true)
   }
 
+  const handleFocusShortcutSelect = (shortcutKey) => {
+    setListFilter('all')
+    setActiveFocusLane(prev => (prev === shortcutKey ? null : shortcutKey))
+  }
+
   const handleListFilterChange = (value) => {
+    setActiveFocusLane(null)
     setListFilter(value)
     if (value !== 'all') {
       setActiveList(value)
     }
+    setListNavExpanded(false)
   }
 
   const handleDeleteActiveList = () => {
@@ -532,10 +541,36 @@ function App() {
   const filteredTodos = listFilter === 'all'
     ? todos
     : todos.filter(todo => (todo.list_id || todo.listId) === listFilter)
-  const todaysTasks = getTodaysTasks(filteredTodos)
-  const focusTasks = listFilter === 'all' ? todos : filteredTodos
+  const baseFocusTasks = listFilter === 'all' ? todos : filteredTodos
 
-  const upcomingTasks = filteredTodos
+  const todaysTasks = getTodaysTasks(filteredTodos)
+
+  const todayStart = new Date()
+  todayStart.setHours(0, 0, 0, 0)
+  const todayEnd = new Date(todayStart)
+  todayEnd.setDate(todayEnd.getDate() + 1)
+  const sevenDayWindowEnd = new Date(todayEnd)
+  sevenDayWindowEnd.setDate(sevenDayWindowEnd.getDate() + 6)
+
+  const overdueTasksAll = todos.filter(todo => {
+    if (todo.completed || !todo.due_date) return false
+    const dueDate = new Date(todo.due_date)
+    return dueDate < todayStart
+  })
+
+  const todayOnlyTasksAll = todos.filter(todo => {
+    if (todo.completed || !todo.due_date) return false
+    const dueDate = new Date(todo.due_date)
+    return dueDate >= todayStart && dueDate < todayEnd
+  })
+
+  const nextSevenDaysTasksAll = todos.filter(todo => {
+    if (todo.completed || !todo.due_date) return false
+    const dueDate = new Date(todo.due_date)
+    return dueDate >= todayEnd && dueDate <= sevenDayWindowEnd
+  })
+
+  const upcomingTaskPool = filteredTodos
     .filter(todo => {
       if (todo.completed) return false
       if (!todo.due_date) return false
@@ -546,7 +581,57 @@ function App() {
       return dueDate > today
     })
     .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
-    .slice(0, 5)
+
+  const priorityTaskPoolAll = todos
+    .filter(todo => {
+      if (todo.completed) return false
+      const priority = String(todo.priority || '').toLowerCase()
+      return ['high', 'urgent', 'p1'].includes(priority)
+    })
+    .sort((a, b) => {
+      const dateA = a.due_date ? new Date(a.due_date).getTime() : Infinity
+      const dateB = b.due_date ? new Date(b.due_date).getTime() : Infinity
+      return dateA - dateB
+    })
+
+  const focusShortcuts = [
+    {
+      key: 'today',
+      label: 'Today',
+      description: 'Due before midnight',
+      tasks: todayOnlyTasksAll
+    },
+    {
+      key: 'overdue',
+      label: 'Overdue',
+      description: 'Past their due date',
+      tasks: overdueTasksAll
+    },
+    {
+      key: 'week',
+      label: 'Next 7 Days',
+      description: 'Coming up this week',
+      tasks: nextSevenDaysTasksAll
+    },
+    {
+      key: 'priority',
+      label: 'High Priority',
+      description: 'Flagged as urgent',
+      tasks: priorityTaskPoolAll
+    }
+  ]
+
+  const visibleFocusShortcuts = focusShortcuts.filter(shortcut => shortcut.tasks.length > 0)
+  const activeShortcut = focusShortcuts.find(shortcut => shortcut.key === activeFocusLane && shortcut.tasks.length > 0)
+  const focusTasks = activeShortcut ? activeShortcut.tasks : baseFocusTasks
+
+  useEffect(() => {
+    if (!activeFocusLane) return
+    const shortcutHasTasks = focusShortcuts.some(shortcut => shortcut.key === activeFocusLane && shortcut.tasks.length > 0)
+    if (!shortcutHasTasks) {
+      setActiveFocusLane(null)
+    }
+  }, [activeFocusLane, focusShortcuts])
 
   const calendarMonthStart = startOfMonth(selectedDate)
   const calendarMonthEnd = endOfMonth(selectedDate)
@@ -561,18 +646,25 @@ function App() {
 
   const selectedDayLabel = format(selectedDate, 'EEEE, MMM d')
   const calendarContextTasks = selectedDayTasks.length === 0
-    ? (todaysTasks.length > 0 ? todaysTasks.slice(0, 3) : upcomingTasks.slice(0, 3))
+    ? (todaysTasks.length > 0 ? todaysTasks.slice(0, 3) : upcomingTaskPool.slice(0, 3))
     : []
   const calendarContextLabel = todaysTasks.length > 0 ? 'Redirect overdue items' : 'Plan ahead'
   const selectedDayTaskCountLabel = selectedDayTasks.length === 1 ? 'task' : 'tasks'
 
   const activeFilterList = lists.find(list => list.id === listFilter)
-  const focusHeading = listFilter === 'all' ? 'All lists' : activeFilterList?.name || 'Selected list'
-  const focusDescription = focusTasks.length > 0
-    ? `${focusTasks.length} task${focusTasks.length === 1 ? '' : 's'} ${listFilter === 'all' ? 'across all lists' : 'in this list'}`
+  const baseFocusHeading = listFilter === 'all' ? 'All lists' : activeFilterList?.name || 'Selected list'
+  const baseFocusDescription = baseFocusTasks.length > 0
+    ? `${baseFocusTasks.length} task${baseFocusTasks.length === 1 ? '' : 's'} ${listFilter === 'all' ? 'across all lists' : 'in this list'}`
     : listFilter === 'all'
       ? 'No tasks yet. Create your first one!'
       : 'No tasks in this list yet.'
+  const focusHeading = activeShortcut ? activeShortcut.label : baseFocusHeading
+  const focusDescription = activeShortcut
+    ? `${activeShortcut.tasks.length} task${activeShortcut.tasks.length === 1 ? '' : 's'} • ${activeShortcut.description}`
+    : baseFocusDescription
+  const focusEmptyCopy = activeShortcut
+    ? 'No tasks match this filter yet.'
+    : (listFilter === 'all' ? 'No tasks yet. Create your first one!' : 'No tasks in this list yet.')
 
   const cardClasses = theme === 'cyberpunk'
     ? 'bg-black/80 border-cyan-500/30 shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
@@ -725,74 +817,48 @@ function App() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto bg-gray-50/50 dark:bg-gray-900/50 pb-24">
           <div className="p-6">
-            <div className="grid gap-5 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
-              <section className="space-y-5">
-                <div className={`${cardClasses} rounded-lg p-5 space-y-4`}>
-                  <div className="flex flex-wrap items-end justify-between gap-4">
-                    <div>
-                      <p className={`text-xs font-semibold tracking-[0.2em] uppercase ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
-                        Command center
-                      </p>
-                      <h2 className={`text-2xl font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
-                        {listFilter === 'all' ? 'All tasks' : activeFilterList?.name || 'Filtered tasks'}
-                      </h2>
-                      {listFilter !== 'all' && activeFilterList && (
-                        <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'} text-sm mt-1`}>
-                          Showing tasks from {activeFilterList.name}
-                        </p>
-                      )}
-                    </div>
-                    <div className="flex flex-wrap items-center gap-2 text-sm font-medium">
-                      <button
-                        onClick={() => setShowCreateListModal(true)}
-                        className={`px-3 py-1.5 rounded-lg border transition-colors ${
-                          theme === 'cyberpunk'
-                            ? 'border-cyan-500/40 text-cyan-200 hover:border-cyan-300'
-                            : 'border-gray-200 text-gray-700 hover:border-teal-400 dark:border-gray-600 dark:text-gray-200'
-                        }`}
-                      >
-                        New List
-                      </button>
-                      {listFilter !== 'all' && activeFilterList && (
-                        <button
-                          onClick={handleDeleteActiveList}
-                          className={`px-3 py-1.5 rounded-lg border transition-colors flex items-center gap-2 ${
-                            theme === 'cyberpunk'
-                              ? 'border-red-500/40 text-red-300 hover:border-red-400'
-                              : 'border-red-200 text-red-600 hover:border-red-400 dark:border-red-500 dark:text-red-300'
-                          }`}
-                        >
-                          Delete List
-                        </button>
-                      )}
-                    </div>
+            <div className="grid gap-5 lg:grid-cols-[minmax(200px,240px)_minmax(0,3fr)_minmax(280px,1fr)]">
+              <nav className={`${cardClasses} rounded-lg p-4 space-y-4 lg:sticky lg:top-6 h-fit`}>
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className={`text-[0.65rem] uppercase tracking-[0.3em] ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                      Lists
+                    </p>
+                    <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'} text-sm`}>
+                      Jump between contexts quickly.
+                    </p>
                   </div>
-                  <div className="flex flex-wrap gap-3" role="tablist" aria-label="List filters">
+                  <button
+                    onClick={() => setShowCreateListModal(true)}
+                    className={`p-2 rounded-lg border transition-colors ${
+                      theme === 'cyberpunk'
+                        ? 'border-cyan-500/40 text-cyan-200 hover:border-cyan-300'
+                        : 'border-gray-200 text-gray-700 hover:border-teal-400 dark:border-gray-600 dark:text-gray-200'
+                    }`}
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+                <div className="relative">
+                  <div className={`flex flex-col gap-1 pr-1 transition-all duration-300 ${listNavExpanded ? 'max-h-[420px]' : 'max-h-48'} overflow-hidden`}>
                     <button
                       onClick={() => handleListFilterChange('all')}
                       aria-pressed={listFilter === 'all'}
-                      className={`px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                      className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 text-sm font-semibold transition-all ${
                         listFilter === 'all'
                           ? theme === 'cyberpunk'
-                            ? 'bg-cyan-500/90 text-black border-cyan-300 shadow-[0_8px_25px_rgba(6,182,212,0.35)]'
-                            : 'bg-gradient-to-r from-teal-500 to-teal-400 text-white border-transparent shadow-lg shadow-teal-500/40'
+                            ? 'bg-cyan-500/20 text-cyan-100 border border-cyan-400/60'
+                            : 'bg-teal-500/10 text-teal-700 dark:text-teal-200 border border-teal-400/50'
                           : theme === 'cyberpunk'
-                            ? 'text-cyan-200 border-cyan-500/30 hover:border-cyan-400 hover:text-cyan-100'
-                            : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-teal-400'
+                            ? 'text-cyan-200 border border-transparent hover:border-cyan-500/40'
+                            : 'text-gray-700 dark:text-gray-200 border border-transparent hover:border-teal-400/40'
                       }`}
                     >
-                      All lists
-                      <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full ${
-                        listFilter === 'all'
-                          ? theme === 'cyberpunk'
-                            ? 'bg-black/30 text-cyan-100'
-                            : 'bg-white/25 text-white'
-                          : theme === 'cyberpunk'
-                            ? 'bg-cyan-500/10 text-cyan-200'
-                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-                      }`}>
-                        {todos.length}
+                      <span className="flex items-center gap-2">
+                        <span className={`h-2 w-2 rounded-full ${listFilter === 'all' ? 'bg-teal-400' : 'bg-gray-300 dark:bg-gray-600'}`}></span>
+                        All lists
                       </span>
+                      <span className="text-xs opacity-80">{todos.length}</span>
                     </button>
                     {lists.map((list) => {
                       const incompleteTasksCount = todos.filter(todo => (todo.list_id || todo.listId) === list.id && !todo.completed).length
@@ -802,39 +868,111 @@ function App() {
                           key={list.id}
                           onClick={() => handleListFilterChange(list.id)}
                           aria-pressed={isActive}
-                          className={`px-4 py-2 rounded-full border text-sm font-semibold transition-all duration-200 flex items-center gap-2 ${
+                          className={`flex items-center justify-between gap-3 rounded-2xl px-3 py-2 text-sm font-medium transition-all ${
                             isActive
                               ? theme === 'cyberpunk'
-                                ? 'bg-cyan-500/90 text-black border-cyan-300 shadow-[0_8px_25px_rgba(6,182,212,0.35)]'
-                                : 'bg-gradient-to-r from-teal-500 to-teal-400 text-white border-transparent shadow-lg shadow-teal-500/40'
+                                ? 'bg-cyan-500/20 text-cyan-100 border border-cyan-400/60'
+                                : 'bg-teal-500/10 text-teal-700 dark:text-teal-200 border border-teal-400/50'
                               : theme === 'cyberpunk'
-                                ? 'text-cyan-200 border-cyan-500/30 hover:border-cyan-400 hover:text-cyan-100'
-                                : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-teal-400'
+                                ? 'text-cyan-200 border border-transparent hover:border-cyan-500/40'
+                                : 'text-gray-700 dark:text-gray-200 border border-transparent hover:border-teal-400/40'
                           }`}
                         >
-                          {list.name}
-                          <span className={`text-[0.65rem] font-semibold px-2 py-0.5 rounded-full ${
-                            isActive
-                              ? theme === 'cyberpunk'
-                                ? 'bg-black/30 text-cyan-100'
-                                : 'bg-white/25 text-white'
-                              : theme === 'cyberpunk'
-                                ? 'bg-cyan-500/10 text-cyan-200'
-                                : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200'
-                          }`}>
-                            {incompleteTasksCount}
+                          <span className="flex items-center gap-2">
+                            <span className={`h-2 w-2 rounded-full ${isActive ? 'bg-cyan-400' : 'bg-gray-300 dark:bg-gray-600'}`}></span>
+                            {list.name}
                           </span>
+                          <span className="text-xs opacity-80">{incompleteTasksCount}</span>
                         </button>
                       )
                     })}
                   </div>
+                  {!listNavExpanded && lists.length > 4 && (
+                    <div className={`${theme === 'cyberpunk' ? 'from-black/80' : 'from-white dark:from-gray-900'} pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t to-transparent`}></div>
+                  )}
+                </div>
+                {lists.length > 4 && (
+                  <button
+                    onClick={() => setListNavExpanded(prev => !prev)}
+                    className={`w-full rounded-xl px-3 py-2 text-sm font-semibold transition-colors ${
+                      theme === 'cyberpunk'
+                        ? 'text-cyan-200 hover:text-cyan-100'
+                        : 'text-teal-600 hover:text-teal-500 dark:text-teal-300'
+                    }`}
+                  >
+                    {listNavExpanded ? 'Collapse lists' : 'Show all lists'}
+                  </button>
+                )}
+                <button
+                  onClick={handleDeleteActiveList}
+                  disabled={listFilter === 'all' || !activeFilterList}
+                  className={`w-full rounded-xl border px-3 py-2 text-sm font-semibold transition-colors ${
+                    listFilter === 'all' || !activeFilterList
+                      ? 'border-gray-200 dark:border-gray-700 text-gray-400 cursor-not-allowed'
+                      : theme === 'cyberpunk'
+                        ? 'border-red-400/60 text-red-300 hover:border-red-300'
+                        : 'border-red-200 text-red-600 hover:border-red-400 dark:border-red-500 dark:text-red-300'
+                  }`}
+                >
+                  Delete active list
+                </button>
+              </nav>
+
+              <section className="space-y-5">
+                <div className={`${cardClasses} rounded-lg p-5 space-y-3`}>
+                  <div>
+                    <p className={`text-sm uppercase tracking-[0.3em] ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                      Focus shortcuts
+                    </p>
+                    <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'} text-sm`}>
+                      Route attention without leaving the list.
+                    </p>
+                  </div>
+                  {visibleFocusShortcuts.length > 0 ? (
+                    <div className="flex flex-col gap-2">
+                      {visibleFocusShortcuts.map(shortcut => {
+                        const isActive = activeFocusLane === shortcut.key
+                        return (
+                          <button
+                            key={shortcut.key}
+                            type="button"
+                            aria-pressed={isActive}
+                            onClick={() => handleFocusShortcutSelect(shortcut.key)}
+                            className={`flex items-center justify-between rounded-xl border px-3 py-2 text-left transition-colors ${
+                              isActive
+                                ? theme === 'cyberpunk'
+                                  ? 'border-cyan-400/70 bg-cyan-500/10 text-cyan-100'
+                                  : 'border-teal-400/70 bg-teal-50 text-teal-800 dark:bg-teal-900/50 dark:text-teal-100'
+                                : theme === 'cyberpunk'
+                                  ? 'border-cyan-500/20 text-cyan-200 hover:border-cyan-400/40'
+                                  : 'border-gray-200 text-gray-800 hover:border-teal-200 dark:border-gray-700 dark:text-gray-100'
+                            }`}
+                          >
+                            <div>
+                              <p className="text-sm font-semibold">{shortcut.label}</p>
+                              <p className="text-xs opacity-80">{shortcut.description}</p>
+                            </div>
+                            <span className="text-xs font-semibold uppercase tracking-wide opacity-80">
+                              {shortcut.tasks.length}
+                            </span>
+                          </button>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className={`rounded-lg border border-dashed px-3 py-2 text-center text-sm ${
+                      theme === 'cyberpunk' ? 'border-cyan-500/30 text-cyan-200' : 'border-gray-200 text-gray-500 dark:border-gray-700 dark:text-gray-300'
+                    }`}>
+                      Nothing needs urgent attention.
+                    </div>
+                  )}
                 </div>
 
                 <div className={`${cardClasses} rounded-lg p-5`}>
                   <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
                     <div>
                       <p className={`text-sm uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
-                        Focus
+                        Tasks
                       </p>
                       <h2 className={`text-2xl font-bold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
                         {focusHeading}
@@ -855,6 +993,7 @@ function App() {
                       Add task
                     </button>
                   </div>
+
                   {focusTasks.length > 0 ? (
                     <TodoList
                       todos={focusTasks}
@@ -866,11 +1005,10 @@ function App() {
                     <div className="text-center py-8">
                       <CheckCircle className={`w-12 h-12 mx-auto mb-3 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
                       <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
-                        {listFilter === 'all' ? 'No tasks yet. Create your first one!' : 'No tasks in this list yet.'}
+                        {focusEmptyCopy}
                       </p>
                     </div>
                   )}
-
                 </div>
               </section>
 
