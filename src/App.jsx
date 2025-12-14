@@ -1,5 +1,4 @@
 import React, { useState, useEffect } from 'react'
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import TodoList from './components/TodoList'
 import AddTodo from './components/AddTodo'
@@ -7,7 +6,7 @@ import RecurringTaskModal from './components/RecurringTaskModal'
 import Settings from './components/Settings'
 import Auth from './components/Auth'
 import UserProfile from './components/UserProfile'
-import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Home, Zap, Bot, Repeat, X, ChevronLeft, ChevronRight, ChevronDown } from 'lucide-react'
+import { CheckCircle, Clock, Plus, Moon, Sun, Calendar, List, Bot, X, ChevronLeft, ChevronRight, Trash2 } from 'lucide-react'
 import { format, startOfMonth, endOfMonth, startOfWeek, endOfWeek, eachDayOfInterval, isSameMonth, isSameDay, isToday } from 'date-fns'
 import { generateRecurringInstances, calculateNextDueDate } from './utils/recurringTaskUtils'
 import { authService } from './services/authService'
@@ -27,17 +26,17 @@ function App() {
   
   const [activeList, setActiveList] = useState('1')
   const [showAddTodo, setShowAddTodo] = useState(false)
+  const [editingTodo, setEditingTodo] = useState(null)
   const [showRecurringTask, setShowRecurringTask] = useState(false)
   const [showSettings, setShowSettings] = useState(false)
   const [showThemeTransition, setShowThemeTransition] = useState(false)
-  const [activeTab, setActiveTab] = useState('today') // 'today', 'lists', 'calendar'
+  const [listFilter, setListFilter] = useState('all')
   const [showListModal, setShowListModal] = useState(false)
   const [selectedList, setSelectedList] = useState(null)
   const [showCreateListModal, setShowCreateListModal] = useState(false)
   const [selectedDate, setSelectedDate] = useState(new Date())
-  const [calendarView, setCalendarView] = useState('month') // 'month' or 'week'
-  const [swipeStartX, setSwipeStartX] = useState(null)
-  const [swipeStartY, setSwipeStartY] = useState(null)
+  const [showDeleteListModal, setShowDeleteListModal] = useState(false)
+  const [listPendingDelete, setListPendingDelete] = useState(null)
 
   // Initialize auth state on app start
   useEffect(() => {
@@ -212,35 +211,57 @@ function App() {
     }
   }, [settings, currentUser, isAuthenticated, theme])
 
-  const addTodo = async (todo) => {
+  const saveTodo = async (todo) => {
     if (!currentUser) return
 
-    console.log('App.jsx addTodo called with:', todo)
-    
-    const newTodoData = {
-      listId: todo.listId,
-      title: todo.title,
-      description: todo.description || '',
-      priority: todo.priority || 'medium',
-      dueDate: todo.dueDate || null,
-      dueTime: todo.dueTime || null,
-      isRecurringInstance: todo.isRecurringInstance || false,
-      parentRecurringTaskId: todo.parentRecurringTaskId || null,
-      recurrence: todo.recurrence || null
-    }
-    
-    const { todo: newTodo, error } = await dataService.createTodo(currentUser.id, newTodoData)
-    
-    if (error) {
-      console.error('Error creating todo:', error)
+    const targetListId = todo.listId || activeList || lists[0]?.id
+    if (!targetListId) {
+      console.warn('Cannot save todo without a list')
       return
     }
-    
-    if (newTodo) {
-      setTodos(prev => [newTodo, ...prev])
+
+    if (todo.id) {
+      const updates = {
+        title: todo.title,
+        list_id: targetListId,
+        priority: todo.priority || 'medium'
+      }
+
+      const { todo: updatedTodo, error } = await dataService.updateTodo(todo.id, updates)
+      if (error) {
+        console.error('Error updating todo:', error)
+        return
+      }
+
+      if (updatedTodo) {
+        setTodos(prev => prev.map(t => t.id === todo.id ? updatedTodo : t))
+      }
+    } else {
+      const newTodoData = {
+        listId: targetListId,
+        title: todo.title,
+        description: todo.description || '',
+        priority: todo.priority || 'medium',
+        dueDate: todo.dueDate || null,
+        dueTime: todo.dueTime || null,
+        isRecurringInstance: todo.isRecurringInstance || false,
+        parentRecurringTaskId: todo.parentRecurringTaskId || null,
+        recurrence: todo.recurrence || null
+      }
+      
+      const { todo: newTodo, error } = await dataService.createTodo(currentUser.id, newTodoData)
+      if (error) {
+        console.error('Error creating todo:', error)
+        return
+      }
+      
+      if (newTodo) {
+        setTodos(prev => [newTodo, ...prev])
+      }
     }
-    
+
     setShowAddTodo(false)
+    setEditingTodo(null)
   }
 
   const addRecurringTask = async (recurringTask) => {
@@ -412,13 +433,38 @@ function App() {
     }
   }
 
-  const handleAddButtonClick = () => {
+  const handleListSelect = (list) => {
+    if (list) {
+      setListFilter(list.id)
+      setActiveList(list.id)
+    }
+    setSelectedList(list)
+    setShowListModal(true)
+  }
+
+  const openNewTaskModal = () => {
+    setEditingTodo(null)
     setShowAddTodo(true)
   }
 
-  const handleListSelect = (list) => {
-    setSelectedList(list)
-    setShowListModal(true)
+  const handleEditTodo = (todo) => {
+    setEditingTodo(todo)
+    setShowAddTodo(true)
+  }
+
+  const handleListFilterChange = (value) => {
+    setListFilter(value)
+    if (value !== 'all') {
+      setActiveList(value)
+    }
+  }
+
+  const handleDeleteActiveList = () => {
+    if (listFilter === 'all') return
+    const targetList = lists.find(list => list.id === listFilter)
+    if (!targetList) return
+    setListPendingDelete(targetList)
+    setShowDeleteListModal(true)
   }
 
   const deleteList = async (id) => {
@@ -435,7 +481,14 @@ function App() {
     setLists(prev => prev.filter(list => list.id !== id))
     
     // Remove all todos that belong to this list from local state
-    setTodos(prev => prev.filter(todo => todo.list_id !== id))
+    setTodos(prev => prev.filter(todo => {
+      const todoListId = todo.list_id || todo.listId
+      return todoListId !== id
+    }))
+
+    if (listFilter === id) {
+      setListFilter('all')
+    }
     
     // If the deleted list was the active one, switch to the first remaining list
     if (activeList === id) {
@@ -446,50 +499,25 @@ function App() {
     }
   }
 
-  // Calendar swipe handlers
-  const handleCalendarSwipeStart = (e) => {
-    const touch = e.touches[0]
-    setSwipeStartX(touch.clientX)
-    setSwipeStartY(touch.clientY)
+  const confirmDeleteList = async () => {
+    if (!listPendingDelete) return
+    await deleteList(listPendingDelete.id)
+    setShowDeleteListModal(false)
+    setListPendingDelete(null)
   }
 
-  const handleCalendarSwipeMove = (e) => {
-    e.preventDefault() // Prevent scrolling during swipe
+  const cancelDeleteList = () => {
+    setShowDeleteListModal(false)
+    setListPendingDelete(null)
   }
 
-  const handleCalendarSwipeEnd = (e) => {
-    if (!swipeStartX || !swipeStartY) return
-
-    const touch = e.changedTouches[0]
-    const deltaX = touch.clientX - swipeStartX
-    const deltaY = touch.clientY - swipeStartY
-    const minSwipeDistance = 50
-
-    // Only handle horizontal swipes (month navigation)
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > minSwipeDistance) {
-      if (deltaX > 0) {
-        // Swipe right - go to previous month
-        const newDate = new Date(selectedDate)
-        newDate.setMonth(newDate.getMonth() - 1)
-        setSelectedDate(newDate)
-      } else {
-        // Swipe left - go to next month
-        const newDate = new Date(selectedDate)
-        newDate.setMonth(newDate.getMonth() + 1)
-        setSelectedDate(newDate)
-      }
-    }
-
-    setSwipeStartX(null)
-    setSwipeStartY(null)
-  }
 
   // Get today's tasks (tasks due today or overdue)
-  const getTodaysTasks = () => {
+  const getTodaysTasks = (taskSource) => {
     const today = new Date()
     today.setHours(0, 0, 0, 0)
     
-    return todos.filter(todo => {
+    return taskSource.filter(todo => {
       if (todo.completed) return false
       if (!todo.due_date) return false
       
@@ -501,9 +529,47 @@ function App() {
     })
   }
 
-  const currentTodos = todos.filter(todo => todo.list_id === activeList)
-  const currentList = lists.find(list => list.id === activeList)
-  const todaysTasks = getTodaysTasks()
+  const filteredTodos = listFilter === 'all'
+    ? todos
+    : todos.filter(todo => (todo.list_id || todo.listId) === listFilter)
+  const todaysTasks = getTodaysTasks(filteredTodos)
+  const focusTasks = listFilter === 'all' ? todos : filteredTodos
+
+  const upcomingTasks = filteredTodos
+    .filter(todo => {
+      if (todo.completed) return false
+      if (!todo.due_date) return false
+      const dueDate = new Date(todo.due_date)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      dueDate.setHours(0, 0, 0, 0)
+      return dueDate > today
+    })
+    .sort((a, b) => new Date(a.due_date) - new Date(b.due_date))
+    .slice(0, 5)
+
+  const calendarMonthStart = startOfMonth(selectedDate)
+  const calendarMonthEnd = endOfMonth(selectedDate)
+  const calendarStart = startOfWeek(calendarMonthStart)
+  const calendarEnd = endOfWeek(calendarMonthEnd)
+  const calendarDays = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
+
+  const selectedDayTasks = filteredTodos.filter(todo => {
+    if (!todo.due_date) return false
+    return isSameDay(new Date(todo.due_date), selectedDate)
+  })
+
+  const activeFilterList = lists.find(list => list.id === listFilter)
+  const focusHeading = listFilter === 'all' ? 'All lists' : activeFilterList?.name || 'Selected list'
+  const focusDescription = focusTasks.length > 0
+    ? `${focusTasks.length} task${focusTasks.length === 1 ? '' : 's'} ${listFilter === 'all' ? 'across all lists' : 'in this list'}`
+    : listFilter === 'all'
+      ? 'No tasks yet. Create your first one!'
+      : 'No tasks in this list yet.'
+
+  const cardClasses = theme === 'cyberpunk'
+    ? 'bg-black/80 border-cyan-500/30 shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
+    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700 shadow-sm'
 
   // Show loading screen during auth initialization
   if (authLoading) {
@@ -527,7 +593,6 @@ function App() {
   }
 
   return (
-    <Router>
       <div className="flex flex-col h-screen relative">
         {/* Animated Background */}
         <motion.div 
@@ -653,170 +718,200 @@ function App() {
         {/* Main Content Area */}
         <main className="flex-1 overflow-auto bg-gray-50/50 dark:bg-gray-900/50 pb-24">
           <div className="p-6">
-            {activeTab === 'today' && (
-              <motion.div
-                key="today"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="mb-6">
-                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                    Today&apos;s Tasks
-                  </h2>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    {todaysTasks.length} tasks due today
-                  </p>
-                </div>
-                <TodoList
-                  todos={todaysTasks}
-                  onToggle={toggleTodo}
-                  onDelete={deleteTodo}
-                />
-              </motion.div>
-            )}
-
-            {activeTab === 'lists' && (
-              <motion.div
-                key="lists"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-              >
-                <div className="mb-6">
-                  <div className="flex items-center justify-between mb-2">
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      Task Lists
-                    </h2>
-                    <motion.button
-                      onClick={() => setShowCreateListModal(true)}
-                      className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
-                      whileHover={{ scale: 1.05 }}
-                      whileTap={{ scale: 0.95 }}
-                    >
-                      <Plus size={16} />
-                      <span>New List</span>
-                    </motion.button>
-                  </div>
-                  <p className="text-gray-600 dark:text-gray-400">
-                    Organize your tasks into different lists
-                  </p>
-                </div>
-                
-                {/* Lists Grid */}
-                <div className="grid grid-cols-1 gap-4">
-                  {lists.map((list) => (
-                    <motion.div
-                      key={list.id}
-                      className={`p-6 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-                        theme === 'cyberpunk'
-                          ? 'bg-black/80 border-cyan-500/30 hover:border-cyan-400 hover:bg-black/90 shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
-                          : 'border-gray-200 dark:border-gray-700 hover:border-teal-300 dark:hover:border-teal-600 bg-white dark:bg-gray-800'
-                      }`}
-                      onClick={() => handleListSelect(list)}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <div className="flex items-center gap-4 mb-3">
-                        <div className={`w-4 h-4 ${list.color === 'teal' ? 'bg-teal-500' : list.color === 'blue' ? 'bg-blue-500' : list.color === 'green' ? 'bg-green-500' : 'bg-gray-500'} rounded-full`}></div>
-                        <h3 className={`text-lg font-semibold ${
-                          theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-900 dark:text-white'
-                        }`}>{list.name}</h3>
-                      </div>
-                      <p className={`text-sm ${
-                        theme === 'cyberpunk' ? 'text-gray-300' : 'text-gray-600 dark:text-gray-400'
-                      }`}>
-                        {todos.filter(todo => todo.list_id === list.id && !todo.completed).length} tasks remaining
+            <div className="grid gap-6 lg:grid-cols-[minmax(0,3fr)_minmax(280px,1fr)]">
+              <section className="space-y-6">
+                <div className={`${cardClasses} rounded-lg p-5`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className={`text-sm uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                        Lists
                       </p>
-                    </motion.div>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {activeTab === 'calendar' && (
-              <motion.div
-                key="calendar"
-                initial={{ opacity: 0, x: -20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: 20 }}
-                transition={{ duration: 0.3 }}
-                className="space-y-4"
-              >
-                {/* Calendar Header */}
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
-                      Calendar
-                    </h2>
-                    <p className="text-sm text-gray-500 dark:text-gray-400">
-                      Swipe left/right to navigate months
-                    </p>
-                  </div>
-                  <motion.button
-                    onClick={() => setShowRecurringTask(true)}
-                    className="px-4 py-2 bg-teal-500 hover:bg-teal-600 text-white rounded-lg text-sm font-medium transition-colors duration-200 flex items-center gap-2"
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Plus size={16} />
-                    <span>Add Recurring</span>
-                  </motion.button>
-                </div>
-
-                {/* Month Grid */}
-                <motion.div
-                  key={selectedDate.getMonth() + selectedDate.getFullYear()} // Force re-render on month change
-                  className={`rounded-lg p-4 shadow-sm border ${
-                    theme === 'cyberpunk'
-                      ? 'bg-black/80 border-cyan-500/30 shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
-                      : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                  } ${
-                    calendarView === 'week' ? 'h-20 overflow-hidden' : 'h-auto'
-                  }`}
-                  initial={{ opacity: 0, x: 20 }}
-                  animate={{ 
-                    height: calendarView === 'week' ? '80px' : 'auto',
-                    opacity: 1, 
-                    x: 0 
-                  }}
-                  exit={{ opacity: 0, x: -20 }}
-                  transition={{ duration: 0.3 }}
-                  onTouchStart={handleCalendarSwipeStart}
-                  onTouchMove={handleCalendarSwipeMove}
-                  onTouchEnd={handleCalendarSwipeEnd}
-                >
-                  <div className="flex items-center justify-between mb-3">
-                    <div className="flex items-center gap-3">
-                      <h3 className={`text-lg font-semibold ${
-                        theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-900 dark:text-white'
-                      }`}>
-                        {format(selectedDate, 'MMMM')}
-                      </h3>
-                      <div className="relative">
-                        <select
-                          value={selectedDate.getFullYear()}
-                          onChange={(e) => {
-                            const newDate = new Date(selectedDate)
-                            newDate.setFullYear(parseInt(e.target.value))
-                            setSelectedDate(newDate)
-                          }}
-                          className={`appearance-none bg-transparent border rounded-md px-2 py-1 text-sm font-medium cursor-pointer ${
+                      <h2 className={`text-2xl font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
+                        {listFilter === 'all' ? 'All tasks' : activeFilterList?.name || 'Filtered tasks'}
+                      </h2>
+                      {listFilter !== 'all' && activeFilterList && (
+                        <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'} text-sm mt-1`}>
+                          Showing tasks from {activeFilterList.name}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowCreateListModal(true)}
+                        className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          theme === 'cyberpunk'
+                            ? 'bg-cyan-500/20 text-cyan-200 border border-cyan-500/50 hover:bg-cyan-500/30'
+                            : 'bg-white text-gray-800 border border-gray-200 hover:border-teal-400 dark:bg-gray-900 dark:text-white'
+                        }`}
+                      >
+                        New List
+                      </button>
+                      {listFilter !== 'all' && activeFilterList && (
+                        <button
+                          onClick={handleDeleteActiveList}
+                          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 ${
                             theme === 'cyberpunk'
-                              ? 'border-cyan-500/30 text-cyan-300 hover:border-cyan-400'
-                              : 'border-gray-300 dark:border-gray-600 text-gray-900 dark:text-white hover:border-gray-400'
+                              ? 'border border-red-400/60 text-red-300 hover:bg-red-500/10'
+                              : 'border border-red-300 text-red-600 hover:bg-red-50 dark:border-red-500 dark:text-red-300 dark:hover:bg-red-500/10'
                           }`}
                         >
-                          {[2025, 2026, 2027, 2028].map(year => (
-                            <option key={year} value={year}>{year}</option>
-                          ))}
-                        </select>
-                        <ChevronDown className={`absolute right-1 top-1/2 transform -translate-y-1/2 w-3 h-3 pointer-events-none ${
-                          theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500'
-                        }`} />
-                      </div>
+                          Delete List
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    <button
+                      onClick={() => handleListFilterChange('all')}
+                      className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-colors flex items-center gap-2 ${
+                        listFilter === 'all'
+                          ? theme === 'cyberpunk'
+                            ? 'bg-cyan-500 text-black border-cyan-400'
+                            : 'bg-teal-500 text-white border-teal-400'
+                          : theme === 'cyberpunk'
+                            ? 'text-cyan-200 border-cyan-500/40 hover:border-cyan-400'
+                            : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-teal-400'
+                      }`}
+                    >
+                      All lists
+                      <span className="text-xs opacity-80">{todos.length}</span>
+                    </button>
+                    {lists.map((list) => {
+                      const incompleteTasksCount = todos.filter(todo => (todo.list_id || todo.listId) === list.id && !todo.completed).length
+                      return (
+                        <button
+                          key={list.id}
+                          onClick={() => handleListFilterChange(list.id)}
+                          className={`px-3 py-1.5 rounded-full border text-sm font-medium transition-colors flex items-center gap-2 ${
+                            listFilter === list.id
+                              ? theme === 'cyberpunk'
+                                ? 'bg-cyan-500 text-black border-cyan-400'
+                                : 'bg-teal-500 text-white border-teal-400'
+                              : theme === 'cyberpunk'
+                                ? 'text-cyan-200 border-cyan-500/40 hover:border-cyan-400'
+                                : 'text-gray-700 dark:text-gray-200 border-gray-200 dark:border-gray-600 hover:border-teal-400'
+                          }`}
+                        >
+                          {list.name}
+                          <span className="text-xs opacity-80">{incompleteTasksCount}</span>
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+
+                <div className={`${cardClasses} rounded-lg p-5`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className={`text-sm uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                        Focus
+                      </p>
+                      <h2 className={`text-2xl font-bold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
+                        {focusHeading}
+                      </h2>
+                      <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {focusDescription}
+                      </p>
+                    </div>
+                    <button
+                      onClick={openNewTaskModal}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                        theme === 'cyberpunk'
+                          ? 'bg-cyan-500 text-black hover:bg-cyan-400'
+                          : 'bg-teal-500 text-white hover:bg-teal-600'
+                      }`}
+                    >
+                      <Plus size={16} />
+                      Add Task
+                    </button>
+                  </div>
+                  {focusTasks.length > 0 ? (
+                    <TodoList
+                      todos={focusTasks}
+                      onToggle={toggleTodo}
+                      onDelete={deleteTodo}
+                      onEdit={handleEditTodo}
+                    />
+                  ) : (
+                    <div className="text-center py-10">
+                      <CheckCircle className={`w-12 h-12 mx-auto mb-3 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
+                      <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {listFilter === 'all' ? 'No tasks yet. Create your first one!' : 'No tasks in this list yet.'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                <div className={`${cardClasses} rounded-lg p-5`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <p className={`text-sm ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                        Up next
+                      </p>
+                      <h2 className={`text-2xl font-bold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
+                        Upcoming tasks
+                      </h2>
+                    </div>
+                    <button
+                      onClick={() => setShowRecurringTask(true)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 ${
+                        theme === 'cyberpunk'
+                          ? 'border border-cyan-500/50 text-cyan-200 hover:bg-cyan-500/10'
+                          : 'border border-teal-500 text-teal-600 hover:bg-teal-50 dark:border-teal-400 dark:text-teal-300 dark:hover:bg-teal-400/10'
+                      }`}
+                    >
+                      <Clock size={16} />
+                      Schedule recurring
+                    </button>
+                  </div>
+                  {upcomingTasks.length > 0 ? (
+                    <div className="space-y-3">
+                      {upcomingTasks.map(todo => {
+                        const list = lists.find(l => l.id === (todo.list_id || todo.listId))
+                        const dueDateLabel = todo.due_date ? format(new Date(todo.due_date), 'MMM d') : 'No due date'
+                        return (
+                          <div
+                            key={todo.id}
+                            className={`flex items-center justify-between p-3 rounded-lg border ${
+                              theme === 'cyberpunk'
+                                ? 'border-cyan-500/30 bg-black/40'
+                                : 'border-gray-200 dark:border-gray-700'
+                            }`}
+                          >
+                            <div>
+                              <p className={`font-medium ${todo.completed ? 'line-through text-gray-500' : theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
+                                {todo.title}
+                              </p>
+                              <p className={`text-sm ${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                {dueDateLabel}{list ? ` • ${list.name}` : ''}
+                              </p>
+                            </div>
+                            <div className={`flex items-center gap-2 text-sm ${theme === 'cyberpunk' ? 'text-cyan-200' : 'text-gray-500 dark:text-gray-400'}`}>
+                              <Clock size={14} />
+                              <span>{todo.due_time || 'Anytime'}</span>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Calendar className={`w-10 h-10 mx-auto mb-3 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
+                      <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                        No upcoming tasks scheduled.
+                      </p>
+                    </div>
+                  )}
+                </div>
+              </section>
+
+              <aside className="space-y-6">
+                <div className={`${cardClasses} rounded-lg p-5`}>
+                  <div className="flex items-center justify-between mb-4">
+                    <div>
+                      <h3 className={`text-sm uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-500 dark:text-gray-400'}`}>
+                        {format(selectedDate, 'MMMM yyyy')}
+                      </h3>
                     </div>
                     <div className="flex gap-2">
                       <button
@@ -825,10 +920,10 @@ function App() {
                           newDate.setMonth(newDate.getMonth() - 1)
                           setSelectedDate(newDate)
                         }}
-                        className={`p-2 rounded-lg transition-colors ${
+                        className={`p-2 rounded-lg ${
                           theme === 'cyberpunk'
-                            ? 'hover:bg-cyan-500/20 text-cyan-300 hover:text-cyan-200'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                            ? 'hover:bg-cyan-500/20 text-cyan-300'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
                         }`}
                       >
                         <ChevronLeft size={16} />
@@ -839,277 +934,193 @@ function App() {
                           newDate.setMonth(newDate.getMonth() + 1)
                           setSelectedDate(newDate)
                         }}
-                        className={`p-2 rounded-lg transition-colors ${
+                        className={`p-2 rounded-lg ${
                           theme === 'cyberpunk'
-                            ? 'hover:bg-cyan-500/20 text-cyan-300 hover:text-cyan-200'
-                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                            ? 'hover:bg-cyan-500/20 text-cyan-300'
+                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-300'
                         }`}
                       >
                         <ChevronRight size={16} />
                       </button>
                     </div>
                   </div>
-
-                  {/* Calendar Grid */}
-                  <div className="grid grid-cols-7 gap-1">
+                  <div className={`grid grid-cols-7 gap-1 text-[0.65rem] uppercase tracking-wide ${theme === 'cyberpunk' ? 'text-cyan-300/80' : 'text-gray-500 dark:text-gray-400'}`}>
                     {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                      <div key={day} className={`text-center text-sm font-medium py-2 ${
-                        theme === 'cyberpunk' ? 'text-cyan-400' : 'text-gray-500 dark:text-gray-400'
-                      }`}>
+                      <span key={day} className="text-center">
                         {day}
-                      </div>
+                      </span>
                     ))}
-                    {(() => {
-                      // Generate full calendar grid with padding days
-                      const monthStart = startOfMonth(selectedDate)
-                      const monthEnd = endOfMonth(selectedDate)
-                      const calendarStart = startOfWeek(monthStart)
-                      const calendarEnd = endOfWeek(monthEnd)
-                      const days = eachDayOfInterval({ start: calendarStart, end: calendarEnd })
-
-                      return days.map(date => {
-                        const isCurrentMonth = isSameMonth(date, selectedDate)
-                        const isDayToday = isToday(date)
-                        const isSelected = isSameDay(date, selectedDate)
-                        const hasTasks = todos.some(todo => {
-                          if (!todo.due_date) return false
-                          const todoDate = new Date(todo.due_date)
-                          return todoDate.toDateString() === date.toDateString()
-                        })
-
-                        return (
-                          <motion.button
-                            key={format(date, 'yyyy-MM-dd')}
-                            onClick={() => setSelectedDate(date)}
-                            className={`relative p-2 rounded-lg text-sm transition-colors aspect-square flex items-center justify-center ${
-                              isSelected
-                                ? theme === 'cyberpunk'
-                                  ? 'bg-cyan-500 text-black'
-                                  : 'bg-teal-500 text-white'
-                                : isDayToday
-                                ? theme === 'cyberpunk'
-                                  ? 'bg-cyan-500/20 text-cyan-300 border border-cyan-500/50'
-                                  : 'bg-teal-100 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400'
-                                : isCurrentMonth
-                                ? theme === 'cyberpunk'
-                                  ? 'hover:bg-cyan-500/10 text-cyan-200 hover:text-cyan-100'
-                                  : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-900 dark:text-white'
-                                : theme === 'cyberpunk'
-                                  ? 'text-cyan-200/50 hover:bg-cyan-500/5'
-                                  : 'text-gray-400 dark:text-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800'
-                            }`}
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                          >
-                            {format(date, 'd')}
-                            {hasTasks && (
-                              <div className={`absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 rounded-full ${
-                                theme === 'cyberpunk' ? 'bg-cyan-400' : 'bg-teal-500'
-                              }`}></div>
-                            )}
-                          </motion.button>
-                        )
-                      })
-                    })()}
                   </div>
-                </motion.div>
-
-                {/* Selected Date Agenda */}
-                <div className={`rounded-lg p-4 shadow-sm border ${
-                  theme === 'cyberpunk'
-                    ? 'bg-black/80 border-cyan-500/30 shadow-[0_4px_15px_rgba(6,182,212,0.2)]'
-                    : 'bg-white dark:bg-gray-800 border-gray-200 dark:border-gray-700'
-                }`}>
-                  <h3 className={`text-lg font-semibold mb-4 ${
-                    theme === 'cyberpunk' ? 'text-cyan-300' : 'text-gray-900 dark:text-white'
-                  }`}>
-                    {selectedDate.toLocaleDateString('en-US', { 
-                      weekday: 'long', 
-                      month: 'long', 
-                      day: 'numeric' 
-                    })}
-                  </h3>
-                  
-                  {(() => {
-                    const dayTasks = todos.filter(todo => {
-                      if (!todo.due_date) return false
-                      const todoDate = new Date(todo.due_date)
-                      return todoDate.toDateString() === selectedDate.toDateString()
-                    })
-                    
-                    if (dayTasks.length === 0) {
+                  <div className="grid grid-cols-7 gap-1 mt-2 text-sm">
+                    {calendarDays.map(day => {
+                      const isCurrentMonth = isSameMonth(day, selectedDate)
+                      const isDayToday = isToday(day)
+                      const isSelected = isSameDay(day, selectedDate)
+                      const hasTasks = filteredTodos.some(todo => {
+                        if (!todo.due_date) return false
+                        return isSameDay(new Date(todo.due_date), day)
+                      })
                       return (
-                        <div className="text-center py-8">
-                          <Calendar className={`w-12 h-12 mx-auto mb-3 ${
-                            theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-400'
-                          }`} />
-                          <p className={`${
-                            theme === 'cyberpunk' ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'
-                          }`}>No tasks scheduled for this day</p>
-                        </div>
-                      )
-                    }
-
-                    return (
-                      <div className="space-y-3">
-                        {dayTasks.map(todo => (
-                          <motion.div
-                            key={todo.id}
-                            className={`p-3 rounded-lg border-l-4 ${
-                              todo.completed
+                        <button
+                          key={day.toISOString()}
+                          onClick={() => setSelectedDate(day)}
+                          className={`relative p-2 rounded-lg aspect-square flex items-center justify-center ${
+                            isSelected
+                              ? theme === 'cyberpunk'
+                                ? 'bg-cyan-500 text-black'
+                                : 'bg-teal-500 text-white'
+                              : isDayToday
                                 ? theme === 'cyberpunk'
-                                  ? 'bg-gray-800/50 border-gray-600'
-                                  : 'bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600'
-                                : theme === 'cyberpunk'
-                                  ? 'bg-black/50 border-cyan-500'
-                                  : 'bg-white dark:bg-gray-800 border-teal-500'
-                            }`}
-                            initial={{ opacity: 0, y: 10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.2 }}
-                          >
-                            <div className="flex items-center justify-between">
+                                  ? 'border border-cyan-500/60 text-cyan-200'
+                                  : 'border border-teal-400 text-teal-600 dark:text-teal-300'
+                                : isCurrentMonth
+                                  ? theme === 'cyberpunk'
+                                    ? 'text-cyan-200 hover:bg-cyan-500/10'
+                                    : 'text-gray-900 dark:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                                  : theme === 'cyberpunk'
+                                    ? 'text-cyan-200/40'
+                                    : 'text-gray-400 dark:text-gray-600'
+                          }`}
+                        >
+                          {format(day, 'd')}
+                          {hasTasks && (
+                            <span className={`absolute bottom-1 w-1 h-1 rounded-full ${theme === 'cyberpunk' ? 'bg-black' : 'bg-teal-500'}`} />
+                          )}
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div className="mt-4 border-t border-gray-200 dark:border-gray-700 pt-4">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h4 className={`text-lg font-semibold ${theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
+                          {format(selectedDate, 'EEEE, MMM d')}
+                        </h4>
+                      </div>
+                      <span className={`text-sm ${theme === 'cyberpunk' ? 'text-cyan-200' : 'text-gray-600 dark:text-gray-300'}`}>
+                        {selectedDayTasks.length} tasks
+                      </span>
+                    </div>
+                    {selectedDayTasks.length > 0 ? (
+                      <div className="space-y-3">
+                        {selectedDayTasks.map(todo => {
+                          const list = lists.find(l => l.id === (todo.list_id || todo.listId))
+                          return (
+                            <div
+                              key={todo.id}
+                              className={`p-3 rounded-lg border flex items-center justify-between ${
+                                theme === 'cyberpunk'
+                                  ? 'border-cyan-500/30 bg-black/40'
+                                  : 'border-gray-200 dark:border-gray-700'
+                              }`}
+                            >
                               <div className="flex items-center gap-3">
                                 <button
                                   onClick={() => toggleTodo(todo.id)}
-                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center transition-colors ${
+                                  className={`w-5 h-5 rounded-full border-2 flex items-center justify-center ${
                                     todo.completed
                                       ? 'bg-teal-500 border-teal-500 text-white'
-                                      : 'border-gray-300 dark:border-gray-600 hover:border-teal-500'
+                                      : theme === 'cyberpunk'
+                                        ? 'border-cyan-500/50 text-cyan-200'
+                                        : 'border-gray-300 dark:border-gray-600'
                                   }`}
                                 >
                                   {todo.completed && <CheckCircle size={12} />}
                                 </button>
-                                <span className={`${
-                                  todo.completed 
-                                    ? 'line-through text-gray-500' 
-                                    : theme === 'cyberpunk' 
-                                      ? 'text-cyan-200' 
-                                      : 'text-gray-900 dark:text-white'
-                                }`}>
-                                  {todo.title}
-                                </span>
+                                <div>
+                                  <p className={`font-medium ${todo.completed ? 'line-through text-gray-500' : theme === 'cyberpunk' ? 'text-cyan-100' : 'text-gray-900 dark:text-white'}`}>
+                                    {todo.title}
+                                  </p>
+                                  <p className={`text-xs ${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                                    {list ? list.name : 'No list'}{todo.due_time ? ` • ${todo.due_time}` : ''}
+                                  </p>
+                                </div>
                               </div>
-                              {todo.due_time && (
-                                <span className={`text-sm ${
-                                  theme === 'cyberpunk' ? 'text-gray-300' : 'text-gray-500 dark:text-gray-400'
-                                }`}>
-                                  {todo.due_time}
-                                </span>
-                              )}
                             </div>
-                          </motion.div>
-                        ))}
+                          )
+                        })}
                       </div>
-                    )
-                  })()}
+                    ) : (
+                      <div className="text-center py-6">
+                        <Calendar className={`w-10 h-10 mx-auto mb-2 ${theme === 'cyberpunk' ? 'text-cyan-500' : 'text-gray-300'}`} />
+                        <p className={`${theme === 'cyberpunk' ? 'text-gray-400' : 'text-gray-500 dark:text-gray-400'}`}>
+                          No tasks scheduled for this day.
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 </div>
-              </motion.div>
-            )}
+              </aside>
+            </div>
           </div>
         </main>
 
-        {/* Bottom Navigation */}
-        <motion.nav 
-          className={`fixed bottom-0 left-0 right-0 backdrop-blur-sm border-t z-50 ${
-            theme === 'cyberpunk' 
-              ? 'bg-black/95 border-cyan-500/50 shadow-[0_-4px_20px_rgba(6,182,212,0.3)]' 
-              : 'bg-white/90 dark:bg-gray-800/90 border-gray-200/50 dark:border-gray-700/50'
-          }`}
-          initial={{ y: 100 }}
-          animate={{ y: 0 }}
-          transition={{ delay: 0.3, type: "spring", stiffness: 200 }}
-        >
-          <div className="flex items-center justify-around py-2.5">
-            {/* Today Tab */}
-            <motion.button
-              onClick={() => setActiveTab('today')}
-              className={`flex flex-col items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'today'
-                  ? theme === 'cyberpunk' 
-                    ? 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30' 
-                    : 'text-teal-600 dark:text-teal-400'
-                  : theme === 'cyberpunk'
-                    ? 'text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/5'
-                    : 'text-gray-600 dark:text-gray-400'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Home size={24} />
-              <span className="text-sm font-medium">Today</span>
-            </motion.button>
-
-            {/* Lists Tab */}
-            <motion.button
-              onClick={() => setActiveTab('lists')}
-              className={`flex flex-col items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'lists'
-                  ? theme === 'cyberpunk' 
-                    ? 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30' 
-                    : 'text-teal-600 dark:text-teal-400'
-                  : theme === 'cyberpunk'
-                    ? 'text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/5'
-                    : 'text-gray-600 dark:text-gray-400'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <List size={24} />
-              <span className="text-sm font-medium">Lists</span>
-            </motion.button>
-
-            {/* Calendar Tab */}
-            <motion.button
-              onClick={() => setActiveTab('calendar')}
-              className={`flex flex-col items-center gap-2 px-6 py-3 rounded-lg transition-all duration-200 ${
-                activeTab === 'calendar'
-                  ? theme === 'cyberpunk' 
-                    ? 'text-cyan-400 bg-cyan-500/10 border border-cyan-500/30' 
-                    : 'text-teal-600 dark:text-teal-400'
-                  : theme === 'cyberpunk'
-                    ? 'text-gray-300 hover:text-cyan-400 hover:bg-cyan-500/5'
-                    : 'text-gray-600 dark:text-gray-400'
-              }`}
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-            >
-              <Calendar size={24} />
-              <span className="text-sm font-medium">Calendar</span>
-            </motion.button>
-          </div>
-        </motion.nav>
-
-        {/* Floating Action Button */}
-        <motion.button
-          onClick={handleAddButtonClick}
-          className={`fixed bottom-24 right-6 w-14 h-14 text-white rounded-full shadow-lg hover:shadow-xl transition-all duration-300 z-[60] flex items-center justify-center ${
-            theme === 'cyberpunk'
-              ? 'bg-cyan-500 hover:bg-cyan-400 shadow-[0_4px_20px_rgba(6,182,212,0.4)] hover:shadow-[0_6px_25px_rgba(6,182,212,0.6)]'
-              : 'bg-teal-500 hover:bg-teal-600'
-          }`}
-          whileHover={{ scale: 1.1 }}
-          whileTap={{ scale: 0.9 }}
-          initial={{ scale: 0 }}
-          animate={{ scale: 1 }}
-          transition={{ delay: 0.5, type: "spring", stiffness: 200 }}
-        >
-          <Plus size={24} />
-        </motion.button>
 
         {/* AddTodo Modal - moved outside main content */}
         <AnimatePresence mode="wait">
           {showAddTodo && (
             <AddTodo
               key="add-todo"
-              onAdd={addTodo}
-              onClose={() => setShowAddTodo(false)}
+              onAdd={saveTodo}
+              onClose={() => {
+                setShowAddTodo(false)
+                setEditingTodo(null)
+              }}
               lists={lists}
               activeList={activeList}
+              initialTodo={editingTodo}
             />
           )}
         </AnimatePresence>
 
+        {/* Delete List Modal */}
+        <AnimatePresence>
+          {showDeleteListModal && listPendingDelete && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-[9999]"
+              onClick={cancelDeleteList}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                className="card w-full max-w-md relative z-[10000]"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-300 flex items-center justify-center">
+                    <Trash2 className="w-5 h-5" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                      Delete “{listPendingDelete.name}” list?
+                    </h3>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+                      This will permanently remove the list and every task in it. There’s no undo.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6">
+                  <button
+                    onClick={cancelDeleteList}
+                    className="px-4 py-2 rounded-lg border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmDeleteList}
+                    className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white font-medium transition-colors"
+                  >
+                    Delete List
+                  </button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
 
         {/* RecurringTaskModal */}
@@ -1167,14 +1178,15 @@ function App() {
 
                 <div className="mb-4">
                   <p className="text-gray-600 dark:text-gray-400">
-                    {todos.filter(todo => todo.list_id === selectedList.id && !todo.completed).length} tasks remaining
+                    {todos.filter(todo => (todo.list_id || todo.listId) === selectedList.id && !todo.completed).length} tasks remaining
                   </p>
                 </div>
 
                 <TodoList
-                  todos={todos.filter(todo => todo.list_id === selectedList.id)}
+                  todos={todos.filter(todo => (todo.list_id || todo.listId) === selectedList.id)}
                   onToggle={toggleTodo}
                   onDelete={deleteTodo}
+                  onEdit={handleEditTodo}
                 />
               </motion.div>
             </motion.div>
@@ -1281,7 +1293,6 @@ function App() {
         </AnimatePresence>
 
       </div>
-    </Router>
   )
 }
 

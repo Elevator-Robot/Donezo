@@ -2,14 +2,17 @@ import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { X } from 'lucide-react'
 
-function AddTodo({ onAdd, onClose, lists, activeList }) {
-  const [title, setTitle] = useState('')
-  const [listId, setListId] = useState(activeList)
-  const [priority, setPriority] = useState('')
+function AddTodo({ onAdd, onClose, lists, activeList, initialTodo = null }) {
+  const getInitialListId = () => initialTodo?.list_id || initialTodo?.listId || activeList || lists?.[0]?.id || ''
+  const [title, setTitle] = useState(initialTodo?.title || '')
+  const [listId, setListId] = useState(getInitialListId)
+  const [priority, setPriority] = useState(initialTodo?.priority || '')
 
   useEffect(() => {
-    setListId(activeList)
-  }, [activeList])
+    setTitle(initialTodo?.title || '')
+    setPriority(initialTodo?.priority || '')
+    setListId(initialTodo?.list_id || initialTodo?.listId || activeList || lists?.[0]?.id || '')
+  }, [initialTodo, activeList, lists])
 
   const handleSubmit = (e) => {
     e.preventDefault()
@@ -26,6 +29,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
       })
       
       onAdd({
+        id: initialTodo?.id,
         title: title.trim(),
         listId,
         listName: currentList?.name || 'Unknown',
@@ -56,7 +60,7 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Add New Task</h2>
+          <h2 className="text-xl font-bold text-gray-900 dark:text-white">{initialTodo ? 'Edit Task' : 'Add New Task'}</h2>
           <button
             onClick={onClose}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors duration-200"
@@ -130,9 +134,9 @@ function AddTodo({ onAdd, onClose, lists, activeList }) {
             <button
               type="submit"
               className="btn-primary flex-1 relative z-[10001]"
-              disabled={!title.trim()}
+              disabled={!title.trim() || !listId}
             >
-              Add Task
+              {initialTodo ? 'Update Task' : 'Add Task'}
             </button>
             <button
               type="button"

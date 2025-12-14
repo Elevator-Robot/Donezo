@@ -1,9 +1,9 @@
 import React, { useState, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { CheckCircle, Clock, Trash2, Repeat, AlertTriangle, Calendar } from 'lucide-react'
+import { CheckCircle, Clock, Trash2, Repeat, AlertTriangle, Calendar, Edit3 } from 'lucide-react'
 import { formatDueDate, isOverdue, getPriorityColor, getPriorityBackground, getRecurrenceDescription } from '../utils/recurringTaskUtils'
 
-function TodoList({ todos, onToggle, onDelete }) {
+function TodoList({ todos, onToggle, onDelete, onEdit = () => {} }) {
   const [swipeStates, setSwipeStates] = useState({})
   const [isDragging, setIsDragging] = useState(false)
   const dragStartX = useRef(0)
@@ -311,15 +311,24 @@ function TodoList({ todos, onToggle, onDelete }) {
                     </div>
                   </div>
 
-                  {/* Delete Button */}
-                  <motion.button
-                    onClick={() => onDelete(todo.id)}
-                    className="flex-shrink-0 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                  >
-                    <Trash2 className="w-4 h-4 text-red-500" />
-                  </motion.button>
+                  <div className="flex items-center gap-1">
+                    <motion.button
+                      onClick={() => onEdit(todo)}
+                      className="flex-shrink-0 p-1 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors duration-200"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Edit3 className="w-4 h-4 text-gray-500 dark:text-gray-300" />
+                    </motion.button>
+                    <motion.button
+                      onClick={() => onDelete(todo.id)}
+                      className="flex-shrink-0 p-1 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors duration-200"
+                      whileHover={{ scale: 1.1 }}
+                      whileTap={{ scale: 0.9 }}
+                    >
+                      <Trash2 className="w-4 h-4 text-red-500" />
+                    </motion.button>
+                  </div>
                 </div>
               </div>
             </div>
